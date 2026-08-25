@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerador de .config IPTV & HackDroid (0 Dias)</title>
+  <title>Gerador de .config IPTV</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -22,11 +22,11 @@
               900: '#312e81',
             },
             dark: {
-              bg: '#0B0F19',
+              bg: '#0b0f19',
               card: '#111827',
-              border: '#1F2937',
-              hover: '#1E293B',
-              input: '#0F172A'
+              border: '#1f2937',
+              input: '#1a2234',
+              hover: '#232d42'
             }
           },
           fontFamily: {
@@ -71,13 +71,13 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-emerald-300">
-              Gerador de .config (0 Dias)
+              Gerador de .config IPTV
             </h1>
             <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Ativação 0 Dias
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gerador Ativo & Nuvem 10k
             </span>
           </div>
-          <p class="text-xs text-slate-400">Device ID & User ID Exclusivos por Config</p>
+          <p class="text-xs text-slate-400">Geração de Arquivos .config • Nuvem 10k & Chaves Aleatórias</p>
         </div>
       </div>
 
@@ -97,10 +97,10 @@
     <!-- NAV TABS -->
     <div class="flex items-center gap-2 border-b border-dark-border overflow-x-auto pb-2 scrollbar-none">
       <button onclick="switchTab('single')" id="tab-btn-single" class="tab-btn active px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-brand-400 bg-brand-500/10 border border-brand-500/30">
-        <i data-lucide="zap" class="w-4 h-4"></i> Gerador Individual (0 Dias)
+        <i data-lucide="zap" class="w-4 h-4"></i> Gerador Individual
       </button>
       <button onclick="switchTab('bulk')" id="tab-btn-bulk" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
-        <i data-lucide="layers" class="w-4 h-4"></i> Gerador em Lote (0 Dias)
+        <i data-lucide="layers" class="w-4 h-4"></i> Gerador em Lote
       </button>
       <button onclick="switchTab('decoder')" id="tab-btn-decoder" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="binary" class="w-4 h-4"></i> Decodificador Hex
@@ -133,12 +133,17 @@
             </div>
           </div>
 
-          <!-- Modo 0 Dias Alerta -->
-          <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-200">
-            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="font-semibold text-emerald-300">Modo 0 Dias Ativo:</strong>
-              <p class="text-[11px] text-emerald-300/80 mt-0.5">Device ID, User ID e UUID são gerados do zero para criar uma conta nova e limpa no servidor IPTV.</p>
+          <!-- Aviso de Status das Configs -->
+          <div class="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-start gap-2.5 text-xs text-blue-200">
+            <i data-lucide="info" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
+            <div class="flex flex-col gap-0.5">
+              <div class="flex items-center gap-2">
+                <strong class="font-semibold text-blue-300">Configurações Ativas & Válidas:</strong>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">0 Dias em Desenvolvimento</span>
+              </div>
+              <p class="text-[11px] text-blue-300/80 leading-relaxed">
+                As configurações geradas ou puxadas da nuvem são válidas para uso. A geração de contas com 0 dias virgens está em fase de desenvolvimento e será liberada em breve.
+              </p>
             </div>
           </div>
 
@@ -192,7 +197,7 @@
                   <i data-lucide="refresh-cw" class="w-3 h-3 text-brand-400"></i>
                 </button>
               </div>
-              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Novo / 0 Dias</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300">Aleatório / Único</span>
             </div>
             <p id="devid-preview" class="text-indigo-300 break-all text-[11px] font-semibold text-emerald-400">-</p>
           </div>
@@ -266,12 +271,12 @@
       <div class="lg:col-span-4 flex flex-col gap-4">
         <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
           <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="layers" class="w-4 h-4 text-brand-400"></i> Parâmetros em Lote (0 Dias)
+            <i data-lucide="layers" class="w-4 h-4 text-brand-400"></i> Parâmetros em Lote
           </h2>
 
-          <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200 flex items-start gap-2">
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
-            <span>Cada configuração do lote terá seu próprio <strong>Device ID</strong> e <strong>User ID</strong> exclusivo garantindo 0 dias para todas.</span>
+          <div class="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 text-xs text-blue-200 flex items-start gap-2">
+            <i data-lucide="check-circle" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
+            <span>Cada configuração do lote terá seu próprio <strong>MAC</strong>, <strong>Device ID</strong> e <strong>User ID</strong> exclusivos.</span>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -297,7 +302,7 @@
 
           <div class="flex flex-col gap-2 pt-2">
             <button onclick="runBulkGeneration()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="play" class="w-4 h-4"></i> Gerar Lote de 0 Dias
+              <i data-lucide="play" class="w-4 h-4"></i> Gerar Lote de Configurações
             </button>
             <button onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs transition flex items-center justify-center gap-2">
               <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar Tudo em ZIP Único
@@ -317,7 +322,7 @@
               <i data-lucide="list-checks" class="w-4 h-4 text-emerald-400"></i> Lote Gerado (<span id="bulk-result-count">0</span> itens)
             </h3>
             <span class="text-xs text-emerald-400 font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 0 Dias em todas as contas
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Configs exclusivas por arquivo
             </span>
           </div>
 
@@ -335,7 +340,7 @@
               <tbody id="bulk-table-body" class="divide-y divide-dark-border">
                 <tr>
                   <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-                    Clique em "Gerar Lote de 0 Dias" para criar as configurações exclusivas.
+                    Clique em "Gerar Lote de Configurações" para criar os arquivos.
                   </td>
                 </tr>
               </tbody>
@@ -472,7 +477,7 @@
       <div class="flex items-center gap-2">
         <span class="text-slate-300 font-medium">Gerador de Configurações</span>
         <span>•</span>
-        <span>Modo 0 Dias & Nuvem</span>
+        <span>Nuvem 10k & Local</span>
       </div>
       <a href="https://pixgg.com.br/rzao" target="_blank" rel="noopener noreferrer" 
          class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition flex items-center gap-2">
@@ -792,12 +797,12 @@
       
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `${folder}.zip`);
-      showToast(`Pacote ${folder}.zip (0 Dias) baixado com sucesso!`);
+      showToast(`Pacote ${folder}.zip baixado com sucesso!`);
     }
 
     async function saveSingleToDisk() {
       const mac = document.getElementById('input-mac').value;
-      const folder = document.getElementById('input-folder').value || "CONFIG_NOVA_0_DIAS";
+      const folder = document.getElementById('input-folder').value || "CONFIG_NOVA";
       const uid = document.getElementById('input-userid').value;
       const ch = document.getElementById('input-channel').value;
       
@@ -816,7 +821,7 @@
         });
         const saveData = await saveRes.json();
         if (saveData.success) {
-          showToast(`Configuração 0 DIAS salva na pasta ${folder}!`);
+          showToast(`Configuração salva na pasta ${folder}!`);
           loadLibrary();
         }
       } catch (e) {
@@ -866,7 +871,7 @@
       document.getElementById('btn-download-bulk-zip').disabled = false;
       document.getElementById('btn-save-bulk-disk').disabled = false;
       lucide.createIcons();
-      showToast(`Lote de ${count} configurações 0 DIAS gerado com sucesso!`);
+      showToast(`Lote de ${count} configurações gerado com sucesso!`);
     }
 
     async function downloadBulkZip() {
@@ -881,8 +886,8 @@
       }
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `pacote_configs_${currentBulkList.length}_itens_0_dias.zip`);
-      showToast(`Pacote com ${currentBulkList.length} configs (0 Dias) baixado!`);
+      saveAs(content, `pacote_configs_${currentBulkList.length}_itens.zip`);
+      showToast(`Pacote com ${currentBulkList.length} configs baixado com sucesso!`);
     }
 
     async function saveBulkToDisk() {
@@ -1223,7 +1228,7 @@
         const res = await fetch('/health');
         if (res.ok) {
           document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-emerald-400";
-          document.getElementById('status-text').innerText = "Servidor 0 Dias & ADB Online";
+          document.getElementById('status-text').innerText = "Servidor & Nuvem Online";
           checkAdbDevices();
         }
       } catch (e) {
