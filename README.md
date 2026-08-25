@@ -31,7 +31,7 @@ Execute no terminal:
 ```bash
 docker compose up -d --build
 ```
-Acesse no navegador: **`http://localhost:8000`** (ou através do seu IP/Domínio).
+Acesse no navegador: **`http://localhost:8095`** (ou através do seu IP/Domínio).
 
 ---
 
