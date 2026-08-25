@@ -341,6 +341,78 @@ def get_adb_devices():
         return {"connected": False, "devices": [], "error": str(e)}
 
 
+def inspect_emulator_account_info(device: str = "127.0.0.1:21503") -> dict:
+    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador"""
+    try:
+        # 1. Passa tela de guia se estiver aberta
+        focus_res = subprocess.run(["adb", "-s", device, "shell", "dumpsys window | grep -E 'mCurrentFocus'"], capture_output=True, text=True, errors='ignore', timeout=5)
+        if "GuidePageActivity" in focus_res.stdout:
+            subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
+            time.sleep(0.4)
+            subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_DPAD_RIGHT"], timeout=3)
+            time.sleep(0.4)
+            subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
+            time.sleep(1.5)
+            
+        # 2. Fecha overlays com Back
+        subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
+        time.sleep(0.5)
+        
+        # 3. Abre o diálogo de perfil clicando no ícone mIvPersonal (x=1262, y=60)
+        subprocess.run(["adb", "-s", device, "shell", "input tap 1262 60"], timeout=3)
+        time.sleep(1.5)
+        
+        # 4. Dump da hierarquia da tela
+        subprocess.run(["adb", "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml"], capture_output=True, timeout=5)
+        dump_res = subprocess.run(["adb", "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
+        
+        texts = re.findall(r'text="([^"]+)"', dump_res.stdout)
+        
+        account_id = None
+        activation_date = None
+        days_active = None
+        status_msg = None
+        is_valid = True
+        
+        for t in texts:
+            t_clean = t.strip()
+            if "Falha no acesso" in t_clean or "tente novamente" in t_clean:
+                is_valid = False
+                status_msg = t_clean
+                
+            m_date = re.search(r'ativada em\s*([0-9]{2}-[0-9]{2}-[0-9]{4})', t_clean, re.IGNORECASE)
+            m_days = re.search(r'([0-9]+)\s*dias', t_clean, re.IGNORECASE)
+            if m_date and m_days:
+                activation_date = m_date.group(1)
+                days_active = int(m_days.group(1))
+                status_msg = t_clean
+                is_valid = True
+                
+            if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
+                account_id = t_clean
+                
+        # Fallback para o cache.config.xml se não capturado na UI
+        if not account_id:
+            r_xml = subprocess.run(["adb", "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=5)
+            uid_match = re.search(r'name="key_user_id">([0-9]+)<', r_xml.stdout)
+            if uid_match:
+                account_id = uid_match.group(1)
+                
+        # Fecha o diálogo de perfil
+        subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
+        
+        return {
+            "found": bool(account_id or activation_date or status_msg),
+            "account_id": account_id,
+            "activation_date": activation_date,
+            "days_active": days_active,
+            "status_message": status_msg,
+            "is_valid": is_valid
+        }
+    except Exception as e:
+        return {"found": False, "error": str(e)}
+
+
 @app.post("/api/adb/inject")
 def inject_adb(req: ADBInjectRequest):
     """Injeta a .config diretamente no emulador via ADB e inicia o UniTV Free"""
@@ -369,17 +441,39 @@ def inject_adb(req: ADBInjectRequest):
         
         logs.append("Arquivo .config injetado em /storage/emulated/0/Android/.config")
         
+        account_info = None
         if req.launch_app:
             subprocess.run(["adb", "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
             logs.append("UniTV Free iniciado no emulador!")
             
+            # Aguarda a inicialização do app para leitura de status
+            time.sleep(6)
+            logs.append("Lendo status e dias ativos da conta no aplicativo...")
+            account_info = inspect_emulator_account_info(device)
+            
+            if account_info and account_info.get("found"):
+                if account_info.get("account_id"):
+                    logs.append(f"👑 ID da Conta: {account_info['account_id']}")
+                if account_info.get("activation_date"):
+                    logs.append(f"📅 Ativada em: {account_info['activation_date']} ({account_info.get('days_active', 0)} dias ativa)")
+                if account_info.get("status_message"):
+                    logs.append(f"💬 Status: {account_info['status_message']}")
+            
         return {
             "success": True,
             "device": device,
-            "logs": logs
+            "logs": logs,
+            "account_info": account_info
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/adb/account-info")
+@app.post("/api/adb/account-info")
+def get_account_info_endpoint(device_addr: Optional[str] = "127.0.0.1:21503"):
+    """Endpoint para ler sob demanda os dados e dias ativos da conta no emulador"""
+    return inspect_emulator_account_info(device_addr or "127.0.0.1:21503")
 
 
 # --- SERVIR INTERFACE HTML & ASSETS ---

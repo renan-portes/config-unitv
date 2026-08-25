@@ -448,9 +448,50 @@
         </div>
       </div>
 
-      <!-- Coluna da Direita: Pré-visualização & Logs do ADB -->
+      <!-- Coluna da Direita: Status da Conta, Pré-visualização & Logs do ADB -->
       <div class="lg:col-span-7 flex flex-col gap-4">
         
+        <!-- Card de Status da Conta no Emulador (Após Injeção/Abertura) -->
+        <div id="tester-account-card" class="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-indigo-950/20 to-dark-card flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shadow-md shadow-purple-500/20">
+                <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  Status da Conta no Emulador
+                  <span id="tester-account-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-normal">Aguardando</span>
+                </h4>
+                <p class="text-[11px] text-slate-400">Informações extraídas automaticamente ao abrir o app</p>
+              </div>
+            </div>
+            <button onclick="fetchAccountStatusOnDemand()" id="btn-fetch-account" class="px-3 py-1.5 rounded-xl bg-dark-hover hover:bg-slate-700 text-xs text-purple-300 hover:text-white transition flex items-center gap-1.5 border border-purple-500/30 shadow">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i> Ler Status
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2.5 text-xs font-mono pt-1">
+            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase">ID da Conta</span>
+              <span id="tester-account-id" class="text-white font-bold text-sm truncate mt-0.5">-</span>
+            </div>
+            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase">Data Ativação</span>
+              <span id="tester-account-date" class="text-indigo-300 font-bold text-xs truncate mt-0.5">-</span>
+            </div>
+            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase">Dias Ativos</span>
+              <span id="tester-account-days" class="text-emerald-400 font-bold text-sm truncate mt-0.5">-</span>
+            </div>
+          </div>
+
+          <div id="tester-account-msg-box" class="p-2.5 rounded-xl bg-black/40 border border-dark-border text-xs text-slate-300 flex items-center gap-2 font-mono">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
+            <span id="tester-account-msg" class="truncate text-[11px]">Injete um arquivo .config e abra o aplicativo para verificar os dados da conta.</span>
+          </div>
+        </div>
+
         <!-- Card de Conteúdo do Arquivo -->
         <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
           <div class="flex items-center justify-between pb-3 border-b border-dark-border">
@@ -464,8 +505,8 @@
             </div>
           </div>
 
-          <div class="mt-4 flex-1 relative min-h-[220px]">
-            <pre id="tester-code-viewer" class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[260px]">Nenhum arquivo carregado. Arraste ou selecione um .config para visualizar.</pre>
+          <div class="mt-4 flex-1 relative min-h-[160px]">
+            <pre id="tester-code-viewer" class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[180px]">Nenhum arquivo carregado. Arraste ou selecione um .config para visualizar.</pre>
           </div>
 
           <!-- Console de Logs ADB -->
@@ -1446,8 +1487,11 @@
           if (data.logs && Array.isArray(data.logs)) {
             data.logs.forEach(l => appendTesterLog(`✔ ${l}`));
           }
-          appendTesterLog("✔ Injeção concluída com 100% de sucesso!");
-          showToast("Configuração injetada no emulador com sucesso!");
+          if (data.account_info) {
+            renderAccountInfo(data.account_info);
+          }
+          appendTesterLog("✔ Injeção e leitura concluídas com sucesso!");
+          showToast("Configuração injetada e conta validada no emulador!");
         } else {
           appendTesterLog("❌ Falha na injeção via ADB.");
           showToast("Falha ao injetar no emulador.", true);
@@ -1457,6 +1501,71 @@
         showToast("Erro ao conectar com o ADB.", true);
       } finally {
         btn.innerHTML = originalText;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    function renderAccountInfo(info) {
+      if (!info || !info.found) {
+        document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-normal";
+        document.getElementById('tester-account-badge').innerText = "Não identificado";
+        document.getElementById('tester-account-msg').innerText = "Não foi possível obter dados da conta. Verifique se o aplicativo está aberto.";
+        return;
+      }
+
+      if (info.account_id) {
+        document.getElementById('tester-account-id').innerText = info.account_id;
+      }
+      if (info.activation_date) {
+        document.getElementById('tester-account-date').innerText = info.activation_date;
+      }
+      if (info.days_active !== null && info.days_active !== undefined) {
+        document.getElementById('tester-account-days').innerText = `${info.days_active} dias`;
+        if (info.days_active === 0) {
+          document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
+          document.getElementById('tester-account-badge').innerText = "✨ 0 Dias (Virgem)";
+        } else {
+          document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
+          document.getElementById('tester-account-badge').innerText = "✔ Ativa";
+        }
+      }
+      
+      if (info.status_message) {
+        document.getElementById('tester-account-msg').innerText = info.status_message;
+      } else if (info.activation_date && info.days_active !== null) {
+        document.getElementById('tester-account-msg').innerText = `Sua conta foi ativada em ${info.activation_date} e já está ativa por ${info.days_active} dias`;
+      }
+
+      if (!info.is_valid) {
+        document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold";
+        document.getElementById('tester-account-badge').innerText = "❌ Falha no Acesso";
+      }
+    }
+
+    async function fetchAccountStatusOnDemand() {
+      const btn = document.getElementById('btn-fetch-account');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1"></div> Lendo...`;
+      btn.disabled = true;
+
+      try {
+        appendTesterLog("Lendo status da conta no emulador sob demanda...");
+        const res = await fetch('/api/adb/account-info');
+        const info = await res.json();
+        renderAccountInfo(info);
+        if (info.found) {
+          appendTesterLog(`✔ Conta lida: ID ${info.account_id || '-'} | Ativada em: ${info.activation_date || '-'} (${info.days_active || 0} dias)`);
+          showToast("Status da conta atualizado com sucesso!");
+        } else {
+          appendTesterLog("⚠️ Não foi possível capturar os dados na tela atual.");
+          showToast("Não foi possível ler a conta. Abra o aplicativo no emulador.", true);
+        }
+      } catch (e) {
+        appendTesterLog(`❌ Erro ao ler conta: ${e.message}`);
+        showToast("Erro ao comunicar com o emulador.", true);
+      } finally {
+        btn.innerHTML = origHtml;
         btn.disabled = false;
         lucide.createIcons();
       }
