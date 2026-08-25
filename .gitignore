@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+env/
+ENV/
+
+# Temporary files & caches
+.temp/
+*.log
+scratch/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

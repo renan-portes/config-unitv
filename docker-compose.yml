@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  config-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: config_generator_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DOMAIN=config.servidor.xyz.br
+    volumes:
+      # Mapeia diretório caso queira persistir novas configs geradas no host
+      - ./generated_configs:/app/generated_configs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
