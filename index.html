@@ -186,10 +186,15 @@
           <!-- Device ID B64 Preview -->
           <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-1 text-xs font-mono">
             <div class="flex justify-between items-center">
-              <span class="text-[10px] text-slate-400 font-semibold uppercase">Device ID Único (B64)</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase">Device ID Único (B64)</span>
+                <button onclick="randomizeDeviceIdOnly()" class="p-0.5 hover:text-white text-slate-400 hover:bg-dark-hover rounded transition" title="Gerar Novo Device ID Único">
+                  <i data-lucide="refresh-cw" class="w-3 h-3 text-brand-400"></i>
+                </button>
+              </div>
               <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Novo / 0 Dias</span>
             </div>
-            <p id="devid-preview" class="text-indigo-300 break-all text-[11px]">-</p>
+            <p id="devid-preview" class="text-indigo-300 break-all text-[11px] font-semibold text-emerald-400">-</p>
           </div>
 
           <!-- Action Buttons -->
@@ -672,6 +677,18 @@
       return mac.join(":");
     }
 
+    function generateSingleConfigUI() {
+      randomizeAll();
+    }
+
+    function randomizeDeviceIdOnly() {
+      const newDev = generateFreshDeviceId();
+      currentDeviceIdHex = newDev.hex;
+      currentDeviceIdB64 = newDev.b64;
+      updateSinglePreview();
+      showToast("Novo Device ID único gerado!");
+    }
+
     function randomizeAll() {
       const mac = generateRandomMAC();
       document.getElementById('input-mac').value = mac;
@@ -686,8 +703,11 @@
     function randomizeMacOnly() {
       const mac = generateRandomMAC();
       document.getElementById('input-mac').value = mac;
+      const newDev = generateFreshDeviceId();
+      currentDeviceIdHex = newDev.hex;
+      currentDeviceIdB64 = newDev.b64;
       updateSinglePreview();
-      showToast(`MAC aleatório gerado: ${mac}`);
+      showToast(`Novo MAC e Device ID gerados!`);
     }
 
     function updateSinglePreview() {
@@ -1103,9 +1123,29 @@
         const data = await res.json();
         if (data && data.files && data.files['.config']) {
           currentSingleFiles = data.files;
+          const configText = data.files['.config'];
+          
           if (document.getElementById('input-folder')) {
             document.getElementById('input-folder').value = data.folder_name;
           }
+          
+          const devMatch = configText.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
+          if (devMatch && devMatch[1]) {
+            currentDeviceIdHex = devMatch[1];
+            let raw = "";
+            for (let i = 0; i < devMatch[1].length; i += 2) {
+              raw += String.fromCharCode(parseInt(devMatch[1].substr(i, 2), 16));
+            }
+            currentDeviceIdB64 = raw;
+            if (document.getElementById('devid-preview')) {
+              document.getElementById('devid-preview').innerText = raw;
+            }
+          }
+
+          if (data.mac && document.getElementById('input-mac')) {
+            document.getElementById('input-mac').value = data.mac;
+          }
+
           if (document.getElementById('code-viewer')) {
             document.getElementById('code-viewer').innerText = currentSingleFiles[currentActivePreview] || data.files['.config'];
           }
