@@ -324,10 +324,19 @@ def get_random_cloud_config():
 
 # --- ENDPOINTS ADB (EMULADOR) ---
 
+def ensure_adb_connected(device: str = "127.0.0.1:21503"):
+    """Tenta conectar ao endereço do emulador se não estiver conectado"""
+    try:
+        subprocess.run(["adb", "connect", device], capture_output=True, text=True, timeout=4)
+    except Exception:
+        pass
+
+
 @app.get("/api/adb/devices")
 def get_adb_devices():
     """Detecta emuladores e dispositivos Android conectados via ADB"""
     try:
+        ensure_adb_connected("127.0.0.1:21503")
         res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
         devices = []
         for line in res.stdout.splitlines()[1:]:
@@ -335,7 +344,7 @@ def get_adb_devices():
                 devices.append(line.split("\t")[0].strip())
         return {
             "connected": len(devices) > 0,
-            "devices": devices
+            "devices": devices if devices else ["127.0.0.1:21503"]
         }
     except Exception as e:
         return {"connected": False, "devices": [], "error": str(e)}
@@ -425,6 +434,7 @@ def inject_adb(req: ADBInjectRequest):
             f.write(req.config_content)
             
         logs = []
+        ensure_adb_connected(device)
         logs.append(f"Conectando ao dispositivo ADB: {device}")
         
         if req.clear_cache:

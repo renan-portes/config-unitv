@@ -359,172 +359,330 @@
     <!-- TAB 3: TESTADOR .CONFIG (ADB & UPLOAD) -->
     <div id="tab-tester" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Coluna da Esquerda: Upload & Controles -->
-      <div class="lg:col-span-5 flex flex-col gap-4">
-        
-        <!-- Card de Upload / Dropzone -->
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i data-lucide="upload-cloud" class="w-5 h-5 text-cyan-400"></i> Carregar .config do PC
-            </h2>
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
-              Injeção Direta
-            </span>
-          </div>
+      <!-- Sub-navegação do Testador (Individual vs Lote) -->
+      <div class="lg:col-span-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-dark-border pb-3">
+        <div class="flex items-center gap-2">
+          <button onclick="switchTesterMode('single')" id="tester-mode-btn-single" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-2">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Teste Individual
+          </button>
+          <button onclick="switchTesterMode('batch')" id="tester-mode-btn-batch" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition flex items-center gap-2">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i> Scanner em Lote (Multi-Configs & Filtro)
+          </button>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-dark-card border border-dark-border font-mono text-[11px] text-slate-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-400" id="tester-header-adb-dot"></span>
+            <span id="tester-header-adb-label">127.0.0.1:21503</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- MODO 1: TESTE INDIVIDUAL -->
+      <div id="tester-panel-single" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Coluna da Esquerda: Upload & Controles -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
           
-          <p class="text-xs text-slate-400 leading-relaxed">
-            Selecione ou arraste qualquer arquivo <code>.config</code> do seu computador para testar no emulador Android com 1 clique.
-          </p>
-
-          <!-- Dropzone Area -->
-          <div id="tester-dropzone" 
-               onclick="document.getElementById('tester-file-input').click()"
-               class="p-6 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/30 transition cursor-pointer flex flex-col items-center justify-center gap-3 text-center group">
-            <input type="file" id="tester-file-input" accept=".config,.txt,text/plain" class="hidden" onchange="handleTesterFileUpload(event)">
-            <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center group-hover:scale-110 transition shadow-lg shadow-cyan-500/20">
-              <i data-lucide="file-up" class="w-6 h-6"></i>
-            </div>
-            <div>
-              <p class="text-sm font-semibold text-white group-hover:text-cyan-300 transition">Clique para selecionar ou arraste o .config</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">Suporta arquivos .config ou .txt</p>
-            </div>
-            <span class="text-xs px-3 py-1 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white font-medium shadow transition">
-              Selecionar do Computador
-            </span>
-          </div>
-
-          <!-- Informações do Arquivo Carregado -->
-          <div id="tester-file-info" class="p-3.5 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2 text-xs font-mono">
-            <div class="flex items-center justify-between pb-2 border-b border-dark-border">
-              <span class="text-slate-400 font-semibold uppercase text-[10px]">Arquivo Carregado:</span>
-              <span id="tester-filename" class="text-emerald-400 font-bold truncate max-w-[200px]">Nenhum arquivo carregado</span>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-[11px]">
-              <div>
-                <span class="text-slate-500 text-[10px] block uppercase">MAC Address:</span>
-                <span id="tester-mac" class="text-white font-semibold">-</span>
-              </div>
-              <div>
-                <span class="text-slate-500 text-[10px] block uppercase">Tamanho:</span>
-                <span id="tester-filesize" class="text-slate-300">-</span>
-              </div>
-              <div class="col-span-2">
-                <span class="text-slate-500 text-[10px] block uppercase">Device ID (B64):</span>
-                <span id="tester-devid" class="text-indigo-300 break-all text-[10px]">-</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Parâmetros e Ações de Injeção ADB -->
-          <div class="flex flex-col gap-3 pt-2">
-            <div class="flex items-center justify-between text-xs px-1 text-slate-300">
-              <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400" id="tester-adb-dot"></span>
-                <span id="tester-adb-label" class="font-mono text-[11px]">Emulador: 127.0.0.1:21503</span>
+          <!-- Card de Upload / Dropzone -->
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="upload-cloud" class="w-5 h-5 text-cyan-400"></i> Carregar .config do PC
+              </h2>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
+                Injeção Direta
               </span>
-              <button onclick="checkAdbDevices()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-dark-hover transition" title="Atualizar Emuladores Conectados">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            </div>
+            
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Selecione ou arraste qualquer arquivo <code>.config</code> do seu computador para testar no emulador Android com 1 clique.
+            </p>
+
+            <!-- Dropzone Area -->
+            <div id="tester-dropzone" 
+                 onclick="document.getElementById('tester-file-input').click()"
+                 class="p-6 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/30 transition cursor-pointer flex flex-col items-center justify-center gap-3 text-center group">
+              <input type="file" id="tester-file-input" accept=".config,.txt,text/plain" class="hidden" onchange="handleTesterFileUpload(event)">
+              <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center group-hover:scale-110 transition shadow-lg shadow-cyan-500/20">
+                <i data-lucide="file-up" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-white group-hover:text-cyan-300 transition">Clique para selecionar ou arraste o .config</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Suporta arquivos .config ou .txt</p>
+              </div>
+              <span class="text-xs px-3 py-1 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white font-medium shadow transition">
+                Selecionar do Computador
+              </span>
+            </div>
+
+            <!-- Informações do Arquivo Carregado -->
+            <div id="tester-file-info" class="p-3.5 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2 text-xs font-mono">
+              <div class="flex items-center justify-between pb-2 border-b border-dark-border">
+                <span class="text-slate-400 font-semibold uppercase text-[10px]">Arquivo Carregado:</span>
+                <span id="tester-filename" class="text-emerald-400 font-bold truncate max-w-[200px]">Nenhum arquivo carregado</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span class="text-slate-500 text-[10px] block uppercase">MAC Address:</span>
+                  <span id="tester-mac" class="text-white font-semibold">-</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 text-[10px] block uppercase">Tamanho:</span>
+                  <span id="tester-filesize" class="text-slate-300">-</span>
+                </div>
+                <div class="col-span-2">
+                  <span class="text-slate-500 text-[10px] block uppercase">Device ID (B64):</span>
+                  <span id="tester-devid" class="text-indigo-300 break-all text-[10px]">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parâmetros e Ações de Injeção ADB -->
+            <div class="flex flex-col gap-3 pt-2">
+              <div class="flex items-center justify-between text-xs px-1 text-slate-300">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400" id="tester-adb-dot"></span>
+                  <span id="tester-adb-label" class="font-mono text-[11px]">Emulador: 127.0.0.1:21503</span>
+                </span>
+                <button onclick="checkAdbDevices()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-dark-hover transition" title="Atualizar Emuladores Conectados">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300 px-1">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" id="tester-clear-cache" checked class="rounded bg-dark-input text-cyan-500 border-dark-border">
+                  <span>Limpar Cache/Dados</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" id="tester-launch-app" checked class="rounded bg-dark-input text-cyan-500 border-dark-border">
+                  <span>Iniciar Aplicativo</span>
+                </label>
+              </div>
+
+              <!-- Botão de Injeção -->
+              <button onclick="injectTesterConfigFile()" id="btn-tester-inject" disabled
+                class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-2">
+                <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i> Injetar no Emulador (ADB)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna da Direita: Status da Conta, Pré-visualização & Logs do ADB -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          
+          <!-- Card de Status da Conta no Emulador (Após Injeção/Abertura) -->
+          <div id="tester-account-card" class="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-indigo-950/20 to-dark-card flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shadow-md shadow-purple-500/20">
+                  <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                    Status da Conta no Emulador
+                    <span id="tester-account-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-normal">Aguardando</span>
+                  </h4>
+                  <p class="text-[11px] text-slate-400">Informações extraídas automaticamente ao abrir o app</p>
+                </div>
+              </div>
+              <button onclick="fetchAccountStatusOnDemand()" id="btn-fetch-account" class="px-3 py-1.5 rounded-xl bg-dark-hover hover:bg-slate-700 text-xs text-purple-300 hover:text-white transition flex items-center gap-1.5 border border-purple-500/30 shadow">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i> Ler Status
               </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300 px-1">
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" id="tester-clear-cache" checked class="rounded bg-dark-input text-cyan-500 border-dark-border">
-                <span>Limpar Cache/Dados</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" id="tester-launch-app" checked class="rounded bg-dark-input text-cyan-500 border-dark-border">
-                <span>Iniciar Aplicativo</span>
-              </label>
+            <div class="grid grid-cols-3 gap-2.5 text-xs font-mono pt-1">
+              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase">ID da Conta</span>
+                <span id="tester-account-id" class="text-white font-bold text-sm truncate mt-0.5">-</span>
+              </div>
+              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase">Data Ativação</span>
+                <span id="tester-account-date" class="text-indigo-300 font-bold text-xs truncate mt-0.5">-</span>
+              </div>
+              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase">Dias Ativos</span>
+                <span id="tester-account-days" class="text-emerald-400 font-bold text-sm truncate mt-0.5">-</span>
+              </div>
             </div>
 
-            <!-- Botão de Injeção -->
-            <button onclick="injectTesterConfigFile()" id="btn-tester-inject" disabled
-              class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i> Injetar no Emulador (ADB)
-            </button>
+            <div id="tester-account-msg-box" class="p-2.5 rounded-xl bg-black/40 border border-dark-border text-xs text-slate-300 flex items-center gap-2 font-mono">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
+              <span id="tester-account-msg" class="truncate text-[11px]">Injete um arquivo .config e abra o aplicativo para verificar os dados da conta.</span>
+            </div>
+          </div>
+
+          <!-- Card de Conteúdo do Arquivo -->
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
+            <div class="flex items-center justify-between pb-3 border-b border-dark-border">
+              <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <i data-lucide="file-code" class="w-4 h-4 text-cyan-400"></i> Conteúdo do .config
+              </h3>
+              <div class="flex items-center gap-2">
+                <button onclick="copyTesterContent()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 flex-1 relative min-h-[160px]">
+              <pre id="tester-code-viewer" class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[180px]">Nenhum arquivo carregado. Arraste ou selecione um .config para visualizar.</pre>
+            </div>
+
+            <!-- Console de Logs ADB -->
+            <div class="mt-4 pt-3 border-t border-dark-border flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                  <i data-lucide="terminal" class="w-3.5 h-3.5 text-brand-400"></i> Log de Execução ADB
+                </span>
+                <button onclick="document.getElementById('tester-logs').innerText='Aguardando comando...'" class="text-[10px] text-slate-500 hover:text-slate-300">
+                  Limpar Log
+                </button>
+              </div>
+              <div id="tester-logs" class="p-3 rounded-xl bg-black/50 border border-dark-border font-mono text-[11px] text-emerald-400 min-h-[90px] max-h-[140px] overflow-y-auto leading-relaxed">
+                Aguardando comando de injeção...
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Coluna da Direita: Status da Conta, Pré-visualização & Logs do ADB -->
-      <div class="lg:col-span-7 flex flex-col gap-4">
+      <!-- MODO 2: TESTADOR & SCANNER EM LOTE (MULTI-CONFIGS & FILTRO) -->
+      <div id="tester-panel-batch" class="hidden lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Card de Status da Conta no Emulador (Após Injeção/Abertura) -->
-        <div id="tester-account-card" class="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-indigo-950/20 to-dark-card flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shadow-md shadow-purple-500/20">
-                <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
-              </div>
-              <div>
-                <h4 class="text-sm font-bold text-white flex items-center gap-2">
-                  Status da Conta no Emulador
-                  <span id="tester-account-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-normal">Aguardando</span>
-                </h4>
-                <p class="text-[11px] text-slate-400">Informações extraídas automaticamente ao abrir o app</p>
-              </div>
-            </div>
-            <button onclick="fetchAccountStatusOnDemand()" id="btn-fetch-account" class="px-3 py-1.5 rounded-xl bg-dark-hover hover:bg-slate-700 text-xs text-purple-300 hover:text-white transition flex items-center gap-1.5 border border-purple-500/30 shadow">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i> Ler Status
-            </button>
-          </div>
+        <!-- Controles do Scanner -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-purple-400"></i> Scanner em Lote
+            </h2>
+            <p class="text-xs text-slate-400">
+              Carregue múltiplos arquivos ou puxe um pacote da nuvem. O scanner injeta cada um no emulador, lê a quantidade de dias ativos e separa as contas que baterem sua meta!
+            </p>
 
-          <div class="grid grid-cols-3 gap-2.5 text-xs font-mono pt-1">
-            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
-              <span class="text-[10px] text-slate-400 font-semibold uppercase">ID da Conta</span>
-              <span id="tester-account-id" class="text-white font-bold text-sm truncate mt-0.5">-</span>
+            <!-- Seleção de Origem das Configs -->
+            <div class="flex flex-col gap-2.5 pt-1">
+              <label class="text-xs font-semibold text-slate-300">1. Carregar Configurações</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="document.getElementById('batch-multi-input').click()" class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 hover:text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
+                  <i data-lucide="folder-up" class="w-3.5 h-3.5 text-purple-400"></i> Arquivos do PC
+                </button>
+                <input type="file" id="batch-multi-input" multiple accept=".config,.txt,text/plain" class="hidden" onchange="handleBatchMultiUpload(event)">
+                
+                <button onclick="loadBatchFromCloud()" id="btn-batch-cloud" class="py-2.5 px-3 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i> Nuvem (10k)
+                </button>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                <span>Fila de teste: <strong id="batch-queue-count" class="text-white">0</strong> configs</span>
+                <span class="flex items-center gap-1">
+                  Puxar: 
+                  <select id="batch-cloud-qty" class="bg-dark-input text-white rounded border border-dark-border px-1 py-0.5 text-[11px]">
+                    <option value="5">5 itens</option>
+                    <option value="10" selected>10 itens</option>
+                    <option value="20">20 itens</option>
+                    <option value="50">50 itens</option>
+                  </select>
+                </span>
+              </div>
             </div>
-            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
-              <span class="text-[10px] text-slate-400 font-semibold uppercase">Data Ativação</span>
-              <span id="tester-account-date" class="text-indigo-300 font-bold text-xs truncate mt-0.5">-</span>
-            </div>
-            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
-              <span class="text-[10px] text-slate-400 font-semibold uppercase">Dias Ativos</span>
-              <span id="tester-account-days" class="text-emerald-400 font-bold text-sm truncate mt-0.5">-</span>
-            </div>
-          </div>
 
-          <div id="tester-account-msg-box" class="p-2.5 rounded-xl bg-black/40 border border-dark-border text-xs text-slate-300 flex items-center gap-2 font-mono">
-            <i data-lucide="info" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
-            <span id="tester-account-msg" class="truncate text-[11px]">Injete um arquivo .config e abra o aplicativo para verificar os dados da conta.</span>
+            <!-- Filtro de Meta / Alvo -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
+              <div class="flex justify-between items-center text-xs">
+                <label class="font-semibold text-slate-300">2. Meta de Dias Ativos (Alvo)</label>
+                <span class="font-bold text-amber-400 text-xs">≤ <span id="batch-target-label">100</span> dias</span>
+              </div>
+              <input type="range" id="batch-target-days" min="0" max="500" value="100" step="5"
+                class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
+                oninput="document.getElementById('batch-target-label').innerText = this.value">
+              <p class="text-[11px] text-slate-400">Ex: Salvar apenas configs com <strong>100 dias ou menos</strong> (ou 0 dias virgens).</p>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="flex flex-col gap-2 pt-2">
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="startBatchScanner()" id="btn-start-batch" disabled
+                  class="py-3 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="play" class="w-4 h-4"></i> Iniciar Scanner
+                </button>
+                <button onclick="stopBatchScanner()" id="btn-stop-batch" disabled
+                  class="py-3 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed text-rose-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="square" class="w-4 h-4"></i> Parar
+                </button>
+              </div>
+
+              <!-- Botão de Download das Aprovadas -->
+              <button onclick="downloadApprovedBatchZip()" id="btn-download-approved-zip" disabled
+                class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+                <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Baixar Aprovadas no Alvo (.ZIP)
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Card de Conteúdo do Arquivo -->
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
-          <div class="flex items-center justify-between pb-3 border-b border-dark-border">
-            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-              <i data-lucide="file-code" class="w-4 h-4 text-cyan-400"></i> Conteúdo do .config
-            </h3>
-            <div class="flex items-center gap-2">
-              <button onclick="copyTesterContent()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
-              </button>
+        <!-- Tabela e Progresso do Scanner em Lote -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
+            
+            <!-- Resumo e Estatísticas -->
+            <div class="grid grid-cols-4 gap-3 pb-4 border-b border-dark-border text-xs font-mono">
+              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col">
+                <span class="text-[10px] text-slate-400 uppercase">Na Fila</span>
+                <span id="stat-batch-total" class="text-white font-bold text-base mt-0.5">0</span>
+              </div>
+              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col">
+                <span class="text-[10px] text-slate-400 uppercase">Testadas</span>
+                <span id="stat-batch-tested" class="text-indigo-300 font-bold text-base mt-0.5">0</span>
+              </div>
+              <div class="p-3 rounded-xl bg-dark-input border border-emerald-500/30 bg-emerald-950/20 flex flex-col">
+                <span class="text-[10px] text-emerald-400 uppercase font-semibold">⭐ Aprovadas</span>
+                <span id="stat-batch-approved" class="text-emerald-400 font-bold text-base mt-0.5">0</span>
+              </div>
+              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col">
+                <span class="text-[10px] text-slate-400 uppercase">Reprovadas</span>
+                <span id="stat-batch-rejected" class="text-slate-400 font-bold text-base mt-0.5">0</span>
+              </div>
             </div>
-          </div>
 
-          <div class="mt-4 flex-1 relative min-h-[160px]">
-            <pre id="tester-code-viewer" class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[180px]">Nenhum arquivo carregado. Arraste ou selecione um .config para visualizar.</pre>
-          </div>
-
-          <!-- Console de Logs ADB -->
-          <div class="mt-4 pt-3 border-t border-dark-border flex flex-col gap-2">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
-                <i data-lucide="terminal" class="w-3.5 h-3.5 text-brand-400"></i> Log de Execução ADB
-              </span>
-              <button onclick="document.getElementById('tester-logs').innerText='Aguardando comando...'" class="text-[10px] text-slate-500 hover:text-slate-300">
-                Limpar Log
-              </button>
+            <!-- Barra de Progresso Atual -->
+            <div class="flex flex-col gap-1.5 py-3 border-b border-dark-border">
+              <div class="flex items-center justify-between text-xs">
+                <span id="batch-progress-status" class="text-slate-300 font-medium">Aguardando início do teste...</span>
+                <span id="batch-progress-percent" class="font-mono text-purple-400 font-semibold">0%</span>
+              </div>
+              <div class="w-full h-2 bg-dark-input rounded-full overflow-hidden border border-dark-border">
+                <div id="batch-progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-300 w-0"></div>
+              </div>
             </div>
-            <div id="tester-logs" class="p-3 rounded-xl bg-black/50 border border-dark-border font-mono text-[11px] text-emerald-400 min-h-[90px] max-h-[140px] overflow-y-auto leading-relaxed">
-              Aguardando comando de injeção...
+
+            <!-- Tabela de Resultados -->
+            <div class="mt-4 overflow-auto max-h-[360px] rounded-xl border border-dark-border flex-1">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-dark-input text-slate-400 uppercase font-semibold sticky top-0">
+                  <tr>
+                    <th class="px-3 py-2.5">#</th>
+                    <th class="px-3 py-2.5">Origem / Nome</th>
+                    <th class="px-3 py-2.5">ID Conta</th>
+                    <th class="px-3 py-2.5">Ativada em</th>
+                    <th class="px-3 py-2.5">Dias Ativos</th>
+                    <th class="px-3 py-2.5">Resultado</th>
+                    <th class="px-3 py-2.5 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
+                  <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-slate-500 font-sans">
+                      Carregue arquivos do computador ou da nuvem e clique em "Iniciar Scanner" para começar o teste automático.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- TAB 4: DECODIFICADOR HEX -->
@@ -645,6 +803,61 @@
               <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar APK
             </a>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUIA DE INSTALAÇÃO & DICAS DO ANDROID -->
+    <div class="glass-panel rounded-2xl border border-dark-border overflow-hidden">
+      <div onclick="toggleElement('guide-content-body', 'guide-chevron')" class="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-dark-hover/50 transition user-select-none">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
+            <i data-lucide="help-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              Guia de Instalação & Dicas do Android
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">Dicas Importantes</span>
+            </h3>
+            <p class="text-xs text-slate-400">Limpeza prévia, aviso sobre Google Backup e arquivos ocultos</p>
+          </div>
+        </div>
+        <i data-lucide="chevron-down" id="guide-chevron" class="w-5 h-5 text-slate-400 transition-transform duration-300"></i>
+      </div>
+
+      <div id="guide-content-body" class="hidden p-5 pt-0 border-t border-dark-border/60 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+        
+        <!-- Dica 1: Limpeza -->
+        <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-amber-400 font-semibold">
+            <i data-lucide="trash-2" class="w-4 h-4 shrink-0"></i>
+            <span>1. Limpeza de Instalação</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed text-[11px]">
+            Para evitar conflitos, desinstale o app completamente. Apague os arquivos antigos <code>.config</code>, <code>.properties</code> e a pasta <code>Alarms/system_uf</code> do armazenamento interno.
+          </p>
+        </div>
+
+        <!-- Dica 2: Google Backup -->
+        <div class="p-4 rounded-xl bg-dark-input border border-amber-500/30 bg-amber-950/10 flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-amber-300 font-semibold">
+            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+            <span>2. Google Backup Automático</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed text-[11px]">
+            Se a opção "Restauração Automática de Apps" estiver ligada no Android (<em>Configurações → Google → Backup</em>), o sistema pode restaurar os dados antigos da conta ao reinstalar. Desative antes de testar nova config.
+          </p>
+        </div>
+
+        <!-- Dica 3: Arquivos Ocultos -->
+        <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-emerald-400 font-semibold">
+            <i data-lucide="folder-check" class="w-4 h-4 shrink-0"></i>
+            <span>3. Arquivos Ocultos (.)</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed text-[11px]">
+            Arquivos iniciados com ponto (<code>.config</code>) são ocultos. No seu gerenciador de arquivos (ex: MiXplorer, ZArchiver, X-plore), ative <strong>"Mostrar arquivos ocultos"</strong> para confirmar a cópia em <code>/storage/emulated/0/Android/.config</code>.
+          </p>
         </div>
       </div>
     </div>
@@ -1357,6 +1570,16 @@
       });
     }
 
+    function toggleElement(id, chevronId) {
+      const el = document.getElementById(id);
+      const ch = chevronId ? document.getElementById(chevronId) : null;
+      if (!el) return;
+      el.classList.toggle('hidden');
+      if (ch) {
+        ch.classList.toggle('rotate-180');
+      }
+    }
+
     let testerLoadedContent = "";
     let testerLoadedFilename = "";
 
@@ -1571,7 +1794,282 @@
       }
     }
 
-    // --- UPLOAD DIRETO NO GERADOR INDIVIDUAL ---
+    // --- SUB-MODES TESTADOR: INDIVIDUAL vs LOTE ---
+    function switchTesterMode(mode) {
+      const btnSingle = document.getElementById('tester-mode-btn-single');
+      const btnBatch = document.getElementById('tester-mode-btn-batch');
+      const panelSingle = document.getElementById('tester-panel-single');
+      const panelBatch = document.getElementById('tester-panel-batch');
+
+      if (mode === 'single') {
+        btnSingle.className = "px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-2";
+        btnBatch.className = "px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition flex items-center gap-2";
+        panelSingle.classList.remove('hidden');
+        panelBatch.classList.add('hidden');
+      } else {
+        btnBatch.className = "px-3.5 py-2 rounded-xl text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-2";
+        btnSingle.className = "px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition flex items-center gap-2";
+        panelSingle.classList.add('hidden');
+        panelBatch.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    // --- BATCH SCANNER STATE & LOGIC ---
+    let batchQueue = []; // array of { name: string, content: string }
+    let batchResults = []; // array of { index, name, content, account_id, activation_date, days_active, is_target, is_valid, status }
+    let isBatchRunning = false;
+
+    function updateBatchCounters() {
+      const total = batchQueue.length;
+      const tested = batchResults.length;
+      const approved = batchResults.filter(r => r.is_target).length;
+      const rejected = batchResults.filter(r => !r.is_target).length;
+
+      document.getElementById('batch-queue-count').innerText = total;
+      document.getElementById('stat-batch-total').innerText = total;
+      document.getElementById('stat-batch-tested').innerText = tested;
+      document.getElementById('stat-batch-approved').innerText = approved;
+      document.getElementById('stat-batch-rejected').innerText = rejected;
+
+      const btnStart = document.getElementById('btn-start-batch');
+      if (btnStart) {
+        btnStart.disabled = (total === 0 || isBatchRunning);
+      }
+      const btnDownload = document.getElementById('btn-download-approved-zip');
+      if (btnDownload) {
+        btnDownload.disabled = (approved === 0);
+      }
+    }
+
+    function handleBatchMultiUpload(event) {
+      const files = Array.from(event.target.files);
+      if (!files || files.length === 0) return;
+
+      batchQueue = [];
+      batchResults = [];
+      document.getElementById('batch-results-table-body').innerHTML = "";
+
+      let loadedCount = 0;
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          batchQueue.push({ name: file.name, content: e.target.result });
+          loadedCount++;
+          if (loadedCount === files.length) {
+            updateBatchCounters();
+            showToast(`${files.length} arquivos carregados na fila de teste!`);
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    async function loadBatchFromCloud() {
+      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
+      const btn = document.getElementById('btn-batch-cloud');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1"></div> Baixando...`;
+      btn.disabled = true;
+
+      try {
+        batchQueue = [];
+        batchResults = [];
+        document.getElementById('batch-results-table-body').innerHTML = "";
+
+        for (let i = 0; i < qty; i++) {
+          const res = await fetch('/api/cloud/random');
+          const data = await res.json();
+          if (data && data.files && data.files['.config']) {
+            batchQueue.push({
+              name: `cloud_${data.mac ? data.mac.replace(/:/g, '') : (i + 1)}.config`,
+              content: data.files['.config']
+            });
+          }
+        }
+        updateBatchCounters();
+        showToast(`${batchQueue.length} configs puxadas da nuvem para a fila de teste!`);
+      } catch (e) {
+        showToast("Erro ao carregar lote da nuvem: " + e.message, true);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function startBatchScanner() {
+      if (batchQueue.length === 0) {
+        showToast("Nenhuma configuração na fila para testar.", true);
+        return;
+      }
+
+      const targetDays = parseInt(document.getElementById('batch-target-days').value) || 100;
+      isBatchRunning = true;
+      batchResults = [];
+      document.getElementById('batch-results-table-body').innerHTML = "";
+
+      document.getElementById('btn-start-batch').disabled = true;
+      document.getElementById('btn-stop-batch').disabled = false;
+
+      const total = batchQueue.length;
+
+      for (let i = 0; i < total; i++) {
+        if (!isBatchRunning) {
+          document.getElementById('batch-progress-status').innerText = "Teste interrompido pelo usuário.";
+          break;
+        }
+
+        const item = batchQueue[i];
+        const percent = Math.round(((i + 1) / total) * 100);
+        document.getElementById('batch-progress-percent').innerText = `${percent}%`;
+        document.getElementById('batch-progress-bar').style.width = `${percent}%`;
+        document.getElementById('batch-progress-status').innerText = `Testando ${i + 1} de ${total}: ${item.name}...`;
+
+        try {
+          const res = await fetch('/api/adb/inject', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              config_content: item.content,
+              device_addr: "127.0.0.1:21503",
+              clear_cache: true,
+              launch_app: true
+            })
+          });
+          const data = await res.json();
+          const info = data.account_info || {};
+
+          let days = null;
+          let isTarget = false;
+          let statusText = "❌ Falha no Acesso";
+
+          if (info.days_active !== null && info.days_active !== undefined && info.is_valid !== false) {
+            days = info.days_active;
+            if (days <= targetDays) {
+              isTarget = true;
+              statusText = (days === 0) ? "✨ 0 DIAS (VIRGEM)" : "⭐ APROVADA";
+            } else {
+              statusText = `❌ ${days}d (> ${targetDays}d)`;
+            }
+          }
+
+          const resultItem = {
+            index: i + 1,
+            name: item.name,
+            content: item.content,
+            account_id: info.account_id || "-",
+            activation_date: info.activation_date || "-",
+            days_active: (days !== null) ? `${days} dias` : "-",
+            is_target: isTarget,
+            is_valid: (info.is_valid !== false),
+            status: statusText
+          };
+
+          batchResults.push(resultItem);
+          appendBatchTableRow(resultItem);
+          updateBatchCounters();
+        } catch (err) {
+          console.error(err);
+          const errItem = {
+            index: i + 1,
+            name: item.name,
+            content: item.content,
+            account_id: "-",
+            activation_date: "-",
+            days_active: "-",
+            is_target: false,
+            is_valid: false,
+            status: "❌ Erro de Conexão"
+          };
+          batchResults.push(errItem);
+          appendBatchTableRow(errItem);
+          updateBatchCounters();
+        }
+      }
+
+      isBatchRunning = false;
+      document.getElementById('btn-start-batch').disabled = false;
+      document.getElementById('btn-stop-batch').disabled = true;
+      document.getElementById('batch-progress-status').innerText = "Varredura em lote finalizada!";
+      showToast("Varredura em lote concluída!");
+      lucide.createIcons();
+    }
+
+    function stopBatchScanner() {
+      isBatchRunning = false;
+      document.getElementById('btn-stop-batch').disabled = true;
+      document.getElementById('btn-start-batch').disabled = false;
+      document.getElementById('batch-progress-status').innerText = "Parando scanner...";
+      showToast("Scanner pausado.");
+    }
+
+    function appendBatchTableRow(item) {
+      const tbody = document.getElementById('batch-results-table-body');
+      const tr = document.createElement('tr');
+      tr.className = item.is_target 
+        ? "bg-emerald-950/20 border-emerald-500/20 hover:bg-emerald-950/30" 
+        : "hover:bg-dark-hover/40";
+
+      const badgeClass = item.is_target 
+        ? "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]" 
+        : "px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 text-[10px]";
+
+      tr.innerHTML = `
+        <td class="px-3 py-2 text-slate-400">${item.index}</td>
+        <td class="px-3 py-2 text-white font-medium truncate max-w-[140px]">${item.name}</td>
+        <td class="px-3 py-2 text-amber-300 font-bold">${item.account_id}</td>
+        <td class="px-3 py-2 text-indigo-300">${item.activation_date}</td>
+        <td class="px-3 py-2 font-bold ${item.is_target ? 'text-emerald-400' : 'text-slate-300'}">${item.days_active}</td>
+        <td class="px-3 py-2"><span class="${badgeClass}">${item.status}</span></td>
+        <td class="px-3 py-2 text-right">
+          <button onclick="downloadSingleBatchConfig(${item.index - 1})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar esta config">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      lucide.createIcons();
+    }
+
+    function downloadSingleBatchConfig(index) {
+      const item = batchResults[index] || batchQueue[index];
+      if (!item) return;
+      const blob = new Blob([item.content], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = item.name.endsWith('.config') ? item.name : `${item.name}.config`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Download de ${item.name} iniciado!`);
+    }
+
+    async function downloadApprovedBatchZip() {
+      const approved = batchResults.filter(r => r.is_target);
+      if (approved.length === 0) {
+        showToast("Nenhuma configuração aprovada para baixar.", true);
+        return;
+      }
+
+      const zip = new JSZip();
+      approved.forEach((item, idx) => {
+        const daysClean = String(item.days_active).replace(/[^0-9]/g, '') || "0";
+        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS`;
+        zip.file(`${folderName}/.config`, item.content);
+        zip.file(`${folderName}/.properties`, item.content);
+        zip.file(`${folderName}/Android/.config`, item.content);
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `UNITV_APROVADAS_${approved.length}_ITENS.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Pacote ZIP com ${approved.length} configs aprovadas baixado com sucesso!`);
+    }
     function handleSingleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
