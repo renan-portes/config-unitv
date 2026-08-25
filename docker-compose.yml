@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   config-generator:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: https://github.com/renan-portes/config-unitv.git#main
     container_name: config_generator_app
     restart: unless-stopped
     ports:
