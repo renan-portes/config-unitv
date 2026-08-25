@@ -387,10 +387,47 @@ def get_adb_devices():
                 devices.append(line.split("\t")[0].strip())
         return {
             "connected": len(devices) > 0,
-            "devices": devices if devices else ["127.0.0.1:21503"]
+            "devices": devices if devices else []
         }
     except Exception as e:
         return {"connected": False, "devices": [], "error": str(e)}
+
+
+@app.post("/api/adb/reconnect")
+def reconnect_adb(req: Optional[dict] = None):
+    """Força reconexão com o dispositivo ADB"""
+    device = (req or {}).get("device_addr", "127.0.0.1:21503")
+    try:
+        subprocess.run(["adb", "connect", device], capture_output=True, text=True, timeout=5)
+        res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
+        return {"success": True, "connected": len(devices) > 0, "devices": devices}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/adb/clear-app")
+def clear_app_data(req: Optional[dict] = None):
+    """Limpa dados do aplicativo e configs antigas no emulador"""
+    device = (req or {}).get("device_addr", "127.0.0.1:21503")
+    try:
+        ensure_adb_connected(device)
+        subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+        return {"success": True, "message": "Cache e dados limpos com sucesso no emulador!"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/adb/launch-app")
+def launch_app_data(req: Optional[dict] = None):
+    """Inicia o UniTV Free no emulador"""
+    device = (req or {}).get("device_addr", "127.0.0.1:21503")
+    try:
+        ensure_adb_connected(device)
+        subprocess.run(["adb", "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
+        return {"success": True, "message": "UniTV Free iniciado no emulador!"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:

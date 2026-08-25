@@ -459,10 +459,52 @@
               </table>
             </div>
           </div>
-    -->
+        </div>
+      </div>
+    </div>
 
-    <!-- TAB 4: APLICATIVOS (CENTRAL DE DOWNLOADS) -->
+    <!-- TAB 3: CONEXÃO ADB & APLICATIVOS -->
     <div id="tab-apps" class="tab-content hidden flex flex-col gap-6">
+
+      <!-- CARD 1: PAINEL DE CONEXÃO ADB & EMULADOR -->
+      <div class="glass-panel p-6 rounded-2xl border border-dark-border flex flex-col gap-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="smartphone" class="w-5 h-5 text-cyan-400"></i> Status & Conexão ADB (Emulador Android)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Gerencie a conexão direta com o emulador para testes e injeção automática</p>
+          </div>
+          <span id="apps-adb-badge" class="text-xs px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-mono flex items-center gap-1.5 self-start sm:self-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-400" id="apps-adb-dot"></span>
+            <span id="apps-adb-status-text">Detectando...</span>
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+          <div class="md:col-span-6 flex flex-col gap-2">
+            <label class="text-xs font-semibold text-slate-300">Endereço do Dispositivo / Porta ADB</label>
+            <div class="flex items-center gap-2">
+              <input type="text" id="apps-adb-input" value="127.0.0.1:21503" class="flex-1 bg-dark-input border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 transition">
+              <button onclick="reconnectAdbManual()" id="btn-adb-reconnect" class="py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition flex items-center gap-1.5 whitespace-nowrap shadow-md">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Reconectar ADB
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500">Padrões: MEmu (<code>127.0.0.1:21503</code>), Nox (<code>127.0.0.1:62001</code>), LDPlayer (<code>127.0.0.1:5555</code>).</p>
+          </div>
+
+          <div class="md:col-span-6 flex flex-wrap gap-2.5 pt-2 md:pt-0">
+            <button onclick="clearAdbCacheManual()" id="btn-adb-clear-app" class="flex-1 py-2.5 px-3.5 rounded-xl bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-2 shadow-sm">
+              <i data-lucide="trash-2" class="w-4 h-4 text-amber-400"></i> Limpar Dados do App
+            </button>
+            <button onclick="launchAdbAppManual()" id="btn-adb-launch-app" class="flex-1 py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-md">
+              <i data-lucide="play" class="w-4 h-4 text-indigo-200"></i> Abrir UniTV Free
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: CENTRAL DE DOWNLOADS DE APLICATIVOS -->
       <div class="glass-panel p-6 rounded-2xl border border-dark-border flex flex-col gap-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
           <div>
@@ -538,61 +580,62 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- GUIA DE INSTALAÇÃO & DICAS DO ANDROID -->
-    <div class="glass-panel rounded-2xl border border-dark-border overflow-hidden">
-      <div onclick="toggleElement('guide-content-body', 'guide-chevron')" class="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-dark-hover/50 transition user-select-none">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
-            <i data-lucide="help-circle" class="w-5 h-5"></i>
+      <!-- CARD 3: GUIA DE INSTALAÇÃO & DICAS DO ANDROID -->
+      <div class="glass-panel rounded-2xl border border-dark-border overflow-hidden">
+        <div onclick="toggleElement('guide-content-body', 'guide-chevron')" class="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-dark-hover/50 transition user-select-none">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
+              <i data-lucide="help-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                Guia de Instalação & Dicas do Android
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">Dicas Importantes</span>
+              </h3>
+              <p class="text-xs text-slate-400">Limpeza prévia, aviso sobre Google Backup e arquivos ocultos</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              Guia de Instalação & Dicas do Android
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">Dicas Importantes</span>
-            </h3>
-            <p class="text-xs text-slate-400">Limpeza prévia, aviso sobre Google Backup e arquivos ocultos</p>
+          <i data-lucide="chevron-down" id="guide-chevron" class="w-5 h-5 text-slate-400 transition-transform duration-300"></i>
+        </div>
+
+        <div id="guide-content-body" class="p-5 pt-0 border-t border-dark-border/60 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+          
+          <!-- Dica 1: Limpeza -->
+          <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
+            <div class="flex items-center gap-2 text-amber-400 font-semibold">
+              <i data-lucide="trash-2" class="w-4 h-4 shrink-0"></i>
+              <span>1. Limpeza de Instalação</span>
+            </div>
+            <p class="text-slate-400 leading-relaxed text-[11px]">
+              Para evitar conflitos, desinstale o app completamente. Apague os arquivos antigos <code>.config</code>, <code>.properties</code> e a pasta <code>Alarms/system_uf</code> do armazenamento interno.
+            </p>
+          </div>
+
+          <!-- Dica 2: Google Backup -->
+          <div class="p-4 rounded-xl bg-dark-input border border-amber-500/30 bg-amber-950/10 flex flex-col gap-2">
+            <div class="flex items-center gap-2 text-amber-300 font-semibold">
+              <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+              <span>2. Google Backup Automático</span>
+            </div>
+            <p class="text-slate-400 leading-relaxed text-[11px]">
+              Se a opção "Restauração Automática de Apps" estiver ligada no Android (<em>Configurações → Google → Backup</em>), o sistema pode restaurar os dados antigos da conta ao reinstalar. Desative antes de testar nova config.
+            </p>
+          </div>
+
+          <!-- Dica 3: Arquivos Ocultos -->
+          <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
+            <div class="flex items-center gap-2 text-emerald-400 font-semibold">
+              <i data-lucide="folder-check" class="w-4 h-4 shrink-0"></i>
+              <span>3. Arquivos Ocultos (.)</span>
+            </div>
+            <p class="text-slate-400 leading-relaxed text-[11px]">
+              Arquivos iniciados com ponto (<code>.config</code>) são ocultos. No seu gerenciador de arquivos (ex: MiXplorer, ZArchiver, X-plore), ative <strong>"Mostrar arquivos ocultos"</strong> para confirmar a cópia em <code>/storage/emulated/0/Android/.config</code>.
+            </p>
           </div>
         </div>
-        <i data-lucide="chevron-down" id="guide-chevron" class="w-5 h-5 text-slate-400 transition-transform duration-300"></i>
       </div>
 
-      <div id="guide-content-body" class="hidden p-5 pt-0 border-t border-dark-border/60 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
-        
-        <!-- Dica 1: Limpeza -->
-        <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
-          <div class="flex items-center gap-2 text-amber-400 font-semibold">
-            <i data-lucide="trash-2" class="w-4 h-4 shrink-0"></i>
-            <span>1. Limpeza de Instalação</span>
-          </div>
-          <p class="text-slate-400 leading-relaxed text-[11px]">
-            Para evitar conflitos, desinstale o app completamente. Apague os arquivos antigos <code>.config</code>, <code>.properties</code> e a pasta <code>Alarms/system_uf</code> do armazenamento interno.
-          </p>
-        </div>
-
-        <!-- Dica 2: Google Backup -->
-        <div class="p-4 rounded-xl bg-dark-input border border-amber-500/30 bg-amber-950/10 flex flex-col gap-2">
-          <div class="flex items-center gap-2 text-amber-300 font-semibold">
-            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
-            <span>2. Google Backup Automático</span>
-          </div>
-          <p class="text-slate-400 leading-relaxed text-[11px]">
-            Se a opção "Restauração Automática de Apps" estiver ligada no Android (<em>Configurações → Google → Backup</em>), o sistema pode restaurar os dados antigos da conta ao reinstalar. Desative antes de testar nova config.
-          </p>
-        </div>
-
-        <!-- Dica 3: Arquivos Ocultos -->
-        <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
-          <div class="flex items-center gap-2 text-emerald-400 font-semibold">
-            <i data-lucide="folder-check" class="w-4 h-4 shrink-0"></i>
-            <span>3. Arquivos Ocultos (.)</span>
-          </div>
-          <p class="text-slate-400 leading-relaxed text-[11px]">
-            Arquivos iniciados com ponto (<code>.config</code>) são ocultos. No seu gerenciador de arquivos (ex: MiXplorer, ZArchiver, X-plore), ative <strong>"Mostrar arquivos ocultos"</strong> para confirmar a cópia em <code>/storage/emulated/0/Android/.config</code>.
-          </p>
-        </div>
-      </div>
     </div>
 
     <!-- FOOTER WITH SUPPORT & GITHUB BUTTONS -->
@@ -1975,14 +2018,109 @@
       try {
         const res = await fetch('/api/adb/devices');
         const data = await res.json();
+        const scLabel = document.getElementById('scanner-adb-label');
+        const appsDot = document.getElementById('apps-adb-dot');
+        const appsText = document.getElementById('apps-adb-status-text');
+
         if (data.connected && data.devices.length > 0) {
           const dev = data.devices[0];
-          document.getElementById('scanner-adb-label').innerText = dev;
+          if (scLabel) scLabel.innerText = dev;
+          if (appsDot) appsDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+          if (appsText) appsText.innerText = `Conectado (${dev})`;
         } else {
-          document.getElementById('scanner-adb-label').innerText = "127.0.0.1:21503 (Desconectado)";
+          if (scLabel) scLabel.innerText = "127.0.0.1:21503 (Desconectado)";
+          if (appsDot) appsDot.className = "w-2 h-2 rounded-full bg-amber-400";
+          if (appsText) appsText.innerText = "Emulador não detectado";
         }
       } catch (e) {
-        document.getElementById('scanner-adb-label').innerText = "127.0.0.1:21503";
+        if (document.getElementById('scanner-adb-label')) {
+          document.getElementById('scanner-adb-label').innerText = "127.0.0.1:21503";
+        }
+      }
+    }
+
+    async function reconnectAdbManual() {
+      const addr = document.getElementById('apps-adb-input').value.trim() || "127.0.0.1:21503";
+      const btn = document.getElementById('btn-adb-reconnect');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Conectando...`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/adb/reconnect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_addr: addr })
+        });
+        const data = await res.json();
+        if (data.connected) {
+          showToast(`✔ Conectado ao emulador com sucesso: ${data.devices[0] || addr}`);
+        } else {
+          showToast("Emulador não encontrado nesse endereço. Verifique se está aberto.", true);
+        }
+        checkAdbDevices();
+      } catch (e) {
+        showToast("Erro ao comunicar com o servidor ADB: " + e.message, true);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function clearAdbCacheManual() {
+      const addr = document.getElementById('apps-adb-input').value.trim() || "127.0.0.1:21503";
+      const btn = document.getElementById('btn-adb-clear-app');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Limpando...`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/adb/clear-app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_addr: addr })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("✔ Dados do UniTV Free e configs antigas apagadas com sucesso!");
+        } else {
+          showToast("Falha ao limpar dados no emulador.", true);
+        }
+      } catch (e) {
+        showToast("Erro de conexão ADB.", true);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function launchAdbAppManual() {
+      const addr = document.getElementById('apps-adb-input').value.trim() || "127.0.0.1:21503";
+      const btn = document.getElementById('btn-adb-launch-app');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Abrindo...`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/adb/launch-app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_addr: addr })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast("🚀 UniTV Free iniciado no emulador!");
+        } else {
+          showToast("Falha ao iniciar app no emulador.", true);
+        }
+      } catch (e) {
+        showToast("Erro de conexão ADB.", true);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        lucide.createIcons();
       }
     }
 
@@ -1990,13 +2128,22 @@
       try {
         const res = await fetch('/health');
         if (res.ok) {
-          document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-emerald-400";
-          document.getElementById('status-text').innerText = "Servidor & Nuvem Online";
+          const dot = document.getElementById('status-dot');
+          const txt = document.getElementById('status-text');
+          if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+          if (txt) txt.innerText = "Servidor & Nuvem Online";
           checkAdbDevices();
+        } else {
+          const dot = document.getElementById('status-dot');
+          const txt = document.getElementById('status-text');
+          if (dot) dot.className = "w-2 h-2 rounded-full bg-blue-400";
+          if (txt) txt.innerText = "Modo Navegador / Offline";
         }
       } catch (e) {
-        document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-blue-400";
-        document.getElementById('status-text').innerText = "Modo Navegador / Offline";
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-text');
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-blue-400";
+        if (txt) txt.innerText = "Modo Navegador / Offline";
       }
     }
 
