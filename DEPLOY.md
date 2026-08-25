@@ -1,6 +1,6 @@
-# 🚀 Guia de Implantação e Uso do Gerador de .config
+# 🚀 Guia de Implantação e Deploy - Gerador de .config
 
-Este projeto é um gerador completo de arquivos de configuração (`.config`, `.properties` e `cache.config.xml`) para aparelhos e aplicativos IPTV / HackDroid, baseado na engenharia reversa de mais de 87 configurações reais.
+Este projeto é um gerador completo de arquivos de configuração (`.config`, `.properties` e `cache.config.xml`) para aplicações IPTV.
 
 ---
 

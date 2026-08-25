@@ -1,6 +1,6 @@
 """
-Motor Gerador de Configurações (.config, .properties, cache.config.xml)
-Compatível com Unitv / HackDroid IPTV
+Motor de Geração de Configurações (.config, .properties, cache.config.xml)
+Compatível com IPTV
 Suporte a Contas Novas (0 Dias / Trial Fresco) e Customizadas
 """
 

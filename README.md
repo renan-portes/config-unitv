@@ -1,4 +1,4 @@
-# ⚡ Gerador de Configurações IPTV & HackDroid
+# ⚡ Gerador de Configurações IPTV
 
 Gerador moderno, rápido e completo de arquivos `.config`, `.properties` e `cache.config.xml`, com interface web responsiva, suporte a geração em lote, integração com banco de dados na nuvem (10.000+ arquivos) e injeção automática via ADB.
 
@@ -11,6 +11,7 @@ Gerador moderno, rápido e completo de arquivos `.config`, `.properties` e `cach
 - **☁️ Integração com Pool da Nuvem (10.000+ configs)**: Busca instantânea de configurações ativas diretamente do repositório online.
 - **📲 Injeção ADB com 1 Clique**: Detecta emuladores Android (ex: MEmu em `127.0.0.1:21503`), limpa o cache, injeta o arquivo `.config` e inicia o aplicativo automaticamente.
 - **🔓 Decodificador Hexadecimal**: Ferramenta embutida para decodificar tokens, Device IDs e chaves criptografadas.
+- **📦 Central de Aplicativos**: Aba dedicada para download direto de versões de aplicativos.
 - **🐳 100% Compatível com Docker e Portainer**: Pronto para deploy em VPS, servidores locais ou nuvem.
 
 ---
@@ -53,7 +54,7 @@ Acesse no navegador: **`http://localhost:8095`** (ou através do seu IP/Domínio
 ├── index.html             # Painel Web moderno (TailwindCSS + Lucide Icons)
 ├── Iniciar_Gerador.bat    # Inicializador rápido para Windows
 ├── Dockerfile             # Configuração de build da imagem Docker
-├── docker-compose.yml     # Orquestração do container Docker
+├── docker-compose.yml     # Orquestração do container Docker (porta 8095)
 ├── requirements.txt       # Dependências Python
 └── README.md              # Documentação do projeto
 ```

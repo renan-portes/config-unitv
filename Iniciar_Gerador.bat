@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-title "Gerador de .config IPTV e HackDroid"
+title "Gerador de .config IPTV"
 
 echo ================================================================
 echo           GERADOR DE .CONFIG / .PROPERTIES / XML

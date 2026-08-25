@@ -12,6 +12,8 @@ ENV/
 .temp/
 *.log
 scratch/
+*.apk
+apps/
 
 # IDE
 .vscode/

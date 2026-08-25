@@ -1,5 +1,5 @@
 """
-Servidor Web e API REST para o Gerador de Configurações IPTV & HackDroid
+Servidor Web e API REST para o Gerador de Configurações IPTV
 Suporta geração local de novas contas, injeção ADB no emulador e integração com o Pool da Nuvem (10.231 configs)
 """
 
