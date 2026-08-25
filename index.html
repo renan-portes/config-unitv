@@ -205,10 +205,15 @@
               </label>
             </div>
 
-            <button onclick="downloadSingleZip()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar Pacote Completo (.ZIP)
+            <!-- Download Single .config Direct Button -->
+            <button onclick="downloadSingleConfigFile()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="file-down" class="w-4 h-4 text-emerald-200"></i> Baixar Apenas o Arquivo (.config)
             </button>
-            <button onclick="saveSingleToDisk()" id="btn-save-disk-single" class="w-full py-2 px-4 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-slate-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-2">
+
+            <button onclick="downloadSingleZip()" class="w-full py-2 px-4 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-slate-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-2">
+              <i data-lucide="archive" class="w-3.5 h-3.5 text-slate-400"></i> Baixar Pacote Completo (.ZIP)
+            </button>
+            <button onclick="saveSingleToDisk()" id="btn-save-disk-single" class="w-full py-2 px-4 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-slate-400 hover:text-slate-200 font-medium text-xs transition flex items-center justify-center gap-2">
               <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Salvar Diretamente no Disco
             </button>
           </div>
@@ -729,6 +734,17 @@
       const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
       saveAs(blob, currentActivePreview);
       showToast(`Arquivo ${currentActivePreview} baixado!`);
+    }
+
+    function downloadSingleConfigFile() {
+      const text = currentSingleFiles['.config'] || "";
+      if (!text) {
+        showToast("Gere uma configuração primeiro!", true);
+        return;
+      }
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      saveAs(blob, ".config");
+      showToast("Arquivo .config baixado com sucesso!");
     }
 
     async function downloadSingleZip() {
