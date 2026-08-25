@@ -5,11 +5,14 @@ Suporta geração local de novas contas, injeção ADB no emulador e integraçã
 
 import os
 import io
+import re
+import time
 import json
 import base64
 import random
 import subprocess
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, HTMLResponse
@@ -320,6 +323,46 @@ def get_random_cloud_config():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar na nuvem: {str(e)}")
+
+
+@app.get("/api/cloud/batch")
+def get_batch_cloud_configs(count: int = 10):
+    """Retorna múltiplas configurações da nuvem em paralelo super rápido"""
+    try:
+        ids = load_cloud_ids()
+        if not ids:
+            raise HTTPException(status_code=500, detail="Pool de IDs da nuvem vazio ou indisponível")
+            
+        chosen_ids = random.sample(ids, min(count, len(ids), 50))
+        
+        def fetch_one(id_str):
+            try:
+                url = f"https://drive.google.com/uc?export=download&id={id_str}"
+                r = requests.get(url, timeout=6)
+                if r.ok and "key_device_id_unitvfree" in r.text:
+                    text = r.text
+                    mac_m = re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text) or re.search(r'KEY_SP_SN=([^\s\r\n]+)', text)
+                    mac = mac_m.group(1).upper() if mac_m else None
+                    return {
+                        "id": id_str,
+                        "mac": mac or f"9C:00:D3:{id_str[:6].upper()}",
+                        "config": text
+                    }
+            except Exception:
+                pass
+            return None
+
+        with ThreadPoolExecutor(max_workers=min(count, 15)) as executor:
+            results = list(executor.map(fetch_one, chosen_ids))
+
+        valid_results = [res for res in results if res is not None]
+        return {
+            "count": len(valid_results),
+            "total_available": len(ids),
+            "items": valid_results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar lote na nuvem: {str(e)}")
 
 
 # --- ENDPOINTS ADB (EMULADOR) ---

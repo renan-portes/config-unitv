@@ -1877,18 +1877,20 @@
         batchResults = [];
         document.getElementById('batch-results-table-body').innerHTML = "";
 
-        for (let i = 0; i < qty; i++) {
-          const res = await fetch('/api/cloud/random');
-          const data = await res.json();
-          if (data && data.files && data.files['.config']) {
+        const res = await fetch(`/api/cloud/batch?count=${qty}`);
+        const data = await res.json();
+        if (data && data.items && data.items.length > 0) {
+          data.items.forEach((item, idx) => {
             batchQueue.push({
-              name: `cloud_${data.mac ? data.mac.replace(/:/g, '') : (i + 1)}.config`,
-              content: data.files['.config']
+              name: `cloud_${item.mac ? item.mac.replace(/:/g, '') : (idx + 1)}.config`,
+              content: item.config
             });
-          }
+          });
+          updateBatchCounters();
+          showToast(`${batchQueue.length} configs carregadas da nuvem em ultra-velocidade!`);
+        } else {
+          showToast("Não foi possível carregar o lote da nuvem.", true);
         }
-        updateBatchCounters();
-        showToast(`${batchQueue.length} configs puxadas da nuvem para a fila de teste!`);
       } catch (e) {
         showToast("Erro ao carregar lote da nuvem: " + e.message, true);
       } finally {
