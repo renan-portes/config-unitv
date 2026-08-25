@@ -729,10 +729,25 @@
       });
     }
 
+    function downloadRawFile(content, filename) {
+      const blob = new Blob([content], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 200);
+    }
+
     function downloadCurrentFile() {
       const text = currentSingleFiles[currentActivePreview] || "";
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      saveAs(blob, currentActivePreview);
+      if (!text) return;
+      downloadRawFile(text, currentActivePreview);
       showToast(`Arquivo ${currentActivePreview} baixado!`);
     }
 
@@ -742,8 +757,7 @@
         showToast("Gere uma configuração primeiro!", true);
         return;
       }
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      saveAs(blob, ".config");
+      downloadRawFile(text, ".config");
       showToast("Arquivo .config baixado com sucesso!");
     }
 
