@@ -266,14 +266,34 @@ def save_to_disk(req: SaveDiskRequest):
 
 # --- POOL DA NUVEM (10.231 CONFIGS) ---
 
+def load_cloud_ids() -> list:
+    """Carrega a lista de IDs localmente de ids.json ou faz fallback para URL remota"""
+    local_file = os.path.join(BASE_DIR, "ids.json")
+    if os.path.exists(local_file):
+        try:
+            with open(local_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                ids = data.get("arquivos", [])
+                if ids:
+                    return ids
+        except Exception as e:
+            print(f"Aviso ao ler ids.json local: {e}")
+            
+    try:
+        r = requests.get(CLOUD_IDS_URL, timeout=10)
+        return r.json().get("arquivos", [])
+    except Exception as e:
+        print(f"Aviso ao buscar ids remotos: {e}")
+        return []
+
+
 @app.get("/api/cloud/random")
 def get_random_cloud_config():
     """Puxa uma configuração fresca aleatória do pool da nuvem (10.231 disponíveis)"""
     global cached_cloud_ids
     try:
         if not cached_cloud_ids:
-            r = requests.get(CLOUD_IDS_URL, timeout=10)
-            cached_cloud_ids = r.json().get("arquivos", [])
+            cached_cloud_ids = load_cloud_ids()
             
         if not cached_cloud_ids:
             raise HTTPException(status_code=503, detail="Não foi possível obter a lista da nuvem")
