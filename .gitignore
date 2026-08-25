@@ -12,6 +12,8 @@ ENV/
 .temp/
 *.log
 scratch/
+pacote_*/
+*.zip
 
 # IDE
 .vscode/

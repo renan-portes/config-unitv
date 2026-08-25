@@ -603,14 +603,18 @@
             <!-- Seleção de Origem das Configs -->
             <div class="flex flex-col gap-2.5 pt-1">
               <label class="text-xs font-semibold text-slate-300">1. Carregar Configurações</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button onclick="document.getElementById('batch-multi-input').click()" class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 hover:text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
-                  <i data-lucide="folder-up" class="w-3.5 h-3.5 text-purple-400"></i> Arquivos do PC
+              <div class="grid grid-cols-3 gap-1.5">
+                <button onclick="document.getElementById('batch-multi-input').click()" class="py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 hover:text-white font-medium text-[11px] transition flex items-center justify-center gap-1 text-center truncate">
+                  <i data-lucide="folder-up" class="w-3.5 h-3.5 text-purple-400"></i> PC (.config)
                 </button>
                 <input type="file" id="batch-multi-input" multiple accept=".config,.txt,text/plain" class="hidden" onchange="handleBatchMultiUpload(event)">
                 
-                <button onclick="loadBatchFromCloud()" id="btn-batch-cloud" class="py-2.5 px-3 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-1.5">
+                <button onclick="loadBatchFromCloud()" id="btn-batch-cloud" class="py-2.5 px-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 hover:text-white font-medium text-[11px] transition flex items-center justify-center gap-1 truncate">
                   <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i> Nuvem (10k)
+                </button>
+
+                <button onclick="loadBatchHunter()" id="btn-batch-hunter" class="py-2.5 px-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 hover:text-white font-semibold text-[11px] transition flex items-center justify-center gap-1 truncate">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Caçador (0d)
                 </button>
               </div>
               <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
@@ -622,6 +626,7 @@
                     <option value="10" selected>10 itens</option>
                     <option value="20">20 itens</option>
                     <option value="50">50 itens</option>
+                    <option value="100">100 itens</option>
                   </select>
                 </span>
               </div>
@@ -636,7 +641,13 @@
               <input type="range" id="batch-target-days" min="0" max="500" value="100" step="5"
                 class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
                 oninput="document.getElementById('batch-target-label').innerText = this.value">
-              <p class="text-[11px] text-slate-400">Ex: Salvar apenas configs com <strong>100 dias ou menos</strong> (ou 0 dias virgens).</p>
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Aprovar apenas contas abaixo da meta</span>
+                <label class="flex items-center gap-1 cursor-pointer text-amber-300/90 hover:text-amber-200">
+                  <input type="checkbox" id="batch-stop-on-virgin" class="rounded bg-dark-input text-amber-500 border-dark-border">
+                  <span>Parar no 0 Dias</span>
+                </label>
+              </div>
             </div>
 
             <!-- Botões de Ação -->
@@ -666,20 +677,24 @@
           <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
             
             <!-- Resumo e Estatísticas -->
-            <div class="grid grid-cols-4 gap-3 pb-4 border-b border-dark-border text-xs font-mono">
-              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col">
+            <div class="grid grid-cols-5 gap-2 pb-4 border-b border-dark-border text-xs font-mono">
+              <div class="p-2.5 rounded-xl bg-dark-input border border-dark-border flex flex-col">
                 <span class="text-[10px] text-slate-400 uppercase">Na Fila</span>
                 <span id="stat-batch-total" class="text-white font-bold text-base mt-0.5">0</span>
               </div>
-              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col">
+              <div class="p-2.5 rounded-xl bg-dark-input border border-dark-border flex flex-col">
                 <span class="text-[10px] text-slate-400 uppercase">Testadas</span>
                 <span id="stat-batch-tested" class="text-indigo-300 font-bold text-base mt-0.5">0</span>
               </div>
-              <div class="p-3 rounded-xl bg-dark-input border border-emerald-500/30 bg-emerald-950/20 flex flex-col">
+              <div class="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 flex flex-col">
+                <span class="text-[10px] text-amber-400 uppercase font-semibold">✨ 0 Dias</span>
+                <span id="stat-batch-virgins" class="text-amber-300 font-bold text-base mt-0.5">0</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col">
                 <span class="text-[10px] text-emerald-400 uppercase font-semibold">⭐ Aprovadas</span>
                 <span id="stat-batch-approved" class="text-emerald-400 font-bold text-base mt-0.5">0</span>
               </div>
-              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col">
+              <div class="p-2.5 rounded-xl bg-dark-input border border-dark-border flex flex-col">
                 <span class="text-[10px] text-slate-400 uppercase">Reprovadas</span>
                 <span id="stat-batch-rejected" class="text-slate-400 font-bold text-base mt-0.5">0</span>
               </div>
@@ -2024,12 +2039,15 @@
     function updateBatchCounters() {
       const total = batchQueue.length;
       const tested = batchResults.length;
+      const virgins = batchResults.filter(r => r.days_raw === 0).length;
       const approved = batchResults.filter(r => r.is_target).length;
       const rejected = batchResults.filter(r => !r.is_target).length;
 
       document.getElementById('batch-queue-count').innerText = total;
       document.getElementById('stat-batch-total').innerText = total;
       document.getElementById('stat-batch-tested').innerText = tested;
+      const statVirgins = document.getElementById('stat-batch-virgins');
+      if (statVirgins) statVirgins.innerText = virgins;
       document.getElementById('stat-batch-approved').innerText = approved;
       document.getElementById('stat-batch-rejected').innerText = rejected;
 
@@ -2064,6 +2082,29 @@
         };
         reader.readAsText(file);
       });
+    }
+
+    function loadBatchHunter() {
+      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
+      batchQueue = [];
+      batchResults = [];
+      document.getElementById('batch-results-table-body').innerHTML = "";
+
+      for (let i = 0; i < qty; i++) {
+        const mac = generateSmartRandomMAC();
+        const folderName = `HUNTER_${i + 1}_${mac.replace(/:/g, '')}`;
+        const freshUid = generateRandomUserId();
+        const freshDev = generateFreshDeviceId();
+        const item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
+
+        batchQueue.push({
+          name: `${folderName}.config`,
+          content: item.files['.config']
+        });
+      }
+
+      updateBatchCounters();
+      showToast(`🎯 ${batchQueue.length} configs do Caçador geradas e carregadas na fila!`);
     }
 
     async function loadBatchFromCloud() {
@@ -2165,6 +2206,7 @@
             content: item.content,
             account_id: info.account_id || "-",
             activation_date: info.activation_date || "-",
+            days_raw: days,
             days_active: (days !== null) ? `${days} dias` : "-",
             is_target: isTarget,
             is_valid: (info.is_valid !== false),
@@ -2174,6 +2216,16 @@
           batchResults.push(resultItem);
           appendBatchTableRow(resultItem);
           updateBatchCounters();
+
+          if (days === 0) {
+            showToast("✨ CONTA VIRGEM DE 0 DIAS ENCONTRADA! ID: " + (info.account_id || "-"));
+            const stopOnVirgin = document.getElementById('batch-stop-on-virgin');
+            if (stopOnVirgin && stopOnVirgin.checked) {
+              isBatchRunning = false;
+              document.getElementById('batch-progress-status').innerText = "✨ Scanner pausado: Conta Virgem de 0 Dias Encontrada!";
+              break;
+            }
+          }
         } catch (err) {
           console.error(err);
           const errItem = {
@@ -2182,6 +2234,7 @@
             content: item.content,
             account_id: "-",
             activation_date: "-",
+            days_raw: null,
             days_active: "-",
             is_target: false,
             is_valid: false,
@@ -2196,7 +2249,9 @@
       isBatchRunning = false;
       document.getElementById('btn-start-batch').disabled = false;
       document.getElementById('btn-stop-batch').disabled = true;
-      document.getElementById('batch-progress-status').innerText = "Varredura em lote finalizada!";
+      if (document.getElementById('batch-progress-status').innerText.indexOf("pausado") === -1) {
+        document.getElementById('batch-progress-status').innerText = "Varredura em lote finalizada!";
+      }
       showToast("Varredura em lote concluída!");
       lucide.createIcons();
     }
@@ -2212,20 +2267,27 @@
     function appendBatchTableRow(item) {
       const tbody = document.getElementById('batch-results-table-body');
       const tr = document.createElement('tr');
-      tr.className = item.is_target 
-        ? "bg-emerald-950/20 border-emerald-500/20 hover:bg-emerald-950/30" 
-        : "hover:bg-dark-hover/40";
+      if (item.days_raw === 0) {
+        tr.className = "bg-amber-950/40 border border-amber-500/40 hover:bg-amber-950/60";
+      } else if (item.is_target) {
+        tr.className = "bg-emerald-950/20 border-emerald-500/20 hover:bg-emerald-950/30";
+      } else {
+        tr.className = "hover:bg-dark-hover/40";
+      }
 
-      const badgeClass = item.is_target 
-        ? "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]" 
-        : "px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 text-[10px]";
+      let badgeClass = "px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 text-[10px]";
+      if (item.days_raw === 0) {
+        badgeClass = "px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px]";
+      } else if (item.is_target) {
+        badgeClass = "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]";
+      }
 
       tr.innerHTML = `
         <td class="px-3 py-2 text-slate-400">${item.index}</td>
         <td class="px-3 py-2 text-white font-medium truncate max-w-[140px]">${item.name}</td>
         <td class="px-3 py-2 text-amber-300 font-bold">${item.account_id}</td>
         <td class="px-3 py-2 text-indigo-300">${item.activation_date}</td>
-        <td class="px-3 py-2 font-bold ${item.is_target ? 'text-emerald-400' : 'text-slate-300'}">${item.days_active}</td>
+        <td class="px-3 py-2 font-bold ${item.days_raw === 0 ? 'text-amber-300 font-extrabold text-xs' : (item.is_target ? 'text-emerald-400' : 'text-slate-300')}">${item.days_active}</td>
         <td class="px-3 py-2"><span class="${badgeClass}">${item.status}</span></td>
         <td class="px-3 py-2 text-right">
           <button onclick="downloadSingleBatchConfig(${item.index - 1})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar esta config">
