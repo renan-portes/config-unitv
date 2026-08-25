@@ -353,12 +353,20 @@ def inject_adb(req: ADBInjectRequest):
             f.write(req.config_content)
             
         logs = []
+        logs.append(f"Conectando ao dispositivo ADB: {device}")
+        
         if req.clear_cache:
             r1 = subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv"], capture_output=True, text=True, timeout=10)
-            logs.append(f"Limpeza de cache com.integration.unitvsiptv: {r1.stdout.strip() or 'OK'}")
+            logs.append(f"Limpeza de cache (pm clear): {r1.stdout.strip() or 'OK'}")
             
-        subprocess.run(["adb", "-s", device, "push", temp_file, "/storage/emulated/0/Android/.config"], capture_output=True, text=True, timeout=10)
+        # Cria diretórios de destino se não existirem
+        subprocess.run(["adb", "-s", device, "shell", "mkdir -p /storage/emulated/0/Android /sdcard/Android"], capture_output=True, text=True, timeout=10)
+
+        # Injeta nos caminhos padrões do UniTV
+        r_push1 = subprocess.run(["adb", "-s", device, "push", temp_file, "/storage/emulated/0/Android/.config"], capture_output=True, text=True, timeout=10)
         subprocess.run(["adb", "-s", device, "push", temp_file, "/storage/emulated/0/.config"], capture_output=True, text=True, timeout=10)
+        subprocess.run(["adb", "-s", device, "push", temp_file, "/sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+        
         logs.append("Arquivo .config injetado em /storage/emulated/0/Android/.config")
         
         if req.launch_app:
