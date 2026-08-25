@@ -104,9 +104,11 @@
       <button onclick="switchTab('tester')" id="tab-btn-tester" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="smartphone" class="w-4 h-4 text-cyan-400"></i> Testador .config (ADB)
       </button>
+      <!-- Decodificador Hex comentado temporariamente
       <button onclick="switchTab('decoder')" id="tab-btn-decoder" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="binary" class="w-4 h-4"></i> Decodificador Hex
       </button>
+      -->
       <button onclick="switchTab('apps')" id="tab-btn-apps" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="box" class="w-4 h-4"></i> Aplicativos
       </button>
@@ -723,7 +725,7 @@
 
     </div>
 
-    <!-- TAB 4: DECODIFICADOR HEX -->
+    <!-- TAB 4: DECODIFICADOR HEX (COMENTADO TEMPORARIAMENTE)
     <div id="tab-decoder" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div class="lg:col-span-6 flex flex-col gap-4">
         <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
@@ -765,6 +767,7 @@
         </div>
       </div>
     </div>
+    -->
 
     <!-- TAB 4: APLICATIVOS (CENTRAL DE DOWNLOADS) -->
     <div id="tab-apps" class="tab-content hidden flex flex-col gap-6">
@@ -1013,6 +1016,10 @@
         hexOutput += b64.charCodeAt(i).toString(16);
       }
       return { hex: hexOutput, b64: b64 };
+    }
+
+    function randomOctet() {
+      return Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
     }
 
     function generateRandomUserId() {
