@@ -393,8 +393,8 @@ def get_adb_devices():
         return {"connected": False, "devices": [], "error": str(e)}
 
 
-def inspect_emulator_account_info(device: str = "127.0.0.1:21503") -> dict:
-    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador"""
+def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
+    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador com validação de MAC"""
     try:
         # 1. Passa tela de guia se estiver aberta
         focus_res = subprocess.run(["adb", "-s", device, "shell", "dumpsys window | grep -E 'mCurrentFocus'"], capture_output=True, text=True, errors='ignore', timeout=5)
@@ -443,23 +443,42 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503") -> dict:
             if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
                 account_id = t_clean
                 
-        # Fallback para o cache.config.xml se não capturado na UI
+        # Leitura do cache.config.xml do app para checar MAC real carregado
+        r_xml = subprocess.run(["adb", "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=5)
+        app_mac = None
+        m_app_mac = re.search(r'name="KEY_SP_SN">([^<]+)<', r_xml.stdout)
+        if m_app_mac:
+            app_mac = m_app_mac.group(1).upper()
+
         if not account_id:
-            r_xml = subprocess.run(["adb", "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=5)
             uid_match = re.search(r'name="key_user_id">([0-9]+)<', r_xml.stdout)
             if uid_match:
                 account_id = uid_match.group(1)
                 
+        # Validação: Se o app rejeitou o chute e usou outra conta de fallback
+        if expected_config_content:
+            exp_mac_m = re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', expected_config_content) or re.search(r'KEY_SP_SN=([^\s\r\n]+)', expected_config_content)
+            if exp_mac_m:
+                exp_mac = exp_mac_m.group(1).upper().replace(":", "")
+                app_mac_clean = (app_mac or "").replace(":", "")
+                if app_mac_clean and exp_mac != app_mac_clean:
+                    is_valid = False
+                    status_msg = "Configuração rejeitada pelo app (Chute/Token Inválido)"
+                    account_id = "-"
+                    activation_date = "-"
+                    days_active = None
+
         # Fecha o diálogo de perfil
         subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
         
         return {
             "found": bool(account_id or activation_date or status_msg),
-            "account_id": account_id,
-            "activation_date": activation_date,
+            "account_id": account_id if is_valid else "-",
+            "activation_date": activation_date if is_valid else "-",
             "days_active": days_active,
             "status_message": status_msg,
-            "is_valid": is_valid
+            "is_valid": is_valid,
+            "app_mac": app_mac
         }
     except Exception as e:
         return {"found": False, "error": str(e)}
@@ -481,8 +500,8 @@ def inject_adb(req: ADBInjectRequest):
         logs.append(f"Conectando ao dispositivo ADB: {device}")
         
         if req.clear_cache:
-            r1 = subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv"], capture_output=True, text=True, timeout=10)
-            logs.append(f"Limpeza de cache (pm clear): {r1.stdout.strip() or 'OK'}")
+            subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+            logs.append("Limpeza profunda de cache e storage anterior realizada com sucesso")
             
         # Cria diretórios de destino se não existirem
         subprocess.run(["adb", "-s", device, "shell", "mkdir -p /storage/emulated/0/Android /sdcard/Android"], capture_output=True, text=True, timeout=10)
@@ -502,7 +521,7 @@ def inject_adb(req: ADBInjectRequest):
             # Aguarda a inicialização do app para leitura de status
             time.sleep(6)
             logs.append("Lendo status e dias ativos da conta no aplicativo...")
-            account_info = inspect_emulator_account_info(device)
+            account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)
             
             if account_info and account_info.get("found"):
                 if account_info.get("account_id"):

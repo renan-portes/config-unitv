@@ -1062,7 +1062,7 @@
       const timeCol0 = nowMs - 200000000;
       const timeRec = nowMs - 25000000;
 
-      const configText = `#personal info\n${dateHeader}\nkey_n_bt=${DEFAULT_N_BT}\nkey_device_id_unitvfree=${devIdObj.hex}\nkey_sn_token_unitvfree=${token.hex}\n`;
+      const configText = `#personal info\n# MAC: ${mac}\nKEY_SP_SN=${mac}\n${dateHeader}\nkey_n_bt=${DEFAULT_N_BT}\nkey_device_id_unitvfree=${devIdObj.hex}\nkey_sn_token_unitvfree=${token.hex}\n`;
       const propText = configText;
 
       const xmlText = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
@@ -1142,7 +1142,7 @@
       const timeCol0 = nowMs - 200000000;
       const timeRec = nowMs - 25000000;
 
-      const configText = `#personal info\n${dateHeader}\nkey_n_bt=${nBt.hex}\nkey_device_id_unitvfree=${devIdObj.hex}\nkey_sn_token_unitvfree=${token.hex}\n`;
+      const configText = `#personal info\n# MAC: ${mac}\nKEY_SP_SN=${mac}\n${dateHeader}\nkey_n_bt=${nBt.hex}\nkey_device_id_unitvfree=${devIdObj.hex}\nkey_sn_token_unitvfree=${token.hex}\n`;
       const propText = configText;
 
       const xmlText = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
@@ -2146,6 +2146,8 @@
             } else {
               statusText = `❌ ${days}d (> ${targetDays}d)`;
             }
+          } else {
+            statusText = (info.status_message && info.status_message.includes("rejeitada")) ? "❌ Chute Rejeitado" : "❌ Falha no Acesso";
           }
 
           const resultItem = {
