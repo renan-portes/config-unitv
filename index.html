@@ -1218,31 +1218,43 @@
       showToast("Novo Device ID 100% aleatório gerado!");
     }
 
+    function generateSmartRandomMAC() {
+      // Pool de MACs aceitos pelo ecossistema UniTV / TV Boxes
+      const prefixes = ["9C:00:D3", "00:1A:79", "A0:BB:3E", "70:2C:1F", "10:D0:7A", "44:D8:78"];
+      const p = (Math.random() < 0.85) ? "9C:00:D3" : prefixes[Math.floor(Math.random() * prefixes.length)];
+      const b3 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      const b4 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      const b5 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      return `${p}:${b3}:${b4}:${b5}`;
+    }
+
     function randomizeAll() {
-      const mac = generateRandomMAC();
+      const mac = generateSmartRandomMAC();
       const uid = generateRandomUserId();
       const folder = "CONFIG_RANDOM_" + Math.floor(1000 + Math.random() * 9000);
+      const freshDev = generateFreshDeviceId();
 
       document.getElementById('input-mac').value = mac;
       document.getElementById('input-userid').value = uid;
       document.getElementById('input-folder').value = folder;
 
-      const data = buildFullyRandomConfig(mac, folder, uid, document.getElementById('input-channel').value);
+      const data = buildSingleConfig(mac, folder, uid, document.getElementById('input-channel').value, freshDev);
       currentDeviceIdHex = data.dev_id_hex;
       currentDeviceIdB64 = data.dev_id_b64;
       currentSingleFiles = data.files;
 
       document.getElementById('devid-preview').innerText = data.dev_id_b64;
       document.getElementById('code-viewer').innerText = currentSingleFiles[currentActivePreview] || "";
-      showToast("Configuração 100% aleatória gerada com sucesso!");
+      showToast("Configuração aleatória inteligente gerada com sucesso!");
     }
 
     function randomizeMacOnly() {
-      const mac = generateRandomMAC();
+      const mac = generateSmartRandomMAC();
       document.getElementById('input-mac').value = mac;
-      const newDev = generateRandomToken(16);
-      currentDeviceIdHex = newDev.hex;
-      currentDeviceIdB64 = newDev.b64;
+      const freshDev = generateFreshDeviceId();
+      currentDeviceIdHex = freshDev.hex;
+      currentDeviceIdB64 = freshDev.b64;
+      document.getElementById('devid-preview').innerText = freshDev.b64;
       updateSinglePreview();
       showToast(`Novo MAC e Device ID aleatórios gerados!`);
     }
@@ -1466,8 +1478,9 @@
           let item = null;
 
           if (currentBulkMode === 'random') {
-            mac = `${randomOctet()}:${randomOctet()}:${randomOctet()}:${randomOctet()}:${randomOctet()}:${randomOctet()}`;
-            item = buildFullyRandomConfig(mac, folderName, freshUid, "SBTHD");
+            mac = generateSmartRandomMAC();
+            const freshDev = generateFreshDeviceId();
+            item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
           } else {
             const macByte = (startByte + i) % 256;
             mac = `9C:00:D3:EC:AA:${macByte.toString(16).toUpperCase().padStart(2, '0')}`;
