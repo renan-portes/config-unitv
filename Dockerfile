@@ -6,9 +6,10 @@ LABEL description="Gerador de arquivos .config, .properties e cache.config.xml"
 
 WORKDIR /app
 
-# Instala curl para healthcheck
+# Instala curl e adb para conexões e healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    android-tools-adb \
     && rm -rf /var/lib/apt/lists/*
 
 # Instala dependências Python
@@ -21,6 +22,8 @@ COPY server.py .
 COPY index.html .
 COPY logo.png .
 COPY ids.json .
+COPY Conectar_Emulador_Remoto.bat .
+COPY apps/ ./apps/
 
 # Variáveis de ambiente padrão
 ENV HOST=0.0.0.0

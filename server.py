@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -39,6 +40,10 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CLOUD_IDS_URL = "https://raw.githubusercontent.com/iurysouza041095-bit/sorteio/main/ids.json"
 cached_cloud_ids = []
+
+apps_dir = os.path.join(BASE_DIR, "apps")
+if os.path.exists(apps_dir):
+    app.mount("/apps", StaticFiles(directory=apps_dir), name="apps")
 
 
 # --- MODELOS DE REQUISIÇÃO ---
