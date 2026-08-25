@@ -105,6 +105,9 @@
       <button onclick="switchTab('decoder')" id="tab-btn-decoder" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="binary" class="w-4 h-4"></i> Decodificador Hex
       </button>
+      <button onclick="switchTab('apps')" id="tab-btn-apps" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
+        <i data-lucide="box" class="w-4 h-4"></i> Aplicativos
+      </button>
     </div>
 
     <!-- TAB 1: GERADOR INDIVIDUAL -->
@@ -370,6 +373,85 @@
               <span class="text-[10px] uppercase font-bold text-slate-500">Bytes Internos (Hex do Base64):</span>
               <span id="decoder-out-bytes" class="text-indigo-300 break-all select-all">-</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: APLICATIVOS (CENTRAL DE DOWNLOADS) -->
+    <div id="tab-apps" class="tab-content hidden flex flex-col gap-6">
+      <div class="glass-panel p-6 rounded-2xl border border-dark-border flex flex-col gap-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dark-border pb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="box" class="w-5 h-5 text-brand-400"></i> Central de Downloads de Aplicativos
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Selecione e baixe as versões disponíveis para os seus dispositivos.</p>
+          </div>
+          <span class="text-xs px-3 py-1 rounded-full bg-dark-input border border-dark-border text-slate-300 font-mono flex items-center gap-1.5 self-start sm:self-auto">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Repositório Ativo
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Card App 1 -->
+          <div class="p-5 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between gap-4 hover:border-brand-500/50 transition">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-sm">
+                  <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white">Versão Recente</h3>
+                  <p class="text-[11px] text-slate-400">v5.8.0 • Recomendada</p>
+                </div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-medium">Estável</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">Versão mais recente com suporte a todos os recursos e melhorias de estabilidade.</p>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md flex items-center justify-center gap-2">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar APK
+            </a>
+          </div>
+
+          <!-- Card App 2 -->
+          <div class="p-5 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between gap-4 hover:border-brand-500/50 transition">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-sm">
+                  <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white">Versão Anterior</h3>
+                  <p class="text-[11px] text-slate-400">v5.7.2 • Compatível</p>
+                </div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium">Clássica</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">Versão estável com alta compatibilidade em aparelhos e TV boxes mais antigos.</p>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-white font-semibold text-xs transition flex items-center justify-center gap-2">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar APK
+            </a>
+          </div>
+
+          <!-- Card App 3 -->
+          <div class="p-5 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between gap-4 hover:border-brand-500/50 transition">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm">
+                  <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white">Versão Base</h3>
+                  <p class="text-[11px] text-slate-400">v5.1.0 • Legada</p>
+                </div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-medium">Legada</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">Versão base para dispositivos com versões anteriores do Android.</p>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-white font-semibold text-xs transition flex items-center justify-center gap-2">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar APK
+            </a>
           </div>
         </div>
       </div>
