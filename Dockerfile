@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY generator_engine.py .
 COPY server.py .
 COPY index.html .
+COPY logo.png .
 
 # Variáveis de ambiente padrão
 ENV HOST=0.0.0.0

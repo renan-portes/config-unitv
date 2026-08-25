@@ -354,7 +354,7 @@ def inject_adb(req: ADBInjectRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# --- SERVIR INTERFACE HTML ---
+# --- SERVIR INTERFACE HTML & ASSETS ---
 
 @app.get("/")
 def serve_index():
@@ -362,6 +362,22 @@ def serve_index():
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return HTMLResponse("<h1>Gerador de .config</h1><p>index.html não encontrado.</p>")
+
+
+@app.get("/logo.png")
+def serve_logo():
+    logo_file = os.path.join(BASE_DIR, "logo.png")
+    if os.path.exists(logo_file):
+        return FileResponse(logo_file, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Logo não encontrado")
+
+
+@app.get("/favicon.ico")
+def serve_favicon():
+    logo_file = os.path.join(BASE_DIR, "logo.png")
+    if os.path.exists(logo_file):
+        return FileResponse(logo_file, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Favicon não encontrado")
 
 
 if __name__ == "__main__":
