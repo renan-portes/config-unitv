@@ -306,16 +306,40 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-2 pt-2">
-            <button onclick="runBulkGeneration()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="play" class="w-4 h-4"></i> Gerar Lote de Configurações
+          <!-- Meta de Dias Alvo no Gerador em Lote -->
+          <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
+            <div class="flex justify-between items-center text-xs">
+              <label class="font-semibold text-slate-300 flex items-center gap-1">
+                <i data-lucide="target" class="w-3.5 h-3.5 text-amber-400"></i> Meta de Dias (Alvo)
+              </label>
+              <span class="font-bold text-amber-400 text-xs">≤ <span id="bulk-target-label">100</span> dias</span>
+            </div>
+            <input type="range" id="bulk-target-days" min="0" max="500" value="100" step="5"
+              class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
+              oninput="document.getElementById('bulk-target-label').innerText = this.value; if(document.getElementById('batch-target-days')) { document.getElementById('batch-target-days').value = this.value; document.getElementById('batch-target-label').innerText = this.value; }">
+            <p class="text-[11px] text-slate-400">Aprova apenas configs com dias ativos menores ou iguais à meta.</p>
+          </div>
+
+          <!-- Botões de Ação do Lote -->
+          <div class="flex flex-col gap-2.5 pt-1">
+            <!-- Botão Principal: Gerar e Já Testar no Emulador com Meta -->
+            <button onclick="generateAndTestBulkWithTarget()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i> Gerar &amp; Testar Lote no Emulador (ADB)
             </button>
-            <button onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar Tudo em ZIP Único
+
+            <!-- Botão: Gerar Apenas Arquivos Locais -->
+            <button onclick="runBulkGeneration()" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-emerald-300 hover:text-white font-semibold text-xs transition flex items-center justify-center gap-2">
+              <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-400"></i> Gerar Apenas Arquivos
             </button>
-            <button onclick="saveBulkToDisk()" id="btn-save-bulk-disk" disabled class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed border border-dark-border text-slate-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Gravar Pastas no Disco
-            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
+                <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar ZIP
+              </button>
+              <button onclick="saveBulkToDisk()" id="btn-save-bulk-disk" disabled class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed border border-dark-border text-slate-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
+                <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Salvar Disco
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1346,9 +1370,14 @@
           <td class="px-4 py-2.5 font-mono text-amber-300 text-xs">${freshUid}</td>
           <td class="px-4 py-2.5 font-mono text-indigo-300 text-[11px] truncate max-w-[160px]">${item.dev_id_b64}</td>
           <td class="px-4 py-2.5 text-right">
-            <button onclick="downloadIndividualFromBulk(${i})" class="px-2 py-1 rounded bg-dark-input hover:bg-slate-700 text-xs text-slate-300">
-              <i data-lucide="download" class="w-3.5 h-3.5 inline"></i>
-            </button>
+            <div class="flex items-center justify-end gap-1.5">
+              <button onclick="testSingleBulkItemInEmulator(${i})" class="px-2 py-1 rounded bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-xs text-purple-200 transition flex items-center gap-1" title="Injetar e testar no emulador">
+                <i data-lucide="smartphone" class="w-3.5 h-3.5 text-cyan-300"></i> <span class="hidden sm:inline">Testar</span>
+              </button>
+              <button onclick="downloadIndividualFromBulk(${i})" class="px-2 py-1 rounded bg-dark-input hover:bg-slate-700 text-xs text-slate-300 transition" title="Baixar .config">
+                <i data-lucide="download" class="w-3.5 h-3.5 inline"></i>
+              </button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1359,6 +1388,53 @@
       document.getElementById('btn-save-bulk-disk').disabled = false;
       lucide.createIcons();
       showToast(`Lote de ${count} configurações gerado com sucesso!`);
+    }
+
+    function generateAndTestBulkWithTarget() {
+      runBulkGeneration();
+      
+      const targetDays = parseInt(document.getElementById('bulk-target-days').value) || 100;
+      if (document.getElementById('batch-target-days')) {
+        document.getElementById('batch-target-days').value = targetDays;
+        document.getElementById('batch-target-label').innerText = targetDays;
+      }
+
+      batchQueue = [];
+      batchResults = [];
+      document.getElementById('batch-results-table-body').innerHTML = "";
+
+      currentBulkList.forEach((item) => {
+        batchQueue.push({
+          name: `${item.folder_name}.config`,
+          content: item.files['.config']
+        });
+      });
+      updateBatchCounters();
+
+      switchTab('tester');
+      switchTesterMode('batch');
+      showToast(`Lote de ${currentBulkList.length} configs enviado! Iniciando scanner no emulador...`);
+      startBatchScanner();
+    }
+
+    function testSingleBulkItemInEmulator(index) {
+      const item = currentBulkList[index];
+      if (!item || !item.files || !item.files['.config']) return;
+
+      testerLoadedContent = item.files['.config'];
+      testerLoadedFilename = `${item.folder_name}.config`;
+
+      switchTab('tester');
+      switchTesterMode('single');
+
+      document.getElementById('tester-filename').innerText = testerLoadedFilename;
+      document.getElementById('tester-code-viewer').innerText = testerLoadedContent;
+      document.getElementById('tester-mac').innerText = item.mac || '-';
+      document.getElementById('tester-filesize').innerText = `${testerLoadedContent.length} bytes`;
+      document.getElementById('btn-tester-inject').disabled = false;
+
+      showToast(`Configuração ${item.folder_name} carregada no Testador!`);
+      injectTesterConfigFile();
     }
 
     async function downloadBulkZip() {
