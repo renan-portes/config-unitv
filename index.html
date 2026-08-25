@@ -1219,13 +1219,9 @@
     }
 
     function generateSmartRandomMAC() {
-      // Pool de MACs aceitos pelo ecossistema UniTV / TV Boxes
-      const prefixes = ["9C:00:D3", "00:1A:79", "A0:BB:3E", "70:2C:1F", "10:D0:7A", "44:D8:78"];
-      const p = (Math.random() < 0.85) ? "9C:00:D3" : prefixes[Math.floor(Math.random() * prefixes.length)];
-      const b3 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      const b4 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      const b5 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      return `${p}:${b3}:${b4}:${b5}`;
+      // Sorteia o byte final de 00 a FF no prefixo nativo 9C:00:D3:EC:AA (padrão de decodificação de token do UniTV)
+      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      return `9C:00:D3:EC:AA:${lastByte}`;
     }
 
     function randomizeAll() {

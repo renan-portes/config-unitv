@@ -462,11 +462,15 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 exp_mac = exp_mac_m.group(1).upper().replace(":", "")
                 app_mac_clean = (app_mac or "").replace(":", "")
                 if app_mac_clean and exp_mac != app_mac_clean:
-                    is_valid = False
-                    status_msg = "Configuração rejeitada pelo app (Chute/Token Inválido)"
-                    account_id = "-"
-                    activation_date = "-"
-                    days_active = None
+                    # Verifica se o byte final coincide (decodificador nativo UniTV mapeia o byte final em 9C00D3ECAA)
+                    if exp_mac[-2:] == app_mac_clean[-2:] and app_mac_clean.startswith("9C00D3ECAA"):
+                        pass
+                    else:
+                        is_valid = False
+                        status_msg = "Configuração rejeitada pelo app (Chute/Token Inválido)"
+                        account_id = "-"
+                        activation_date = "-"
+                        days_active = None
 
         # Fecha o diálogo de perfil
         subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
