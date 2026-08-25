@@ -95,22 +95,14 @@
 
     <!-- NAV TABS -->
     <div class="flex items-center gap-2 border-b border-dark-border overflow-x-auto pb-2 scrollbar-none">
-      <button onclick="switchTab('single')" id="tab-btn-single" class="tab-btn active px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-brand-400 bg-brand-500/10 border border-brand-500/30">
+      <button onclick="switchTab('single')" id="tab-btn-single" class="tab-btn active px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-brand-400 bg-brand-500/10 border border-brand-500/30">
         <i data-lucide="zap" class="w-4 h-4"></i> Gerador Individual
       </button>
-      <button onclick="switchTab('bulk')" id="tab-btn-bulk" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
-        <i data-lucide="layers" class="w-4 h-4"></i> Gerador em Lote
+      <button onclick="switchTab('scanner')" id="tab-btn-scanner" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
+        <i data-lucide="rocket" class="w-4 h-4 text-purple-400"></i> Scanner &amp; Validador de Lotes
       </button>
-      <button onclick="switchTab('tester')" id="tab-btn-tester" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
-        <i data-lucide="smartphone" class="w-4 h-4 text-cyan-400"></i> Testador .config (ADB)
-      </button>
-      <!-- Decodificador Hex comentado temporariamente
-      <button onclick="switchTab('decoder')" id="tab-btn-decoder" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
-        <i data-lucide="binary" class="w-4 h-4"></i> Decodificador Hex
-      </button>
-      -->
-      <button onclick="switchTab('apps')" id="tab-btn-apps" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
-        <i data-lucide="box" class="w-4 h-4"></i> Aplicativos
+      <button onclick="switchTab('apps')" id="tab-btn-apps" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
+        <i data-lucide="smartphone" class="w-4 h-4 text-cyan-400"></i> Conexão ADB &amp; Aplicativos
       </button>
     </div>
 
@@ -132,118 +124,95 @@
                 <i data-lucide="folder-open" class="w-4 h-4 text-purple-400"></i> Carregar .config
               </button>
               <input type="file" id="single-file-upload" accept=".config,.txt,text/plain" class="hidden" onchange="handleSingleFileUpload(event)">
-              <button onclick="fetchCloudConfig()" id="btn-cloud-fetch" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs transition shadow-md flex items-center gap-1.5" title="Puxa uma config pronta do pool de 10.000+ arquivos online">
-                <i data-lucide="cloud-download" class="w-4 h-4 text-cyan-200"></i> Puxar da Nuvem (10k)
-              </button>
               <button onclick="generateSingleConfigUI()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
                 <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Local
               </button>
             </div>
           </div>
 
-          <!-- Aviso de Status das Configs -->
-          <div class="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-start gap-2.5 text-xs text-blue-200">
-            <i data-lucide="info" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
-            <div class="flex flex-col gap-0.5">
-              <div class="flex items-center gap-2">
-                <strong class="font-semibold text-blue-300">Configurações Ativas & Válidas:</strong>
-                <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">0 Dias em Desenvolvimento</span>
-              </div>
-              <p class="text-[11px] text-blue-300/80 leading-relaxed">
-                As configurações geradas ou puxadas da nuvem são válidas para uso. A geração de contas com 0 dias virgens está em fase de desenvolvimento e será liberada em breve.
-              </p>
-            </div>
-          </div>
-
           <!-- MAC Address Input -->
           <div class="flex flex-col gap-1.5">
             <div class="flex items-center justify-between">
-              <label class="text-xs font-semibold text-slate-300">Endereço MAC (KEY_SP_SN)</label>
-              <button onclick="randomizeMacOnly()" type="button" class="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 font-medium cursor-pointer">
-                <i data-lucide="dice-5" class="w-3.5 h-3.5"></i> Gerar Novo MAC
+              <label class="text-xs font-semibold text-slate-300">Endereço MAC (Fixo / Random)</label>
+              <button onclick="randomizeMacOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear MAC
               </button>
             </div>
             <div class="relative">
-              <input type="text" id="input-mac" value="9C:00:D3:EC:AA:01" maxlength="17" placeholder="9C:00:D3:EC:AA:XX"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border focus:border-brand-500 font-mono text-sm uppercase tracking-wider text-emerald-400"
+              <input type="text" id="input-mac" value="9C:00:D3:EC:AA:01" 
+                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none uppercase"
                 oninput="updateSinglePreview()">
-              <button onclick="randomizeMacOnly()" title="Sortear outro MAC" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-white p-1">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <!-- User ID Input -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-slate-300">User ID (key_user_id)</label>
+              <button onclick="randomizeUserIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear ID
               </button>
             </div>
-            <p class="text-[11px] text-slate-400">Padrão: <code>9C:00:D3:EC:AA:XX</code> (00 a FF)</p>
+            <input type="text" id="input-uid" value="545050564"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none"
+              oninput="updateSinglePreview()">
           </div>
 
-          <!-- Nome da Pasta -->
+          <!-- Device ID Input -->
           <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-semibold text-slate-300">Nome da Pasta</label>
-            <input type="text" id="input-folder" value="CONFIG_NOVA_0_DIAS"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border focus:border-brand-500 text-sm">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-slate-300">Device ID Base64 (Único)</label>
+              <button onclick="randomizeDeviceIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                <i data-lucide="shuffle" class="w-3 h-3"></i> Novo Device ID
+              </button>
+            </div>
+            <input type="text" id="input-devid" value="0YXNlTTBFS0G22pTPQrY5w=="
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-slate-300 focus:border-brand-500 focus:outline-none"
+              oninput="updateSinglePreview()">
           </div>
 
-          <!-- User ID & Canal -->
+          <!-- Folder Name & Model -->
           <div class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">User ID (9 Dígitos)</label>
-              <input type="text" id="input-userid" value="589412034"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border focus:border-brand-500 font-mono text-xs text-amber-300"
+              <label class="text-xs font-semibold text-slate-300">Nome da Pasta</label>
+              <input type="text" id="input-folder" value="CONFIG_1"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
                 oninput="updateSinglePreview()">
             </div>
             <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">Canal Inicial</label>
-              <input type="text" id="input-channel" value="SBTHD"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border focus:border-brand-500 text-xs">
+              <label class="text-xs font-semibold text-slate-300">Modelo Aparelho</label>
+              <input type="text" id="input-model" value="SBTHD"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
+                oninput="updateSinglePreview()">
             </div>
           </div>
 
-          <!-- Device ID B64 Preview -->
-          <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-1 text-xs font-mono">
-            <div class="flex justify-between items-center">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">Device ID Único (B64)</span>
-                <button onclick="randomizeDeviceIdOnly()" class="p-0.5 hover:text-white text-slate-400 hover:bg-dark-hover rounded transition" title="Gerar Novo Device ID Único">
-                  <i data-lucide="refresh-cw" class="w-3 h-3 text-brand-400"></i>
-                </button>
-              </div>
-              <span class="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300">Aleatório / Único</span>
+          <!-- Randomize All & Quick Actions -->
+          <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
+            <button onclick="randomizeAll()" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition border border-dark-border flex items-center justify-center gap-2">
+              <i data-lucide="dices" class="w-4 h-4 text-purple-400"></i> Sortear Todos os Campos
+            </button>
+            
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="downloadSingleZip()" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center justify-center gap-1.5 text-center">
+                <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar ZIP
+              </button>
+              <button onclick="saveSingleToDisk()" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 text-center">
+                <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Salvar no Disco
+              </button>
             </div>
-            <p id="devid-preview" class="text-indigo-300 break-all text-[11px] font-semibold text-emerald-400">-</p>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="flex flex-col gap-2.5 pt-2">
-            <!-- ADB 1-Click Inject Button -->
-            <button onclick="injectDirectToEmulator()" id="btn-adb-inject" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="smartphone" class="w-4 h-4 text-emerald-300"></i> Injetar Direto no Emulador (ADB)
-            </button>
-            <div class="flex items-center justify-between text-[11px] px-1 text-slate-400">
-              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400" id="adb-status-dot"></span> <span id="adb-device-label">Emulador: 127.0.0.1:21503</span></span>
-              <label class="flex items-center gap-1 cursor-pointer text-slate-300">
-                <input type="checkbox" id="adb-clear-cache" checked class="rounded bg-dark-input text-brand-500 border-dark-border"> Limpar Cache
-              </label>
-            </div>
-
-            <!-- Download Single .config Direct Button -->
-            <button onclick="downloadSingleConfigFile()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="file-down" class="w-4 h-4 text-emerald-200"></i> Baixar Apenas o Arquivo (.config)
-            </button>
-
-            <button onclick="downloadSingleZip()" class="w-full py-2 px-4 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-slate-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="archive" class="w-3.5 h-3.5 text-slate-400"></i> Baixar Pacote Completo (.ZIP)
-            </button>
-            <button onclick="saveSingleToDisk()" id="btn-save-disk-single" class="w-full py-2 px-4 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-slate-400 hover:text-slate-200 font-medium text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Salvar Diretamente no Disco
-            </button>
-          </div>
         </div>
       </div>
 
-      <!-- Painel de Pré-visualização de Código -->
+      <!-- Preview do Código & Injeção ADB Individual -->
       <div class="lg:col-span-8 flex flex-col gap-4">
         <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
-          <div class="flex items-center justify-between pb-3 border-b border-dark-border">
-            <!-- File Selector Tabs -->
-            <div class="flex items-center gap-1.5">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-border">
+            <!-- Tabs do Visualizador -->
+            <div class="flex items-center gap-1.5 p-1 bg-dark-input rounded-xl border border-dark-border">
               <button onclick="switchPreviewFile('.config')" id="preview-tab-config" class="preview-tab active px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 flex items-center gap-1.5">
                 <i data-lucide="file-code" class="w-3.5 h-3.5"></i> .config
               </button>
@@ -255,13 +224,16 @@
               </button>
             </div>
 
-            <!-- Copy & Download Individual -->
+            <!-- Copy, Download & Injetar -->
             <div class="flex items-center gap-2">
               <button onclick="copyCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
                 <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
               </button>
               <button onclick="downloadCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Baixar Arquivo
+                <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Baixar
+              </button>
+              <button onclick="injectDirectAdb()" id="btn-single-inject" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs transition shadow-md flex items-center gap-1.5">
+                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Injetar no ADB
               </button>
             </div>
           </div>
@@ -274,450 +246,202 @@
       </div>
     </div>
 
-    <!-- TAB 2: GERADOR EM MASSA -->
-    <div id="tab-bulk" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- TAB 2: SCANNER & VALIDADOR DE LOTES (CENTRAL UNIFICADA) -->
+    <div id="tab-scanner" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Coluna da Esquerda: Controles em 3 Passos (4 Colunas) -->
       <div class="lg:col-span-4 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="layers" class="w-4 h-4 text-brand-400"></i> Parâmetros em Lote
-          </h2>
-
-          <!-- Modo de Origem do Lote (Local, Nuvem ou 100% Random Chute) -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-semibold text-slate-300">Modo de Geração / Origem</label>
-            <div class="grid grid-cols-3 gap-1.5 p-1 bg-dark-input rounded-xl border border-dark-border text-xs">
-              <button type="button" onclick="setBulkMode('local')" id="bulk-mode-btn-local" class="py-1.5 px-2 rounded-lg font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 transition text-center text-[11px] truncate">
-                ⚡ Local
-              </button>
-              <button type="button" onclick="setBulkMode('cloud')" id="bulk-mode-btn-cloud" class="py-1.5 px-2 rounded-lg font-medium text-slate-400 hover:text-white transition text-center text-[11px] truncate">
-                ☁️ Nuvem (10k)
-              </button>
-              <button type="button" onclick="setBulkMode('random')" id="bulk-mode-btn-random" class="py-1.5 px-2 rounded-lg font-medium text-slate-400 hover:text-white transition text-center text-[11px] truncate">
-                🎲 100% Chute
-              </button>
+        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-5">
+          
+          <!-- Cabeçalho do Card -->
+          <div class="flex items-center justify-between border-b border-dark-border pb-3">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="rocket" class="w-5 h-5 text-purple-400"></i> Scanner de Contas
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Teste em massa com validação de dias e auto-filtro</p>
             </div>
-            <p id="bulk-mode-desc" class="text-[11px] text-slate-400 leading-tight">
-              Gera configurações com chaves criptográficas oficiais locais (prefixo 9C:00:D3).
-            </p>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <div class="flex justify-between items-center text-xs">
-              <label class="font-semibold text-slate-300">Quantidade de Configs</label>
-              <span id="bulk-count-label" class="font-bold text-brand-400 text-sm">10</span>
-            </div>
-            <input type="range" id="input-bulk-count" min="1" max="100" value="10"
-              class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-brand-500"
-              oninput="document.getElementById('bulk-count-label').innerText = this.value">
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">Prefixo da Pasta</label>
-              <input type="text" id="input-bulk-prefix" value="CONFIG_" class="w-full px-3 py-2 rounded-xl bg-dark-input border border-dark-border text-xs">
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">Número Inicial</label>
-              <input type="number" id="input-bulk-start" value="1" min="1" class="w-full px-3 py-2 rounded-xl bg-dark-input border border-dark-border text-xs">
-            </div>
-          </div>
-
-          <!-- Meta de Dias Alvo no Gerador em Lote -->
-          <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
-            <div class="flex justify-between items-center text-xs">
-              <label class="font-semibold text-slate-300 flex items-center gap-1">
-                <i data-lucide="target" class="w-3.5 h-3.5 text-amber-400"></i> Meta de Dias (Alvo)
-              </label>
-              <span class="font-bold text-amber-400 text-xs">≤ <span id="bulk-target-label">100</span> dias</span>
-            </div>
-            <input type="range" id="bulk-target-days" min="0" max="500" value="100" step="5"
-              class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
-              oninput="document.getElementById('bulk-target-label').innerText = this.value; if(document.getElementById('batch-target-days')) { document.getElementById('batch-target-days').value = this.value; document.getElementById('batch-target-label').innerText = this.value; }">
-            <p class="text-[11px] text-slate-400">Aprova apenas configs com dias ativos menores ou iguais à meta.</p>
-          </div>
-
-          <!-- Botões de Ação do Lote -->
-          <div class="flex flex-col gap-2.5 pt-1">
-            <!-- Botão Principal: Gerar e Já Testar no Emulador com Meta -->
-            <button onclick="generateAndTestBulkWithTarget()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
-              <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i> Gerar &amp; Testar Lote no Emulador (ADB)
-            </button>
-
-            <!-- Botão: Gerar Apenas Arquivos Locais -->
-            <button onclick="runBulkGeneration()" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-emerald-300 hover:text-white font-semibold text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-400"></i> Gerar Apenas Arquivos
-            </button>
-
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar ZIP
-              </button>
-              <button onclick="saveBulkToDisk()" id="btn-save-bulk-disk" disabled class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed border border-dark-border text-slate-300 hover:text-white font-medium text-xs transition flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Salvar Disco
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tabela do Lote -->
-      <div class="lg:col-span-8 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
-          <div class="flex items-center justify-between pb-3 border-b border-dark-border">
-            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-              <i data-lucide="list-checks" class="w-4 h-4 text-emerald-400"></i> Lote Gerado (<span id="bulk-result-count">0</span> itens)
-            </h3>
-            <span class="text-xs text-emerald-400 font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Configs exclusivas por arquivo
+            <span class="text-xs px-2.5 py-1 rounded-lg bg-dark-card border border-dark-border font-mono text-slate-300 flex items-center gap-1.5" title="Dispositivo ADB Ativo">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span id="scanner-adb-label">127.0.0.1:21503</span>
             </span>
           </div>
 
-          <div class="mt-4 overflow-auto max-h-[460px] rounded-xl border border-dark-border">
-            <table class="w-full text-left text-xs text-slate-300">
-              <thead class="bg-dark-input text-slate-400 uppercase font-semibold sticky top-0">
-                <tr>
-                  <th class="px-4 py-3">Pasta</th>
-                  <th class="px-4 py-3">MAC Address</th>
-                  <th class="px-4 py-3">User ID Novo</th>
-                  <th class="px-4 py-3">Device ID Único</th>
-                  <th class="px-4 py-3 text-right">Ação</th>
-                </tr>
-              </thead>
-              <tbody id="bulk-table-body" class="divide-y divide-dark-border">
-                <tr>
-                  <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-                    Clique em "Gerar Lote de Configurações" para criar os arquivos.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 3: TESTADOR .CONFIG (ADB & UPLOAD) -->
-    <div id="tab-tester" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- Sub-navegação do Testador (Individual vs Lote) -->
-      <div class="lg:col-span-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-dark-border pb-3">
-        <div class="flex items-center gap-2">
-          <button onclick="switchTesterMode('single')" id="tester-mode-btn-single" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-2">
-            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Teste Individual
-          </button>
-          <button onclick="switchTesterMode('batch')" id="tester-mode-btn-batch" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition flex items-center gap-2">
-            <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i> Scanner em Lote (Multi-Configs & Filtro)
-          </button>
-        </div>
-        <div class="flex items-center gap-2 text-xs">
-          <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-dark-card border border-dark-border font-mono text-[11px] text-slate-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-400" id="tester-header-adb-dot"></span>
-            <span id="tester-header-adb-label">127.0.0.1:21503</span>
-          </span>
-        </div>
-      </div>
-
-      <!-- MODO 1: TESTE INDIVIDUAL -->
-      <div id="tester-panel-single" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Coluna da Esquerda: Upload & Controles -->
-        <div class="lg:col-span-5 flex flex-col gap-4">
-          
-          <!-- Card de Upload / Dropzone -->
-          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
+          <!-- PASSO 1: ESCOLHA A ORIGEM -->
+          <div class="flex flex-col gap-2.5">
             <div class="flex items-center justify-between">
-              <h2 class="text-base font-bold text-white flex items-center gap-2">
-                <i data-lucide="upload-cloud" class="w-5 h-5 text-cyan-400"></i> Carregar .config do PC
-              </h2>
-              <span class="text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
-                Injeção Direta
-              </span>
-            </div>
-            
-            <p class="text-xs text-slate-400 leading-relaxed">
-              Selecione ou arraste qualquer arquivo <code>.config</code> do seu computador para testar no emulador Android com 1 clique.
-            </p>
-
-            <!-- Dropzone Area -->
-            <div id="tester-dropzone" 
-                 onclick="document.getElementById('tester-file-input').click()"
-                 class="p-6 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/30 transition cursor-pointer flex flex-col items-center justify-center gap-3 text-center group">
-              <input type="file" id="tester-file-input" accept=".config,.txt,text/plain" class="hidden" onchange="handleTesterFileUpload(event)">
-              <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center group-hover:scale-110 transition shadow-lg shadow-cyan-500/20">
-                <i data-lucide="file-up" class="w-6 h-6"></i>
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-white group-hover:text-cyan-300 transition">Clique para selecionar ou arraste o .config</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">Suporta arquivos .config ou .txt</p>
-              </div>
-              <span class="text-xs px-3 py-1 rounded-lg bg-cyan-600/80 hover:bg-cyan-500 text-white font-medium shadow transition">
-                Selecionar do Computador
+              <label class="text-xs font-bold text-white flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center text-[11px] font-bold">1</span>
+                Origem das Configurações
+              </label>
+              <span class="text-[11px] text-slate-400">
+                Fila: <strong id="batch-queue-count" class="text-white font-mono">0</strong> itens
               </span>
             </div>
 
-            <!-- Informações do Arquivo Carregado -->
-            <div id="tester-file-info" class="p-3.5 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2 text-xs font-mono">
-              <div class="flex items-center justify-between pb-2 border-b border-dark-border">
-                <span class="text-slate-400 font-semibold uppercase text-[10px]">Arquivo Carregado:</span>
-                <span id="tester-filename" class="text-emerald-400 font-bold truncate max-w-[200px]">Nenhum arquivo carregado</span>
-              </div>
-              <div class="grid grid-cols-2 gap-2 text-[11px]">
-                <div>
-                  <span class="text-slate-500 text-[10px] block uppercase">MAC Address:</span>
-                  <span id="tester-mac" class="text-white font-semibold">-</span>
-                </div>
-                <div>
-                  <span class="text-slate-500 text-[10px] block uppercase">Tamanho:</span>
-                  <span id="tester-filesize" class="text-slate-300">-</span>
-                </div>
-                <div class="col-span-2">
-                  <span class="text-slate-500 text-[10px] block uppercase">Device ID (B64):</span>
-                  <span id="tester-devid" class="text-indigo-300 break-all text-[10px]">-</span>
-                </div>
-              </div>
-            </div>
+            <!-- 3 Botões de Origem -->
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" onclick="loadBatchFromCloud()" id="btn-batch-cloud" class="py-2.5 px-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 hover:text-white font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
+                <i data-lucide="cloud-download" class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition"></i>
+                <span>Nuvem (10k)</span>
+              </button>
 
-            <!-- Parâmetros e Ações de Injeção ADB -->
-            <div class="flex flex-col gap-3 pt-2">
-              <div class="flex items-center justify-between text-xs px-1 text-slate-300">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400" id="tester-adb-dot"></span>
-                  <span id="tester-adb-label" class="font-mono text-[11px]">Emulador: 127.0.0.1:21503</span>
-                </span>
-                <button onclick="checkAdbDevices()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-dark-hover transition" title="Atualizar Emuladores Conectados">
-                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
+              <button type="button" onclick="document.getElementById('batch-multi-input').click()" id="btn-batch-pc" class="py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-300 hover:text-white font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
+                <i data-lucide="folder-up" class="w-4 h-4 text-purple-400 group-hover:scale-110 transition"></i>
+                <span>Arquivos PC</span>
+              </button>
+              <input type="file" id="batch-multi-input" multiple accept=".config,.txt,text/plain" class="hidden" onchange="handleBatchMultiUpload(event)">
 
-              <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300 px-1">
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" id="tester-clear-cache" checked class="rounded bg-dark-input text-cyan-500 border-dark-border">
-                  <span>Limpar Cache/Dados</span>
-                </label>
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" id="tester-launch-app" checked class="rounded bg-dark-input text-cyan-500 border-dark-border">
-                  <span>Iniciar Aplicativo</span>
-                </label>
-              </div>
-
-              <!-- Botão de Injeção -->
-              <button onclick="injectTesterConfigFile()" id="btn-tester-inject" disabled
-                class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-2">
-                <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i> Injetar no Emulador (ADB)
+              <button type="button" onclick="loadBatchLocal()" id="btn-batch-local" class="py-2.5 px-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 hover:text-white font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
+                <i data-lucide="zap" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition"></i>
+                <span>Lote Local</span>
               </button>
             </div>
-          </div>
-        </div>
 
-        <!-- Coluna da Direita: Status da Conta, Pré-visualização & Logs do ADB -->
-        <div class="lg:col-span-7 flex flex-col gap-4">
-          
-          <!-- Card de Status da Conta no Emulador (Após Injeção/Abertura) -->
-          <div id="tester-account-card" class="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-indigo-950/20 to-dark-card flex flex-col gap-3">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <span>Quantidade para puxar / gerar:</span>
+              <select id="batch-cloud-qty" class="bg-dark-input text-white rounded-lg border border-dark-border px-2 py-1 text-xs font-medium focus:border-brand-500">
+                <option value="10" selected>10 itens</option>
+                <option value="20">20 itens</option>
+                <option value="50">50 itens</option>
+                <option value="100">100 itens</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- PASSO 2: DEFINA SEU ALVO -->
+          <div class="flex flex-col gap-3 pt-3 border-t border-dark-border">
             <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shadow-md shadow-purple-500/20">
-                  <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
-                </div>
-                <div>
-                  <h4 class="text-sm font-bold text-white flex items-center gap-2">
-                    Status da Conta no Emulador
-                    <span id="tester-account-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-normal">Aguardando</span>
-                  </h4>
-                  <p class="text-[11px] text-slate-400">Informações extraídas automaticamente ao abrir o app</p>
-                </div>
-              </div>
-              <button onclick="fetchAccountStatusOnDemand()" id="btn-fetch-account" class="px-3 py-1.5 rounded-xl bg-dark-hover hover:bg-slate-700 text-xs text-purple-300 hover:text-white transition flex items-center gap-1.5 border border-purple-500/30 shadow">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-purple-400"></i> Ler Status
+              <label class="text-xs font-bold text-white flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center text-[11px] font-bold">2</span>
+                Meta de Dias Ativos (Alvo)
+              </label>
+              <span class="text-xs font-bold text-amber-400 font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                ≤ <span id="batch-target-label">70</span> dias
+              </span>
+            </div>
+
+            <!-- Botões de Seleção Rápida (Presets) -->
+            <div class="grid grid-cols-4 gap-1.5">
+              <button type="button" onclick="setTargetQuick(0)" id="preset-target-0" class="preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center">
+                ✨ 0 Dias
+              </button>
+              <button type="button" onclick="setTargetQuick(30)" id="preset-target-30" class="preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center">
+                ≤ 30d
+              </button>
+              <button type="button" onclick="setTargetQuick(70)" id="preset-target-70" class="preset-target-btn active py-1.5 px-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition text-center">
+                ≤ 70d
+              </button>
+              <button type="button" onclick="setTargetQuick(100)" id="preset-target-100" class="preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center">
+                ≤ 100d
               </button>
             </div>
 
-            <div class="grid grid-cols-3 gap-2.5 text-xs font-mono pt-1">
-              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">ID da Conta</span>
-                <span id="tester-account-id" class="text-white font-bold text-sm truncate mt-0.5">-</span>
-              </div>
-              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">Data Ativação</span>
-                <span id="tester-account-date" class="text-indigo-300 font-bold text-xs truncate mt-0.5">-</span>
-              </div>
-              <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-0.5">
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">Dias Ativos</span>
-                <span id="tester-account-days" class="text-emerald-400 font-bold text-sm truncate mt-0.5">-</span>
-              </div>
+            <!-- Slider Manual -->
+            <input type="range" id="batch-target-days" min="0" max="500" value="70" step="5"
+              class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
+              oninput="syncTargetSlider(this.value)">
+
+            <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 hover:text-white pt-1">
+              <input type="checkbox" id="batch-stop-on-virgin" checked class="w-4 h-4 rounded bg-dark-input text-amber-500 border-dark-border accent-amber-500">
+              <span class="text-[11px] text-amber-300/90 font-medium">Pausar scanner se encontrar <strong>Conta 0 Dias Virgem</strong></span>
+            </label>
+          </div>
+
+          <!-- PASSO 3: EXECUÇÃO & DOWNLOAD -->
+          <div class="flex flex-col gap-2.5 pt-3 border-t border-dark-border">
+            <label class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[11px] font-bold">3</span>
+              Execução &amp; Download
+            </label>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="startBatchScanner()" id="btn-start-batch" disabled
+                class="py-3 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
+                <i data-lucide="play" class="w-4 h-4"></i> Iniciar Scanner
+              </button>
+              <button onclick="stopBatchScanner()" id="btn-stop-batch" disabled
+                class="py-3 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 disabled:opacity-40 disabled:cursor-not-allowed text-rose-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-2">
+                <i data-lucide="square" class="w-4 h-4"></i> Parar
+              </button>
             </div>
 
-            <div id="tester-account-msg-box" class="p-2.5 rounded-xl bg-black/40 border border-dark-border text-xs text-slate-300 flex items-center gap-2 font-mono">
-              <i data-lucide="info" class="w-3.5 h-3.5 text-purple-400 shrink-0"></i>
-              <span id="tester-account-msg" class="truncate text-[11px]">Injete um arquivo .config e abra o aplicativo para verificar os dados da conta.</span>
+            <button onclick="downloadApprovedBatchZip()" id="btn-download-approved-zip" disabled
+              class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Baixar Aprovadas no Alvo (.ZIP)
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Coluna da Direita: Estatísticas & Tabela de Resultados (8 Colunas) -->
+      <div class="lg:col-span-8 flex flex-col gap-4">
+        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1 gap-4">
+          
+          <!-- Grid de 5 Estatísticas -->
+          <div class="grid grid-cols-5 gap-2.5 text-xs font-mono">
+            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Na Fila</span>
+              <span id="stat-batch-total" class="text-white font-bold text-lg mt-0.5">0</span>
+            </div>
+            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Testadas</span>
+              <span id="stat-batch-tested" class="text-indigo-300 font-bold text-lg mt-0.5">0</span>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex flex-col justify-between">
+              <span class="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3 h-3"></i> 0 Dias
+              </span>
+              <span id="stat-batch-virgins" class="text-amber-300 font-bold text-lg mt-0.5">0</span>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between">
+              <span class="text-[10px] text-emerald-400 uppercase font-bold flex items-center gap-1">
+                <i data-lucide="star" class="w-3 h-3"></i> Aprovadas
+              </span>
+              <span id="stat-batch-approved" class="text-emerald-400 font-bold text-lg mt-0.5">0</span>
+            </div>
+            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Reprovadas</span>
+              <span id="stat-batch-rejected" class="text-slate-400 font-bold text-lg mt-0.5">0</span>
             </div>
           </div>
 
-          <!-- Card de Conteúdo do Arquivo -->
-          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
-            <div class="flex items-center justify-between pb-3 border-b border-dark-border">
-              <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                <i data-lucide="file-code" class="w-4 h-4 text-cyan-400"></i> Conteúdo do .config
-              </h3>
+          <!-- Barra de Progresso Atual -->
+          <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-dark-input border border-dark-border">
+            <div class="flex items-center justify-between text-xs">
+              <span id="batch-progress-status" class="text-slate-300 font-medium truncate max-w-[80%]">Aguardando início do teste...</span>
+              <span id="batch-progress-percent" class="font-mono text-purple-400 font-bold">0%</span>
+            </div>
+            <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-dark-border">
+              <div id="batch-progress-bar" class="h-full bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-400 transition-all duration-300 w-0"></div>
+            </div>
+          </div>
+
+          <!-- Filtros de Visualização e Tabela -->
+          <div class="flex flex-col flex-1 gap-2">
+            <div class="flex items-center justify-between pb-2 border-b border-dark-border">
               <div class="flex items-center gap-2">
-                <button onclick="copyTesterContent()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                  <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
+                <span class="text-xs font-semibold text-white">Exibir:</span>
+                <button type="button" onclick="setTableFilter('all')" id="btn-filter-all" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 transition">
+                  Todas (<span id="filter-all-count">0</span>)
+                </button>
+                <button type="button" onclick="setTableFilter('approved')" id="btn-filter-approved" class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition">
+                  ⭐ Aprovadas (<span id="filter-app-count">0</span>)
                 </button>
               </div>
-            </div>
-
-            <div class="mt-4 flex-1 relative min-h-[160px]">
-              <pre id="tester-code-viewer" class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[180px]">Nenhum arquivo carregado. Arraste ou selecione um .config para visualizar.</pre>
-            </div>
-
-            <!-- Console de Logs ADB -->
-            <div class="mt-4 pt-3 border-t border-dark-border flex flex-col gap-2">
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-semibold text-slate-300 flex items-center gap-1.5">
-                  <i data-lucide="terminal" class="w-3.5 h-3.5 text-brand-400"></i> Log de Execução ADB
-                </span>
-                <button onclick="document.getElementById('tester-logs').innerText='Aguardando comando...'" class="text-[10px] text-slate-500 hover:text-slate-300">
-                  Limpar Log
-                </button>
-              </div>
-              <div id="tester-logs" class="p-3 rounded-xl bg-black/50 border border-dark-border font-mono text-[11px] text-emerald-400 min-h-[90px] max-h-[140px] overflow-y-auto leading-relaxed">
-                Aguardando comando de injeção...
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- MODO 2: TESTADOR & SCANNER EM LOTE (MULTI-CONFIGS & FILTRO) -->
-      <div id="tester-panel-batch" class="hidden lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <!-- Controles do Scanner -->
-        <div class="lg:col-span-4 flex flex-col gap-4">
-          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i data-lucide="layers" class="w-4 h-4 text-purple-400"></i> Scanner em Lote
-            </h2>
-            <p class="text-xs text-slate-400">
-              Carregue múltiplos arquivos ou puxe um pacote da nuvem. O scanner injeta cada um no emulador, lê a quantidade de dias ativos e separa as contas que baterem sua meta!
-            </p>
-
-            <!-- Seleção de Origem das Configs -->
-            <div class="flex flex-col gap-2.5 pt-1">
-              <label class="text-xs font-semibold text-slate-300">1. Carregar Configurações</label>
-              <div class="grid grid-cols-3 gap-1.5">
-                <button onclick="document.getElementById('batch-multi-input').click()" class="py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 hover:text-white font-medium text-[11px] transition flex items-center justify-center gap-1 text-center truncate">
-                  <i data-lucide="folder-up" class="w-3.5 h-3.5 text-purple-400"></i> PC (.config)
-                </button>
-                <input type="file" id="batch-multi-input" multiple accept=".config,.txt,text/plain" class="hidden" onchange="handleBatchMultiUpload(event)">
-                
-                <button onclick="loadBatchFromCloud()" id="btn-batch-cloud" class="py-2.5 px-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 hover:text-white font-medium text-[11px] transition flex items-center justify-center gap-1 truncate">
-                  <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i> Nuvem (10k)
-                </button>
-
-                <button onclick="loadBatchHunter()" id="btn-batch-hunter" class="py-2.5 px-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 hover:text-white font-semibold text-[11px] transition flex items-center justify-center gap-1 truncate">
-                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Caçador (0d)
-                </button>
-              </div>
-              <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
-                <span>Fila de teste: <strong id="batch-queue-count" class="text-white">0</strong> configs</span>
-                <span class="flex items-center gap-1">
-                  Puxar: 
-                  <select id="batch-cloud-qty" class="bg-dark-input text-white rounded border border-dark-border px-1 py-0.5 text-[11px]">
-                    <option value="5">5 itens</option>
-                    <option value="10" selected>10 itens</option>
-                    <option value="20">20 itens</option>
-                    <option value="50">50 itens</option>
-                    <option value="100">100 itens</option>
-                  </select>
-                </span>
-              </div>
-            </div>
-
-            <!-- Filtro de Meta / Alvo -->
-            <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
-              <div class="flex justify-between items-center text-xs">
-                <label class="font-semibold text-slate-300">2. Meta de Dias Ativos (Alvo)</label>
-                <span class="font-bold text-amber-400 text-xs">≤ <span id="batch-target-label">100</span> dias</span>
-              </div>
-              <input type="range" id="batch-target-days" min="0" max="500" value="100" step="5"
-                class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
-                oninput="document.getElementById('batch-target-label').innerText = this.value">
-              <div class="flex items-center justify-between text-[11px]">
-                <span class="text-slate-400">Aprovar apenas contas abaixo da meta</span>
-                <label class="flex items-center gap-1 cursor-pointer text-amber-300/90 hover:text-amber-200">
-                  <input type="checkbox" id="batch-stop-on-virgin" class="rounded bg-dark-input text-amber-500 border-dark-border">
-                  <span>Parar no 0 Dias</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Botões de Ação -->
-            <div class="flex flex-col gap-2 pt-2">
-              <div class="grid grid-cols-2 gap-2">
-                <button onclick="startBatchScanner()" id="btn-start-batch" disabled
-                  class="py-3 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-1.5">
-                  <i data-lucide="play" class="w-4 h-4"></i> Iniciar Scanner
-                </button>
-                <button onclick="stopBatchScanner()" id="btn-stop-batch" disabled
-                  class="py-3 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 disabled:opacity-50 disabled:cursor-not-allowed text-rose-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-1.5">
-                  <i data-lucide="square" class="w-4 h-4"></i> Parar
-                </button>
-              </div>
-
-              <!-- Botão de Download das Aprovadas -->
-              <button onclick="downloadApprovedBatchZip()" id="btn-download-approved-zip" disabled
-                class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-                <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Baixar Aprovadas no Alvo (.ZIP)
+              <button onclick="clearBatchTable()" class="text-[11px] text-slate-400 hover:text-slate-200 transition">
+                Limpar Resultados
               </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabela e Progresso do Scanner em Lote -->
-        <div class="lg:col-span-8 flex flex-col gap-4">
-          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
-            
-            <!-- Resumo e Estatísticas -->
-            <div class="grid grid-cols-5 gap-2 pb-4 border-b border-dark-border text-xs font-mono">
-              <div class="p-2.5 rounded-xl bg-dark-input border border-dark-border flex flex-col">
-                <span class="text-[10px] text-slate-400 uppercase">Na Fila</span>
-                <span id="stat-batch-total" class="text-white font-bold text-base mt-0.5">0</span>
-              </div>
-              <div class="p-2.5 rounded-xl bg-dark-input border border-dark-border flex flex-col">
-                <span class="text-[10px] text-slate-400 uppercase">Testadas</span>
-                <span id="stat-batch-tested" class="text-indigo-300 font-bold text-base mt-0.5">0</span>
-              </div>
-              <div class="p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/30 flex flex-col">
-                <span class="text-[10px] text-amber-400 uppercase font-semibold">✨ 0 Dias</span>
-                <span id="stat-batch-virgins" class="text-amber-300 font-bold text-base mt-0.5">0</span>
-              </div>
-              <div class="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col">
-                <span class="text-[10px] text-emerald-400 uppercase font-semibold">⭐ Aprovadas</span>
-                <span id="stat-batch-approved" class="text-emerald-400 font-bold text-base mt-0.5">0</span>
-              </div>
-              <div class="p-2.5 rounded-xl bg-dark-input border border-dark-border flex flex-col">
-                <span class="text-[10px] text-slate-400 uppercase">Reprovadas</span>
-                <span id="stat-batch-rejected" class="text-slate-400 font-bold text-base mt-0.5">0</span>
-              </div>
-            </div>
-
-            <!-- Barra de Progresso Atual -->
-            <div class="flex flex-col gap-1.5 py-3 border-b border-dark-border">
-              <div class="flex items-center justify-between text-xs">
-                <span id="batch-progress-status" class="text-slate-300 font-medium">Aguardando início do teste...</span>
-                <span id="batch-progress-percent" class="font-mono text-purple-400 font-semibold">0%</span>
-              </div>
-              <div class="w-full h-2 bg-dark-input rounded-full overflow-hidden border border-dark-border">
-                <div id="batch-progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-300 w-0"></div>
-              </div>
             </div>
 
             <!-- Tabela de Resultados -->
-            <div class="mt-4 overflow-auto max-h-[360px] rounded-xl border border-dark-border flex-1">
+            <div class="overflow-auto max-h-[380px] rounded-xl border border-dark-border flex-1">
               <table class="w-full text-left text-xs text-slate-300">
                 <thead class="bg-dark-input text-slate-400 uppercase font-semibold sticky top-0">
                   <tr>
                     <th class="px-3 py-2.5">#</th>
-                    <th class="px-3 py-2.5">Origem / Nome</th>
+                    <th class="px-3 py-2.5">Origem / Arquivo</th>
                     <th class="px-3 py-2.5">ID Conta</th>
                     <th class="px-3 py-2.5">Ativada em</th>
                     <th class="px-3 py-2.5">Dias Ativos</th>
@@ -727,61 +451,14 @@
                 </thead>
                 <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
                   <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-slate-500 font-sans">
-                      Carregue arquivos do computador ou da nuvem e clique em "Iniciar Scanner" para começar o teste automático.
+                    <td colspan="7" class="px-4 py-12 text-center text-slate-500 font-sans">
+                      Selecione a <strong>Origem</strong> (Nuvem, PC ou Lote Local), defina sua <strong>Meta</strong> e clique em <strong>"Iniciar Scanner"</strong>.
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TAB 4: DECODIFICADOR HEX (COMENTADO TEMPORARIAMENTE)
-    <div id="tab-decoder" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="lg:col-span-6 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="binary" class="w-4 h-4 text-brand-400"></i> Decodificar String Hexadecimal
-          </h2>
-          <p class="text-xs text-slate-400">Insira os valores de <code>key_device_id_unitvfree</code>, <code>key_n_bt</code> ou <code>key_sn_token_unitvfree</code> para ver seu conteúdo decodificado.</p>
-
-          <textarea id="decoder-input" rows="5" placeholder="Ex: 67726f546a42535270614157504461304f7548552b673d3d"
-            class="w-full p-3.5 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 focus:border-brand-500"></textarea>
-
-          <div class="flex items-center gap-2">
-            <button onclick="runDecoder()" class="flex-1 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="unlock" class="w-3.5 h-3.5"></i> Decodificar Agora
-            </button>
-            <button onclick="loadSampleHex()" class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 text-xs text-slate-300">
-              Inserir Exemplo
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="lg:col-span-6 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
-          <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-            <i data-lucide="file-check" class="w-4 h-4 text-emerald-400"></i> Resultado da Decodificação
-          </h3>
-
-          <div class="flex flex-col gap-3 font-mono text-xs">
-            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-1">
-              <span class="text-[10px] uppercase font-bold text-slate-500">Texto ASCII / Base64:</span>
-              <span id="decoder-out-text" class="text-emerald-400 break-all select-all font-semibold">-</span>
-            </div>
-            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-1">
-              <span class="text-[10px] uppercase font-bold text-slate-500">Bytes Internos (Hex do Base64):</span>
-              <span id="decoder-out-bytes" class="text-indigo-300 break-all select-all">-</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     -->
 
     <!-- TAB 4: APLICATIVOS (CENTRAL DE DOWNLOADS) -->
@@ -1796,9 +1473,6 @@
       }
     }
 
-    let testerLoadedContent = "";
-    let testerLoadedFilename = "";
-
     function switchTab(tabName) {
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active', 'text-brand-400', 'bg-brand-500/10', 'border', 'border-brand-500/30');
@@ -1815,7 +1489,7 @@
       const target = document.getElementById(`tab-${tabName}`);
       if (target) {
         target.classList.remove('hidden');
-        if (tabName === 'single' || tabName === 'bulk' || tabName === 'tester' || tabName === 'decoder') {
+        if (tabName === 'single' || tabName === 'scanner') {
           target.classList.add('grid');
         }
       }
@@ -1836,173 +1510,43 @@
       }, 3000);
     }
 
-    // --- TESTADOR .CONFIG (ADB & UPLOAD) ---
-    function handleTesterFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      processTesterFile(file);
-    }
-
-    function processTesterFile(file) {
-      testerLoadedFilename = file.name;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        testerLoadedContent = e.target.result;
-        document.getElementById('tester-filename').innerText = file.name;
-        document.getElementById('tester-filesize').innerText = `${(file.size / 1024).toFixed(1)} KB (${file.size} bytes)`;
-        document.getElementById('tester-code-viewer').innerText = testerLoadedContent;
-
-        // Parse MAC e Device ID
-        const macMatch = testerLoadedContent.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) || 
-                         testerLoadedContent.match(/([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})/);
-        const macFound = macMatch ? macMatch[1].toUpperCase() : "Não detectado";
-        document.getElementById('tester-mac').innerText = macFound;
-
-        const devMatch = testerLoadedContent.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
-        if (devMatch && devMatch[1]) {
-          let raw = "";
-          for (let i = 0; i < devMatch[1].length; i += 2) {
-            raw += String.fromCharCode(parseInt(devMatch[1].substr(i, 2), 16));
-          }
-          document.getElementById('tester-devid').innerText = raw || devMatch[1];
-        } else {
-          document.getElementById('tester-devid').innerText = "Padrão / Ausente";
-        }
-
-        document.getElementById('btn-tester-inject').disabled = false;
-        appendTesterLog(`Arquivo "${file.name}" carregado com sucesso (${file.size} bytes). Pronto para injetar!`);
-        showToast(`Arquivo ${file.name} carregado com sucesso!`);
-      };
-      reader.readAsText(file);
-    }
-
-    function appendTesterLog(msg) {
-      const el = document.getElementById('tester-logs');
-      if (!el) return;
-      const time = new Date().toLocaleTimeString();
-      el.innerHTML += `\n<span class="text-slate-400">[${time}]</span> ${msg}`;
-      el.scrollTop = el.scrollHeight;
-    }
-
-    function copyTesterContent() {
-      if (!testerLoadedContent) {
-        showToast("Nenhum arquivo carregado para copiar.", true);
-        return;
-      }
-      navigator.clipboard.writeText(testerLoadedContent).then(() => {
-        showToast("Conteúdo do .config copiado para a área de transferência!");
-      });
-    }
-
-    async function injectTesterConfigFile() {
-      if (!testerLoadedContent) {
-        showToast("Por favor, selecione um arquivo .config primeiro.", true);
+    // --- SINGLE CONFIG DIRECT INJECT ---
+    async function injectDirectAdb() {
+      const configText = currentSingleFiles['.config'] || "";
+      if (!configText) {
+        showToast("Gere ou carregue uma configuração primeiro.", true);
         return;
       }
 
-      const btn = document.getElementById('btn-tester-inject');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div> Injetando no Emulador...`;
+      const btn = document.getElementById('btn-single-inject');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Injetando...`;
       btn.disabled = true;
-
-      const clearCache = document.getElementById('tester-clear-cache').checked;
-      const launchApp = document.getElementById('tester-launch-app').checked;
-
-      appendTesterLog("Iniciando processo de injeção ADB...");
 
       try {
         const res = await fetch('/api/adb/inject', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            config_content: testerLoadedContent,
+            config_content: configText,
             device_addr: "127.0.0.1:21503",
-            clear_cache: clearCache,
-            launch_app: launchApp
+            clear_cache: true,
+            launch_app: true
           })
         });
         const data = await res.json();
         if (data.success) {
-          if (data.logs && Array.isArray(data.logs)) {
-            data.logs.forEach(l => appendTesterLog(`✔ ${l}`));
+          const info = data.account_info || {};
+          if (info.days_active !== null && info.days_active !== undefined) {
+            showToast(`✔ Injetado com Sucesso! Conta ID: ${info.account_id || '-'} (${info.days_active} dias ativos)`);
+          } else {
+            showToast("✔ Configuração injetada e UniTV iniciado no emulador!");
           }
-          if (data.account_info) {
-            renderAccountInfo(data.account_info);
-          }
-          appendTesterLog("✔ Injeção e leitura concluídas com sucesso!");
-          showToast("Configuração injetada e conta validada no emulador!");
         } else {
-          appendTesterLog("❌ Falha na injeção via ADB.");
           showToast("Falha ao injetar no emulador.", true);
         }
       } catch (e) {
-        appendTesterLog(`❌ Erro de comunicação com o servidor: ${e.message}`);
-        showToast("Erro ao conectar com o ADB.", true);
-      } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        lucide.createIcons();
-      }
-    }
-
-    function renderAccountInfo(info) {
-      if (!info || !info.found) {
-        document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 font-normal";
-        document.getElementById('tester-account-badge').innerText = "Não identificado";
-        document.getElementById('tester-account-msg').innerText = "Não foi possível obter dados da conta. Verifique se o aplicativo está aberto.";
-        return;
-      }
-
-      if (info.account_id) {
-        document.getElementById('tester-account-id').innerText = info.account_id;
-      }
-      if (info.activation_date) {
-        document.getElementById('tester-account-date').innerText = info.activation_date;
-      }
-      if (info.days_active !== null && info.days_active !== undefined) {
-        document.getElementById('tester-account-days').innerText = `${info.days_active} dias`;
-        if (info.days_active === 0) {
-          document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold";
-          document.getElementById('tester-account-badge').innerText = "✨ 0 Dias (Virgem)";
-        } else {
-          document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
-          document.getElementById('tester-account-badge').innerText = "✔ Ativa";
-        }
-      }
-      
-      if (info.status_message) {
-        document.getElementById('tester-account-msg').innerText = info.status_message;
-      } else if (info.activation_date && info.days_active !== null) {
-        document.getElementById('tester-account-msg').innerText = `Sua conta foi ativada em ${info.activation_date} e já está ativa por ${info.days_active} dias`;
-      }
-
-      if (!info.is_valid) {
-        document.getElementById('tester-account-badge').className = "text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold";
-        document.getElementById('tester-account-badge').innerText = "❌ Falha no Acesso";
-      }
-    }
-
-    async function fetchAccountStatusOnDemand() {
-      const btn = document.getElementById('btn-fetch-account');
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1"></div> Lendo...`;
-      btn.disabled = true;
-
-      try {
-        appendTesterLog("Lendo status da conta no emulador sob demanda...");
-        const res = await fetch('/api/adb/account-info');
-        const info = await res.json();
-        renderAccountInfo(info);
-        if (info.found) {
-          appendTesterLog(`✔ Conta lida: ID ${info.account_id || '-'} | Ativada em: ${info.activation_date || '-'} (${info.days_active || 0} dias)`);
-          showToast("Status da conta atualizado com sucesso!");
-        } else {
-          appendTesterLog("⚠️ Não foi possível capturar os dados na tela atual.");
-          showToast("Não foi possível ler a conta. Abra o aplicativo no emulador.", true);
-        }
-      } catch (e) {
-        appendTesterLog(`❌ Erro ao ler conta: ${e.message}`);
-        showToast("Erro ao comunicar com o emulador.", true);
+        showToast("Erro ao conectar com o ADB: " + e.message, true);
       } finally {
         btn.innerHTML = origHtml;
         btn.disabled = false;
@@ -2010,31 +1554,71 @@
       }
     }
 
-    // --- SUB-MODES TESTADOR: INDIVIDUAL vs LOTE ---
-    function switchTesterMode(mode) {
-      const btnSingle = document.getElementById('tester-mode-btn-single');
-      const btnBatch = document.getElementById('tester-mode-btn-batch');
-      const panelSingle = document.getElementById('tester-panel-single');
-      const panelBatch = document.getElementById('tester-panel-batch');
+    function handleSingleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const content = e.target.result;
+        currentSingleFiles['.config'] = content;
+        currentSingleFiles['.properties'] = content;
+        
+        document.getElementById('input-folder').value = file.name.replace(/\.[^/.]+$/, "") || "CONFIG_UPLOAD";
 
-      if (mode === 'single') {
-        btnSingle.className = "px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-2";
-        btnBatch.className = "px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition flex items-center gap-2";
-        panelSingle.classList.remove('hidden');
-        panelBatch.classList.add('hidden');
-      } else {
-        btnBatch.className = "px-3.5 py-2 rounded-xl text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-2";
-        btnSingle.className = "px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition flex items-center gap-2";
-        panelSingle.classList.add('hidden');
-        panelBatch.classList.remove('hidden');
-      }
-      lucide.createIcons();
+        const macMatch = content.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) || 
+                         content.match(/([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})/);
+        if (macMatch) {
+          document.getElementById('input-mac').value = macMatch[1].toUpperCase();
+        }
+
+        const devMatch = content.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
+        if (devMatch && devMatch[1]) {
+          currentDeviceIdHex = devMatch[1];
+          let raw = "";
+          for (let i = 0; i < devMatch[1].length; i += 2) {
+            raw += String.fromCharCode(parseInt(devMatch[1].substr(i, 2), 16));
+          }
+          currentDeviceIdB64 = raw;
+          document.getElementById('input-devid').value = raw || devMatch[1];
+        }
+
+        document.getElementById('code-viewer').innerText = content;
+        showToast(`Arquivo ${file.name} carregado no Gerador Individual!`);
+      };
+      reader.readAsText(file);
     }
 
-    // --- BATCH SCANNER STATE & LOGIC ---
+    // --- SCANNER & VALIDADOR EM LOTE ---
     let batchQueue = []; // array of { name: string, content: string }
-    let batchResults = []; // array of { index, name, content, account_id, activation_date, days_active, is_target, is_valid, status }
+    let batchResults = []; // array of { index, name, content, account_id, activation_date, days_raw, days_active, is_target, is_valid, status }
     let isBatchRunning = false;
+    let currentTableFilter = 'all'; // 'all' | 'approved'
+
+    function setTargetQuick(days) {
+      document.getElementById('batch-target-days').value = days;
+      document.getElementById('batch-target-label').innerText = days;
+      
+      document.querySelectorAll('.preset-target-btn').forEach(btn => {
+        btn.className = "preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center";
+      });
+      const activePreset = document.getElementById(`preset-target-${days}`);
+      if (activePreset) {
+        activePreset.className = "preset-target-btn active py-1.5 px-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition text-center";
+      }
+    }
+
+    function syncTargetSlider(val) {
+      document.getElementById('batch-target-label').innerText = val;
+      const numVal = parseInt(val, 10);
+      document.querySelectorAll('.preset-target-btn').forEach(btn => {
+        btn.className = "preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center";
+      });
+      const activePreset = document.getElementById(`preset-target-${numVal}`);
+      if (activePreset) {
+        activePreset.className = "preset-target-btn active py-1.5 px-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition text-center";
+      }
+    }
 
     function updateBatchCounters() {
       const total = batchQueue.length;
@@ -2046,10 +1630,12 @@
       document.getElementById('batch-queue-count').innerText = total;
       document.getElementById('stat-batch-total').innerText = total;
       document.getElementById('stat-batch-tested').innerText = tested;
-      const statVirgins = document.getElementById('stat-batch-virgins');
-      if (statVirgins) statVirgins.innerText = virgins;
+      document.getElementById('stat-batch-virgins').innerText = virgins;
       document.getElementById('stat-batch-approved').innerText = approved;
       document.getElementById('stat-batch-rejected').innerText = rejected;
+
+      document.getElementById('filter-all-count').innerText = tested;
+      document.getElementById('filter-app-count').innerText = approved;
 
       const btnStart = document.getElementById('btn-start-batch');
       if (btnStart) {
@@ -2059,6 +1645,64 @@
       if (btnDownload) {
         btnDownload.disabled = (approved === 0);
       }
+    }
+
+    async function loadBatchFromCloud() {
+      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
+      const btn = document.getElementById('btn-batch-cloud');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Baixando...`;
+      btn.disabled = true;
+
+      try {
+        batchQueue = [];
+        batchResults = [];
+        document.getElementById('batch-results-table-body').innerHTML = "";
+
+        const res = await fetch(`/api/cloud/batch?count=${qty}`);
+        const data = await res.json();
+        if (data && data.items && data.items.length > 0) {
+          data.items.forEach((item, idx) => {
+            batchQueue.push({
+              name: `cloud_${item.mac ? item.mac.replace(/:/g, '') : (idx + 1)}.config`,
+              content: item.config
+            });
+          });
+          updateBatchCounters();
+          showToast(`${batchQueue.length} configs da nuvem carregadas na fila!`);
+        } else {
+          showToast("Falha ao carregar lote da nuvem.", true);
+        }
+      } catch (e) {
+        showToast("Erro ao carregar da nuvem: " + e.message, true);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    function loadBatchLocal() {
+      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
+      batchQueue = [];
+      batchResults = [];
+      document.getElementById('batch-results-table-body').innerHTML = "";
+
+      for (let i = 0; i < qty; i++) {
+        const mac = generateSmartRandomMAC();
+        const folderName = `CONFIG_${i + 1}_${mac.replace(/:/g, '')}`;
+        const freshUid = generateRandomUserId();
+        const freshDev = generateFreshDeviceId();
+        const item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
+
+        batchQueue.push({
+          name: `${folderName}.config`,
+          content: item.files['.config']
+        });
+      }
+
+      updateBatchCounters();
+      showToast(`⚡ ${batchQueue.length} configs geradas localmente com tokens criptográficos DES!`);
     }
 
     function handleBatchMultiUpload(event) {
@@ -2084,71 +1728,15 @@
       });
     }
 
-    function loadBatchHunter() {
-      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
-      batchQueue = [];
-      batchResults = [];
-      document.getElementById('batch-results-table-body').innerHTML = "";
-
-      for (let i = 0; i < qty; i++) {
-        const mac = generateSmartRandomMAC();
-        const folderName = `HUNTER_${i + 1}_${mac.replace(/:/g, '')}`;
-        const freshUid = generateRandomUserId();
-        const freshDev = generateFreshDeviceId();
-        const item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
-
-        batchQueue.push({
-          name: `${folderName}.config`,
-          content: item.files['.config']
-        });
-      }
-
-      updateBatchCounters();
-      showToast(`🎯 ${batchQueue.length} configs do Caçador geradas e carregadas na fila!`);
-    }
-
-    async function loadBatchFromCloud() {
-      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
-      const btn = document.getElementById('btn-batch-cloud');
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<div class="inline-block animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1"></div> Baixando...`;
-      btn.disabled = true;
-
-      try {
-        batchQueue = [];
-        batchResults = [];
-        document.getElementById('batch-results-table-body').innerHTML = "";
-
-        const res = await fetch(`/api/cloud/batch?count=${qty}`);
-        const data = await res.json();
-        if (data && data.items && data.items.length > 0) {
-          data.items.forEach((item, idx) => {
-            batchQueue.push({
-              name: `cloud_${item.mac ? item.mac.replace(/:/g, '') : (idx + 1)}.config`,
-              content: item.config
-            });
-          });
-          updateBatchCounters();
-          showToast(`${batchQueue.length} configs carregadas da nuvem em ultra-velocidade!`);
-        } else {
-          showToast("Não foi possível carregar o lote da nuvem.", true);
-        }
-      } catch (e) {
-        showToast("Erro ao carregar lote da nuvem: " + e.message, true);
-      } finally {
-        btn.innerHTML = origHtml;
-        btn.disabled = false;
-        lucide.createIcons();
-      }
-    }
-
     async function startBatchScanner() {
       if (batchQueue.length === 0) {
         showToast("Nenhuma configuração na fila para testar.", true);
         return;
       }
 
-      const targetDays = parseInt(document.getElementById('batch-target-days').value) || 100;
+      const val = document.getElementById('batch-target-days').value;
+      const targetDays = (val !== "" && !isNaN(val)) ? parseInt(val, 10) : 70;
+
       isBatchRunning = true;
       batchResults = [];
       document.getElementById('batch-results-table-body').innerHTML = "";
@@ -2267,8 +1855,15 @@
     function appendBatchTableRow(item) {
       const tbody = document.getElementById('batch-results-table-body');
       const tr = document.createElement('tr');
+      tr.id = `batch-row-${item.index}`;
+      tr.setAttribute('data-target', item.is_target ? 'true' : 'false');
+
+      if (currentTableFilter === 'approved' && !item.is_target) {
+        tr.classList.add('hidden');
+      }
+
       if (item.days_raw === 0) {
-        tr.className = "bg-amber-950/40 border border-amber-500/40 hover:bg-amber-950/60";
+        tr.className = "bg-amber-950/40 border border-amber-500/40 hover:bg-amber-950/60 animate-pulse";
       } else if (item.is_target) {
         tr.className = "bg-emerald-950/20 border-emerald-500/20 hover:bg-emerald-950/30";
       } else {
@@ -2297,6 +1892,44 @@
       `;
       tbody.appendChild(tr);
       lucide.createIcons();
+    }
+
+    function setTableFilter(mode) {
+      currentTableFilter = mode;
+      const btnAll = document.getElementById('btn-filter-all');
+      const btnApp = document.getElementById('btn-filter-approved');
+
+      if (mode === 'all') {
+        btnAll.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 transition";
+        btnApp.className = "px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition";
+        document.querySelectorAll('#batch-results-table-body tr').forEach(tr => tr.classList.remove('hidden'));
+      } else {
+        btnApp.className = "px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition";
+        btnAll.className = "px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition";
+        document.querySelectorAll('#batch-results-table-body tr').forEach(tr => {
+          if (tr.getAttribute('data-target') !== 'true') {
+            tr.classList.add('hidden');
+          } else {
+            tr.classList.remove('hidden');
+          }
+        });
+      }
+    }
+
+    function clearBatchTable() {
+      batchResults = [];
+      document.getElementById('batch-results-table-body').innerHTML = `
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center text-slate-500 font-sans">
+            Selecione a <strong>Origem</strong> (Nuvem, PC ou Lote Local), defina sua <strong>Meta</strong> e clique em <strong>"Iniciar Scanner"</strong>.
+          </td>
+        </tr>
+      `;
+      updateBatchCounters();
+      document.getElementById('batch-progress-bar').style.width = "0%";
+      document.getElementById('batch-progress-percent').innerText = "0%";
+      document.getElementById('batch-progress-status').innerText = "Aguardando início do teste...";
+      showToast("Resultados limpos com sucesso.");
     }
 
     function downloadSingleBatchConfig(index) {
@@ -2337,157 +1970,19 @@
       document.body.removeChild(a);
       showToast(`Pacote ZIP com ${approved.length} configs aprovadas baixado com sucesso!`);
     }
-    function handleSingleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const content = e.target.result;
-        currentSingleFiles['.config'] = content;
-        currentSingleFiles['.properties'] = content;
-        
-        document.getElementById('input-folder').value = file.name.replace(/\.[^/.]+$/, "") || "CONFIG_UPLOAD";
 
-        const macMatch = content.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) || 
-                         content.match(/([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})/);
-        if (macMatch) {
-          document.getElementById('input-mac').value = macMatch[1].toUpperCase();
-        }
-
-        const devMatch = content.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
-        if (devMatch && devMatch[1]) {
-          currentDeviceIdHex = devMatch[1];
-          let raw = "";
-          for (let i = 0; i < devMatch[1].length; i += 2) {
-            raw += String.fromCharCode(parseInt(devMatch[1].substr(i, 2), 16));
-          }
-          currentDeviceIdB64 = raw;
-          document.getElementById('devid-preview').innerText = raw || devMatch[1];
-        }
-
-        document.getElementById('code-viewer').innerText = content;
-        showToast(`Arquivo ${file.name} carregado no Gerador Individual!`);
-      };
-      reader.readAsText(file);
-    }
-
-    // --- CLOUD POOL FETCH (10.000+ CONFIGS) ---
-    async function fetchCloudConfig() {
-      const btn = document.getElementById('btn-cloud-fetch');
-      const originalHtml = btn.innerHTML;
-      btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Baixando...`;
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/api/cloud/random');
-        const data = await res.json();
-        if (data && data.files && data.files['.config']) {
-          currentSingleFiles = data.files;
-          const configText = data.files['.config'];
-          
-          if (document.getElementById('input-folder')) {
-            document.getElementById('input-folder').value = data.folder_name;
-          }
-          
-          const devMatch = configText.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
-          if (devMatch && devMatch[1]) {
-            currentDeviceIdHex = devMatch[1];
-            let raw = "";
-            for (let i = 0; i < devMatch[1].length; i += 2) {
-              raw += String.fromCharCode(parseInt(devMatch[1].substr(i, 2), 16));
-            }
-            currentDeviceIdB64 = raw;
-            if (document.getElementById('devid-preview')) {
-              document.getElementById('devid-preview').innerText = raw;
-            }
-          }
-
-          if (data.mac && document.getElementById('input-mac')) {
-            document.getElementById('input-mac').value = data.mac;
-          }
-
-          if (document.getElementById('code-viewer')) {
-            document.getElementById('code-viewer').innerText = currentSingleFiles[currentActivePreview] || data.files['.config'];
-          }
-          showToast(`Config baixada com sucesso da nuvem (Pool de ${data.total_available} itens)!`);
-        } else {
-          showToast("Falha ao buscar config da nuvem.", true);
-        }
-      } catch (e) {
-        showToast("Erro ao carregar da nuvem: " + e.message, true);
-      } finally {
-        btn.innerHTML = originalHtml;
-        btn.disabled = false;
-        lucide.createIcons();
-      }
-    }
-
-    // --- ADB DIRECT INJECT ---
     async function checkAdbDevices() {
       try {
         const res = await fetch('/api/adb/devices');
         const data = await res.json();
         if (data.connected && data.devices.length > 0) {
           const dev = data.devices[0];
-          document.getElementById('adb-status-dot').className = "w-2 h-2 rounded-full bg-emerald-400";
-          document.getElementById('adb-device-label').innerText = `Conectado: ${dev}`;
-          if (document.getElementById('tester-adb-dot')) {
-            document.getElementById('tester-adb-dot').className = "w-2 h-2 rounded-full bg-emerald-400";
-            document.getElementById('tester-adb-label').innerText = `Conectado: ${dev}`;
-          }
-          document.getElementById('btn-adb-inject').disabled = false;
+          document.getElementById('scanner-adb-label').innerText = dev;
         } else {
-          document.getElementById('adb-status-dot').className = "w-2 h-2 rounded-full bg-amber-400";
-          document.getElementById('adb-device-label').innerText = "Emulador não detectado";
-          if (document.getElementById('tester-adb-dot')) {
-            document.getElementById('tester-adb-dot').className = "w-2 h-2 rounded-full bg-amber-400";
-            document.getElementById('tester-adb-label').innerText = "Emulador não detectado (127.0.0.1:21503)";
-          }
+          document.getElementById('scanner-adb-label').innerText = "127.0.0.1:21503 (Desconectado)";
         }
       } catch (e) {
-        document.getElementById('adb-status-dot').className = "w-2 h-2 rounded-full bg-slate-500";
-        document.getElementById('adb-device-label').innerText = "ADB indisponível no modo offline";
-        if (document.getElementById('tester-adb-dot')) {
-          document.getElementById('tester-adb-dot').className = "w-2 h-2 rounded-full bg-slate-500";
-          document.getElementById('tester-adb-label').innerText = "ADB indisponível no modo offline";
-        }
-      }
-    }
-
-    async function injectDirectToEmulator() {
-      const configText = currentSingleFiles['.config'] || "";
-      if (!configText) return;
-
-      const clearCache = document.getElementById('adb-clear-cache').checked;
-      const btn = document.getElementById('btn-adb-inject');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div> Injetando no Emulador...`;
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/api/adb/inject', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            config_content: configText,
-            device_addr: "127.0.0.1:21503",
-            clear_cache: clearCache,
-            launch_app: true
-          })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast("Configuração injetada e UniTV Free iniciado no emulador com sucesso!");
-        } else {
-          showToast("Falha ao injetar no emulador.", true);
-        }
-      } catch (e) {
-        showToast("Erro ao conectar com o ADB.", true);
-      } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        lucide.createIcons();
+        document.getElementById('scanner-adb-label').innerText = "127.0.0.1:21503";
       }
     }
 
@@ -2509,34 +2004,7 @@
       lucide.createIcons();
       randomizeAll();
       checkServer();
-
-      // Configura Drag and Drop no Testador
-      const dropzone = document.getElementById('tester-dropzone');
-      if (dropzone) {
-        ['dragenter', 'dragover'].forEach(eventName => {
-          dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropzone.classList.add('border-cyan-300', 'bg-cyan-900/40');
-          }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-          dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropzone.classList.remove('border-cyan-300', 'bg-cyan-900/40');
-          }, false);
-        });
-
-        dropzone.addEventListener('drop', (e) => {
-          const dt = e.dataTransfer;
-          const files = dt.files;
-          if (files && files.length > 0) {
-            processTesterFile(files[0]);
-          }
-        }, false);
-      }
+      setTargetQuick(70);
     });
   </script>
 </body>
