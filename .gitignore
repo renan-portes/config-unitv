@@ -13,7 +13,6 @@ ENV/
 *.log
 scratch/
 *.apk
-apps/
 
 # IDE
 .vscode/
