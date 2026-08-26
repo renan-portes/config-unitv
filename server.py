@@ -496,15 +496,53 @@ def reconnect_adb(req: Optional[dict] = None):
         return {"success": False, "error": str(e)}
 
 
+def grant_all_app_permissions(device: str):
+    """Concede todas as permissões de armazenamento, áudio, mídia e sistema no Android 6 ao 15"""
+    try:
+        adb_bin = get_adb_cmd()
+        pkg = "com.integration.unitvsiptv"
+        
+        # 1. Permissões de Runtime (Android 6 a 15)
+        perms = [
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "android.permission.READ_MEDIA_AUDIO",
+            "android.permission.READ_MEDIA_IMAGES",
+            "android.permission.READ_MEDIA_VIDEO",
+            "android.permission.POST_NOTIFICATIONS",
+            "android.permission.READ_PHONE_STATE",
+            "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.ACCESS_WIFI_STATE"
+        ]
+        for p in perms:
+            subprocess.run([adb_bin, "-s", device, "shell", f"pm grant {pkg} {p}"], capture_output=True, timeout=2)
+            
+        # 2. AppOps para Android 11, 12, 13, 14, 15 (Scoped Storage e Gerenciamento de Arquivos)
+        appops = [
+            "MANAGE_EXTERNAL_STORAGE",
+            "READ_EXTERNAL_STORAGE",
+            "WRITE_EXTERNAL_STORAGE",
+            "READ_MEDIA_AUDIO",
+            "READ_MEDIA_IMAGES",
+            "READ_MEDIA_VIDEO",
+            "SYSTEM_ALERT_WINDOW"
+        ]
+        for op in appops:
+            subprocess.run([adb_bin, "-s", device, "shell", f"appops set {pkg} {op} allow"], capture_output=True, timeout=2)
+    except Exception:
+        pass
+
+
 @app.post("/api/adb/clear-app")
 def clear_app_data(req: Optional[dict] = None):
-    """Limpa dados do aplicativo e configs antigas no emulador"""
+    """Limpa dados do aplicativo e configs antigas no emulador e reconcede permissões"""
     global current_active_adb_device
     device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
         adb_bin = get_adb_cmd()
         ensure_adb_connected(device)
         subprocess.run([adb_bin, "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+        grant_all_app_permissions(device)
         return {"success": True, "message": "Cache e dados limpos com sucesso no emulador!"}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -512,12 +550,13 @@ def clear_app_data(req: Optional[dict] = None):
 
 @app.post("/api/adb/launch-app")
 def launch_app_data(req: Optional[dict] = None):
-    """Inicia o UniTV Free no emulador"""
+    """Inicia o UniTV Free no emulador garantindo permissões no Android 12-15"""
     global current_active_adb_device
     device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
         adb_bin = get_adb_cmd()
         ensure_adb_connected(device)
+        grant_all_app_permissions(device)
         subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
         return {"success": True, "message": "UniTV Free iniciado no emulador!"}
     except Exception as e:
@@ -525,18 +564,22 @@ def launch_app_data(req: Optional[dict] = None):
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
-    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador com validação de MAC e suporte a qualquer resolução"""
+    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador com validação de MAC e suporte a qualquer resolução/Android"""
     try:
         adb_bin = get_adb_cmd()
+        
+        # 0. Garante permissões ativas e passa eventuais diálogos de permissão do Android 13/14/15
+        grant_all_app_permissions(device)
+        
         # 1. Passa tela de guia se estiver aberta
         focus_res = subprocess.run([adb_bin, "-s", device, "shell", "dumpsys window | grep -E 'mCurrentFocus'"], capture_output=True, text=True, errors='ignore', timeout=5)
-        if "GuidePageActivity" in focus_res.stdout:
+        if "GuidePageActivity" in focus_res.stdout or "Definições" in focus_res.stdout or "Settings" in focus_res.stdout:
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
             time.sleep(0.4)
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_RIGHT"], timeout=3)
             time.sleep(0.4)
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
-            time.sleep(1.5)
+            time.sleep(1.0)
             
         # 2. Fecha overlays com Back
         subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
@@ -554,6 +597,17 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         dump_res = subprocess.run([adb_bin, "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
         
         texts = re.findall(r'text="([^"]+)"', dump_res.stdout)
+        
+        # Trata pop-up de permissão na tela se existir
+        if any("Permitir" in t or "PERMITIR" in t or "Allow" in t for t in texts):
+            grant_all_app_permissions(device)
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER; input keyevent KEYCODE_ENTER"], timeout=2)
+            time.sleep(0.5)
+            subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=2)
+            time.sleep(1.0)
+            subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml"], capture_output=True, timeout=5)
+            dump_res = subprocess.run([adb_bin, "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
+            texts = re.findall(r'text="([^"]+)"', dump_res.stdout)
         
         account_id = None
         activation_date = None
@@ -663,18 +717,25 @@ def inject_adb(req: ADBInjectRequest):
             subprocess.run([adb_bin, "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
             logs.append("Limpeza profunda de cache e storage anterior realizada com sucesso")
             
+        # Concede todas as permissoes de armazenamento e midia (Android 6 a 15)
+        grant_all_app_permissions(device)
+            
         # Cria diretórios de destino se não existirem
-        subprocess.run([adb_bin, "-s", device, "shell", "mkdir -p /storage/emulated/0/Android /sdcard/Android"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "shell", "mkdir -p /storage/emulated/0/Android /sdcard/Android /storage/emulated/0/Alarms/system_uf /sdcard/Alarms/system_uf"], capture_output=True, text=True, timeout=10)
 
-        # Injeta nos caminhos padrões do UniTV
-        r_push1 = subprocess.run([adb_bin, "-s", device, "push", temp_file, "/storage/emulated/0/Android/.config"], capture_output=True, text=True, timeout=10)
+        # Injeta nos caminhos padrões do UniTV (Android 5 ao 15)
+        subprocess.run([adb_bin, "-s", device, "push", temp_file, "/storage/emulated/0/Android/.config"], capture_output=True, text=True, timeout=10)
         subprocess.run([adb_bin, "-s", device, "push", temp_file, "/storage/emulated/0/.config"], capture_output=True, text=True, timeout=10)
         subprocess.run([adb_bin, "-s", device, "push", temp_file, "/sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "push", temp_file, "/sdcard/.config"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "push", temp_file, "/storage/emulated/0/Alarms/system_uf/.config"], capture_output=True, text=True, timeout=10)
         
         logs.append("Arquivo .config injetado em /storage/emulated/0/Android/.config")
         
         account_info = None
         if req.launch_app:
+            # Garante permissoes antes de lancar
+            grant_all_app_permissions(device)
             subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
             logs.append("UniTV Free iniciado no emulador!")
             

@@ -9,12 +9,14 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [1.3.1] - 2026-08-26 (Em Desenvolvimento / Branch `develop`)
 
 ### ✨ Adicionado
+- **🛡️ Concessão Automática de Permissões no Android 12 a 15 (`grant_all_app_permissions`):** Concede automaticamente via ADB todas as permissões de armazenamento, música e áudio (`READ_MEDIA_AUDIO`, `READ_MEDIA_IMAGES`, `MANAGE_EXTERNAL_STORAGE`) no MuMu Player e Android modernos, eliminando telas de bloqueio de permissão.
 - **📦 Ferramentas ADB Portáteis Embutidas (`tools/`):** Inclusão de `adb.exe`, `AdbWinApi.dll` e `AdbWinUsbApi.dll` diretamente no projeto e dentro do executável `.exe`. Usuários não precisam mais instalar o Android SDK nem configurar o PATH do Windows.
 - **🎮 Suporte Nativo ao MuMu Player:** Detecção e conexão automática nas portas `127.0.0.1:16384` (MuMu Player 12 / Pro) e `127.0.0.1:7555` (MuMu Player 6).
 - **📐 Detecção Dinâmica de Resolução de Tela (`wm size`):** Cálculo proporcional de coordenadas de toque para abrir o perfil do aplicativo automaticamente em telas 720p (1280x720), 1080p (1920x1080), 2K, 4K e resoluções customizadas sem falhas de clique.
 - **🔄 Auto-Descoberta Multi-Emuladores:** Varredura automática nas portas locais `21503`, `21513`, `21523`, `16384`, `16416`, `7555`, `5555`, `62001`.
 
 ### 🐛 Corrigido
+- **Telas de Permissão no Android 12-15:** Resolvido o travamento no diálogo *"Permitir que a app UniTV Free aceda a música e áudio"* no MuMu Player.
 - **Falha de Clique no Perfil:** Resolvido o problema onde alguns emuladores com resolução diferente de 1280x720 não abriam a tela de perfil automaticamente.
 - **Erro `'adb' não é reconhecido`:** Resolvido com o localizador inteligente de binários ADB (`get_adb_cmd()`).
 - **Device ADB Dinâmico:** Injeção e scanner agora respeitam 100% o IP/porta conectado sem fallback fixo para `21503`.
