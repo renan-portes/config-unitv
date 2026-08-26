@@ -86,7 +86,9 @@ O **ADB (Android Debug Bridge)** é o protocolo que permite ao gerador transferi
 
 | Emulador | Endereço / Porta Padrão | Observações |
 |---|---|---|
-| **MEmu Play** | `127.0.0.1:21503` | Padrão do projeto. Conecta direto. |
+| **MuMu Player 12 / Pro** | `127.0.0.1:16384` | Instância 0 (`16384`), Instância 1 (`16416`)... |
+| **MuMu Player 6** | `127.0.0.1:7555` | Versão clássica do MuMu Player |
+| **MEmu Play** | `127.0.0.1:21503` | Instância 1 (`21503`), Instância 2 (`21513`)... |
 | **LDPlayer 9 / 4** | `127.0.0.1:5555` | Em instâncias extras, pode ser `5556`, `5558`... |
 | **NoxPlayer** | `127.0.0.1:62001` | Em multi-instância pode usar `62025` |
 | **BlueStacks 5** | `127.0.0.1:5555` | Requer ativar "Depuração ADB" nas configurações |

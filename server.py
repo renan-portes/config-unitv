@@ -404,11 +404,18 @@ def get_adb_devices(device_addr: Optional[str] = None):
         res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
         devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
         
-        # Se nenhum conectado, tenta portas comuns (MEmu primário/secundário, LDPlayer, Nox)
+        # Se nenhum conectado, tenta portas comuns (MuMu 12/6, MEmu, LDPlayer, Nox)
         if not devices:
-            for test_addr in ["127.0.0.1:21503", "127.0.0.1:21513", "127.0.0.1:21523", "127.0.0.1:5555", "127.0.0.1:62001"]:
+            common_ports = [
+                "127.0.0.1:21503", "127.0.0.1:21513", "127.0.0.1:21523",
+                "127.0.0.1:16384", "127.0.0.1:16416", "127.0.0.1:16448",
+                "127.0.0.1:7555",
+                "127.0.0.1:5555", "127.0.0.1:5556", "127.0.0.1:5558",
+                "127.0.0.1:62001", "127.0.0.1:62025"
+            ]
+            for test_addr in common_ports:
                 try:
-                    subprocess.run(["adb", "connect", test_addr], capture_output=True, text=True, timeout=1.5)
+                    subprocess.run(["adb", "connect", test_addr], capture_output=True, text=True, timeout=1)
                 except Exception:
                     pass
             res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=3)

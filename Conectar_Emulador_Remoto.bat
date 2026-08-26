@@ -11,17 +11,21 @@ echo Este utilitário cria um túnel seguro para o servidor remoto acessar
 echo o seu emulador Android local com 1 clique.
 echo.
 echo [1] MEmu Play (Porta 21503)
-echo [2] Nox Player (Porta 62001)
-echo [3] LDPlayer (Porta 5555)
-echo [4] Outra Porta Customizada
+echo [2] MuMu Player 12 / Pro (Porta 16384)
+echo [3] MuMu Player 6 (Porta 7555)
+echo [4] LDPlayer / BlueStacks (Porta 5555)
+echo [5] Nox Player (Porta 62001)
+echo [6] Outra Porta Customizada
 echo.
 set /p opt="Escolha o seu emulador (Padrao 1): "
 if "%opt%"=="" set opt=1
 
 set PORT=21503
-if "%opt%"=="2" set PORT=62001
-if "%opt%"=="3" set PORT=5555
-if "%opt%"=="4" (
+if "%opt%"=="2" set PORT=16384
+if "%opt%"=="3" set PORT=7555
+if "%opt%"=="4" set PORT=5555
+if "%opt%"=="5" set PORT=62001
+if "%opt%"=="6" (
     set /p PORT="Digite o numero da porta ADB: "
 )
 
