@@ -353,6 +353,7 @@ def get_batch_cloud_configs(count: int = 10):
                 url = f"https://drive.google.com/uc?export=download&id={id_str}"
                 r = requests.get(url, timeout=6)
                 if r.ok and "key_device_id_unitvfree" in r.text:
+                    text = r.text
                     mac_m = re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n]+)', text) or re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text)
                     mac = mac_m.group(1).upper() if mac_m else engine.generate_smart_random_mac()
                     return {
