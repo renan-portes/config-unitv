@@ -298,6 +298,28 @@
               </div>
             </div>
 
+            <!-- Endereço MAC Manual / Base (Opcional) -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300">Endereço MAC (Manual / Base)</label>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="randomizeBulkMacBase()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                    <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear
+                  </button>
+                  <button type="button" onclick="clearBulkMac()" class="text-[11px] text-slate-400 hover:text-slate-200 hover:underline">
+                    Limpar
+                  </button>
+                </div>
+              </div>
+              <input type="text" id="bulk-gen-mac" placeholder="Ex: 9C:00:D3:EC:AA:01 (ou deixe vazio para sortear)" class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-mono focus:border-brand-500 focus:outline-none uppercase">
+              <div class="flex items-center justify-between gap-2 mt-0.5">
+                <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none">
+                  <input type="checkbox" id="bulk-mac-sequential" checked class="w-3.5 h-3.5 rounded bg-dark-input border-dark-border text-brand-500 focus:ring-0">
+                  <span>Incrementar MAC sequencialmente (+1)</span>
+                </label>
+              </div>
+            </div>
+
             <!-- Quantidade de Configs -->
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-semibold text-slate-300">Quantidade para Gerar</label>
@@ -1356,6 +1378,37 @@
       lucide.createIcons();
     }
 
+    function randomizeBulkMacBase() {
+      const el = document.getElementById('bulk-gen-mac');
+      if (el) {
+        el.value = generateSmartRandomMAC();
+        showToast(`MAC Base sorteado: ${el.value}`);
+      }
+    }
+
+    function clearBulkMac() {
+      const el = document.getElementById('bulk-gen-mac');
+      if (el) {
+        el.value = "";
+        showToast("Campo MAC limpo. O gerador sorteará automaticamente.");
+      }
+    }
+
+    function getSequentialMAC(baseMac, offset) {
+      let clean = (baseMac || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+      if (clean.length < 12) {
+        clean = clean.padEnd(12, '0');
+      }
+      try {
+        let macNum = BigInt("0x" + clean.slice(0, 12));
+        let nextNum = (macNum + BigInt(offset)) & BigInt("0xFFFFFFFFFFFF");
+        let hexStr = nextNum.toString(16).padStart(12, '0').toUpperCase();
+        return hexStr.match(/.{1,2}/g).join(':');
+      } catch (e) {
+        return generateSmartRandomMAC();
+      }
+    }
+
     function setBulkGenSource(src) {
       currentBulkGenSource = src;
       const btnLocal = document.getElementById('bulk-src-local');
@@ -1381,6 +1434,8 @@
       const count = parseInt(document.getElementById('bulk-gen-count').value) || 10;
       const prefix = document.getElementById('bulk-gen-prefix').value.trim() || "CONFIG_";
       const startIndex = parseInt(document.getElementById('bulk-gen-start').value) || 1;
+      const manualMacInput = (document.getElementById('bulk-gen-mac') ? document.getElementById('bulk-gen-mac').value.trim() : "");
+      const isSequential = document.getElementById('bulk-mac-sequential') ? document.getElementById('bulk-mac-sequential').checked : true;
       const btn = document.getElementById('btn-run-bulk');
       const origHtml = btn ? btn.innerHTML : "";
 
@@ -1394,7 +1449,7 @@
       if (tbody) tbody.innerHTML = "";
 
       try {
-        if (currentBulkGenSource === 'cloud') {
+        if (currentBulkGenSource === 'cloud' && !manualMacInput) {
           showToast(`Buscando ${count} configurações da nuvem...`);
           const res = await fetch(`/api/cloud/batch?count=${count}`);
           const data = await res.json();
@@ -1432,16 +1487,16 @@
           for (let i = 0; i < count; i++) {
             const idx = startIndex + i;
             const folderName = `${prefix}${idx}`;
-            const mac = generateRandomMAC();
+            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput.toUpperCase()) : generateRandomMAC();
             const freshUid = generateRandomUserId();
             const item = buildFullyRandomConfig(mac, folderName, freshUid, "SBTHD");
             currentBulkList.push(item);
           }
         } else {
-          // Local (Cripto DES oficial)
+          // Local (Cripto DES oficial) ou Manual MAC
           for (let i = 0; i < count; i++) {
             const idx = startIndex + i;
-            const mac = generateSmartRandomMAC();
+            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput.toUpperCase()) : generateSmartRandomMAC();
             const folderName = `${prefix}${idx}`;
             const freshUid = generateRandomUserId();
             const freshDev = generateFreshDeviceId();
