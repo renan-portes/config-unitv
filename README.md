@@ -94,18 +94,20 @@ O **ADB (Android Debug Bridge)** é o protocolo que permite ao gerador transferi
 | **BlueStacks 5** | `127.0.0.1:5555` | Requer ativar "Depuração ADB" nas configurações |
 | **SmartGaGa** | `127.0.0.1:5555` | Porta padrão Android |
 
+> [!IMPORTANT]
+> **Ordem Recomendada de Inicialização:**  
+> 1. Abra e aguarde o seu **Emulador Android carregar totalmente ANTES de abrir o executável** (`Gerador_IPTV.exe`).  
+> 2. Ao abrir o executável com o emulador já ligado, a detecção e conexão ADB ocorrem de forma **100% automática**.  
+> *(Se você ligou o emulador depois do executável já estar aberto, basta ir na aba **"Conexão ADB & Aplicativos"** e clicar no botão **"Reconectar ADB"**).*
+
 ---
 
 ### MODO A: Usando o Gerador no seu PC Local (`localhost:8000` ou `.exe`)
 
-1. Abra o seu emulador Android (ex: MEmu, LDPlayer, Nox).
+1. Abra o seu emulador Android (ex: MuMu, LDPlayer, MEmu, Nox) e aguarde carregar a tela inicial.
 2. Abra o **`Gerador_IPTV.exe`** ou acesse `http://localhost:8000`.
-3. Vá na aba **Conexão ADB & Aplicativos**:
-   - Digite o endereço do seu emulador (ex: `127.0.0.1:21503` para MEmu ou `127.0.0.1:5555` para LDPlayer).
-   - Clique em **"Conectar Dispositivo"**.
-4. Pronto! Quando aparecer o badge verde **`Conectado (1 aparelho)`**, você pode:
-   - Usar o botão **Injetar** no Gerador Individual.
-   - Usar o **Scanner & Validador ADB** para testar as contas automaticamente e verificar os dias ativos.
+3. O painel detectará o emulador automaticamente com o badge verde **`Conectado`**.
+4. Pronto! Você já pode usar a injeção com 1 clique e rodar o **Scanner de Contas**.
 
 ---
 

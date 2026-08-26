@@ -6,7 +6,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
-## [1.3.1] - 2026-08-26 (Em Desenvolvimento / Branch `develop`)
+## [1.3.1] - 2026-08-26
 
 ### ✨ Adicionado
 - **🛡️ Concessão Automática de Permissões no Android 12 a 15 (`grant_all_app_permissions`):** Concede automaticamente via ADB todas as permissões de armazenamento, música e áudio (`READ_MEDIA_AUDIO`, `READ_MEDIA_IMAGES`, `MANAGE_EXTERNAL_STORAGE`) no MuMu Player e Android modernos, eliminando telas de bloqueio de permissão.
