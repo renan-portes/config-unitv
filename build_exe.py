@@ -40,6 +40,10 @@ def build():
     if os.path.exists(apps_dir):
         datas.append(f"{apps_dir};apps")
 
+    tools_dir = os.path.join(base_dir, "tools")
+    if os.path.exists(tools_dir):
+        datas.append(f"{tools_dir};tools")
+
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--name=Gerador_IPTV",

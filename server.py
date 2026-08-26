@@ -382,12 +382,56 @@ def get_batch_cloud_configs(count: int = 10):
 current_active_adb_device = "127.0.0.1:21503"
 
 
+def get_adb_cmd() -> str:
+    """Retorna o caminho do executavel adb (embutido em tools/, PATH ou emuladores comuns)"""
+    tools_adb = os.path.join(BASE_DIR, "tools", "adb.exe")
+    if os.path.exists(tools_adb):
+        return tools_adb
+    local_adb = os.path.join(BASE_DIR, "adb.exe")
+    if os.path.exists(local_adb):
+        return local_adb
+    import shutil
+    if shutil.which("adb"):
+        return "adb"
+    common_emu_adbs = [
+        r"C:\Program Files\platform-tools\adb.exe",
+        r"C:\Program Files\Microvirt\MEmu\adb.exe",
+        r"C:\Program Files (x86)\Microvirt\MEmu\adb.exe",
+        r"D:\Program Files\Microvirt\MEmu\adb.exe",
+        r"C:\Program Files\Netease\MuMuPlayer-12.0\shell\adb.exe",
+        r"C:\Program Files\Netease\MuMuPlayerGlobal-12.0\shell\adb.exe",
+        r"C:\Program Files\Nox\bin\nox_adb.exe",
+        r"C:\LDPlayer\LDPlayer9\adb.exe",
+        r"C:\LDPlayer\LDPlayer4\adb.exe",
+        r"D:\LDPlayer\LDPlayer9\adb.exe",
+    ]
+    for p in common_emu_adbs:
+        if os.path.exists(p):
+            return p
+    return "adb"
+
+
+def get_screen_size(device: str) -> tuple[int, int]:
+    """Obtém a resolução real da tela do emulador (largura, altura)"""
+    try:
+        adb_bin = get_adb_cmd()
+        res = subprocess.run([adb_bin, "-s", device, "shell", "wm size"], capture_output=True, text=True, errors='ignore', timeout=4)
+        m = re.search(r'(?:Physical|Override)\s*size:\s*(\d+)x(\d+)', res.stdout)
+        if m:
+            w, h = int(m.group(1)), int(m.group(2))
+            return max(w, h), min(w, h)
+    except Exception:
+        pass
+    return 1280, 720
+
+
 def ensure_adb_connected(device: Optional[str] = None):
     """Tenta conectar ao endereço do emulador se não estiver conectado"""
     global current_active_adb_device
     target = device or current_active_adb_device or "127.0.0.1:21503"
     try:
-        subprocess.run(["adb", "connect", target], capture_output=True, text=True, timeout=4)
+        adb_bin = get_adb_cmd()
+        subprocess.run([adb_bin, "connect", target], capture_output=True, text=True, timeout=4)
         current_active_adb_device = target
     except Exception:
         pass
@@ -398,10 +442,11 @@ def get_adb_devices(device_addr: Optional[str] = None):
     """Detecta emuladores e dispositivos Android conectados via ADB com auto-descoberta de portas"""
     global current_active_adb_device
     try:
+        adb_bin = get_adb_cmd()
         if device_addr:
             ensure_adb_connected(device_addr)
             
-        res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        res = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=5)
         devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
         
         # Se nenhum conectado, tenta portas comuns (MuMu 12/6, MEmu, LDPlayer, Nox)
@@ -415,10 +460,10 @@ def get_adb_devices(device_addr: Optional[str] = None):
             ]
             for test_addr in common_ports:
                 try:
-                    subprocess.run(["adb", "connect", test_addr], capture_output=True, text=True, timeout=1)
+                    subprocess.run([adb_bin, "connect", test_addr], capture_output=True, text=True, timeout=1)
                 except Exception:
                     pass
-            res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=3)
+            res = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=3)
             devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
             
         if devices:
@@ -440,8 +485,9 @@ def reconnect_adb(req: Optional[dict] = None):
     global current_active_adb_device
     device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
-        subprocess.run(["adb", "connect", device], capture_output=True, text=True, timeout=5)
-        res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
+        adb_bin = get_adb_cmd()
+        subprocess.run([adb_bin, "connect", device], capture_output=True, text=True, timeout=5)
+        res = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=5)
         devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
         if devices:
             current_active_adb_device = device if device in devices else devices[0]
@@ -456,8 +502,9 @@ def clear_app_data(req: Optional[dict] = None):
     global current_active_adb_device
     device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
+        adb_bin = get_adb_cmd()
         ensure_adb_connected(device)
-        subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
         return {"success": True, "message": "Cache e dados limpos com sucesso no emulador!"}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -469,37 +516,42 @@ def launch_app_data(req: Optional[dict] = None):
     global current_active_adb_device
     device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
+        adb_bin = get_adb_cmd()
         ensure_adb_connected(device)
-        subprocess.run(["adb", "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
         return {"success": True, "message": "UniTV Free iniciado no emulador!"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
-    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador com validação de MAC"""
+    """Lê as informações da conta (ID, data de ativação e dias ativos) diretamente do aplicativo no emulador com validação de MAC e suporte a qualquer resolução"""
     try:
+        adb_bin = get_adb_cmd()
         # 1. Passa tela de guia se estiver aberta
-        focus_res = subprocess.run(["adb", "-s", device, "shell", "dumpsys window | grep -E 'mCurrentFocus'"], capture_output=True, text=True, errors='ignore', timeout=5)
+        focus_res = subprocess.run([adb_bin, "-s", device, "shell", "dumpsys window | grep -E 'mCurrentFocus'"], capture_output=True, text=True, errors='ignore', timeout=5)
         if "GuidePageActivity" in focus_res.stdout:
-            subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
             time.sleep(0.4)
-            subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_DPAD_RIGHT"], timeout=3)
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_RIGHT"], timeout=3)
             time.sleep(0.4)
-            subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
             time.sleep(1.5)
             
         # 2. Fecha overlays com Back
-        subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
+        subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
         time.sleep(0.5)
         
-        # 3. Abre o diálogo de perfil clicando no ícone mIvPersonal (x=1262, y=60)
-        subprocess.run(["adb", "-s", device, "shell", "input tap 1262 60"], timeout=3)
+        # 3. Abre o diálogo de perfil calculando a posição proporcional à resolução real da tela
+        width, height = get_screen_size(device)
+        tap_x = int(width * 0.985)
+        tap_y = int(height * 0.083)
+        subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=3)
         time.sleep(1.5)
         
         # 4. Dump da hierarquia da tela
-        subprocess.run(["adb", "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml"], capture_output=True, timeout=5)
-        dump_res = subprocess.run(["adb", "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
+        subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml"], capture_output=True, timeout=5)
+        dump_res = subprocess.run([adb_bin, "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
         
         texts = re.findall(r'text="([^"]+)"', dump_res.stdout)
         
@@ -526,8 +578,27 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
                 account_id = t_clean
                 
+        # 4.1 Se o diálogo ainda não abriu (ex: TV Box layout), tenta via navegação D-Pad
+        if not activation_date and not days_active:
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_DPAD_UP; input keyevent KEYCODE_DPAD_RIGHT; input keyevent KEYCODE_DPAD_CENTER"], timeout=3)
+            time.sleep(1.0)
+            subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml"], capture_output=True, timeout=5)
+            dump_res2 = subprocess.run([adb_bin, "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
+            texts2 = re.findall(r'text="([^"]+)"', dump_res2.stdout)
+            for t in texts2:
+                t_clean = t.strip()
+                m_date = re.search(r'ativada em\s*([0-9]{2}-[0-9]{2}-[0-9]{4})', t_clean, re.IGNORECASE)
+                m_days = re.search(r'([0-9]+)\s*dias', t_clean, re.IGNORECASE)
+                if m_date and m_days:
+                    activation_date = m_date.group(1)
+                    days_active = int(m_days.group(1))
+                    status_msg = t_clean
+                    is_valid = True
+                if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
+                    account_id = t_clean
+                
         # Leitura do cache.config.xml do app para checar MAC real carregado
-        r_xml = subprocess.run(["adb", "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=5)
+        r_xml = subprocess.run([adb_bin, "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=5)
         app_mac = None
         m_app_mac = re.search(r'name="KEY_SP_SN">([^<]+)<', r_xml.stdout)
         if m_app_mac:
@@ -556,7 +627,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                         days_active = None
 
         # Fecha o diálogo de perfil
-        subprocess.run(["adb", "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
+        subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
         
         return {
             "found": bool(account_id or activation_date or status_msg),
@@ -576,6 +647,7 @@ def inject_adb(req: ADBInjectRequest):
     """Injeta a .config diretamente no emulador via ADB e inicia o UniTV Free"""
     global current_active_adb_device
     try:
+        adb_bin = get_adb_cmd()
         device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
         temp_dir = os.path.join(BASE_DIR, ".temp")
         os.makedirs(temp_dir, exist_ok=True)
@@ -588,22 +660,22 @@ def inject_adb(req: ADBInjectRequest):
         logs.append(f"Conectando ao dispositivo ADB: {device}")
         
         if req.clear_cache:
-            subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+            subprocess.run([adb_bin, "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
             logs.append("Limpeza profunda de cache e storage anterior realizada com sucesso")
             
         # Cria diretórios de destino se não existirem
-        subprocess.run(["adb", "-s", device, "shell", "mkdir -p /storage/emulated/0/Android /sdcard/Android"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "shell", "mkdir -p /storage/emulated/0/Android /sdcard/Android"], capture_output=True, text=True, timeout=10)
 
         # Injeta nos caminhos padrões do UniTV
-        r_push1 = subprocess.run(["adb", "-s", device, "push", temp_file, "/storage/emulated/0/Android/.config"], capture_output=True, text=True, timeout=10)
-        subprocess.run(["adb", "-s", device, "push", temp_file, "/storage/emulated/0/.config"], capture_output=True, text=True, timeout=10)
-        subprocess.run(["adb", "-s", device, "push", temp_file, "/sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
+        r_push1 = subprocess.run([adb_bin, "-s", device, "push", temp_file, "/storage/emulated/0/Android/.config"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "push", temp_file, "/storage/emulated/0/.config"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "push", temp_file, "/sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
         
         logs.append("Arquivo .config injetado em /storage/emulated/0/Android/.config")
         
         account_info = None
         if req.launch_app:
-            subprocess.run(["adb", "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
+            subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
             logs.append("UniTV Free iniciado no emulador!")
             
             # Aguarda a inicialização do app para leitura de status

@@ -1,6 +1,7 @@
 @echo off
 chcp 65001 > nul
 title "Gerador de .config IPTV"
+set "PATH=%~dp0tools;%PATH%"
 
 echo ================================================================
 echo           GERADOR DE .CONFIG / .PROPERTIES / XML
