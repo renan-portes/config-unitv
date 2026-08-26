@@ -1021,17 +1021,11 @@
 
       const xmlText = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <map>
-    <string name="live_last_channel_code">${channelCode}</string>
-    <string name="unitvsiptv_free"></string>
-    <string name="unitvsiptv_live"></string>
+    <string name="live_last_channel_code">SKY Sport F1</string>
     <int name="recommends_cache_time" value="96" />
     <int name="all_Column_key" value="68143" />
-    <long name="service_time_column_10002" value="${nowMs + 300}" />
-    <long name="service_time_column_10001" value="${nowMs}" />
-    <long name="service_time_column_10006" value="${nowMs + 400}" />
     <int name="live_last_column_id" value="68143" />
     <string name="key_user_id">${userId}</string>
-    <long name="service_time_column_0" value="${timeCol0}" />
     <string name="KEY_SP_SN">${mac}</string>
     <string name="_free"></string>
     <string name="_special"></string>
@@ -1042,16 +1036,16 @@
     <string name="key_user_identity">4</string>
     <int name="live_last_tab" value="3" />
     <string name="_search"></string>
-    <string name="unitvsiptv_special"></string>
+    <long name="service_time_column_new_10002" value="${nowMs}" />
+    <long name="service_time_column_new_10001" value="${nowMs}" />
     <int name="heartbeat_cache_time" value="120" />
-    <long name="dcs_realtime" value="5777429" />
-    <string name="key_n_bt">${uuidStr}</string>
+    <long name="dcs_realtime" value="3414756" />
+    <long name="service_time_column_new_10006" value="${nowMs}" />
+    <string name="key_n_bt"></string>
     <string name="key_device_id_unitvfree">${userId}</string>
     <string name="cache_key_recommend"></string>
-    <string name="unitvsiptv_search"></string>
-    <string name="68143">946b2cd8-d75c-11f0-b76f-a304a7c797c8LiveDataV6;1766172909</string>
+    <string name="68143">0773ab1250befd3bd99098a956d866b8;1788375945</string>
     <string name="key_renew_flag">0</string>
-    <long name="service_time_recommends" value="${timeRec}" />
 </map>
 `;
 
@@ -1101,17 +1095,11 @@
 
       const xmlText = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <map>
-    <string name="live_last_channel_code">${channelCode}</string>
-    <string name="unitvsiptv_free"></string>
-    <string name="unitvsiptv_live"></string>
+    <string name="live_last_channel_code">SKY Sport F1</string>
     <int name="recommends_cache_time" value="96" />
     <int name="all_Column_key" value="68143" />
-    <long name="service_time_column_10002" value="${nowMs + 300}" />
-    <long name="service_time_column_10001" value="${nowMs}" />
-    <long name="service_time_column_10006" value="${nowMs + 400}" />
     <int name="live_last_column_id" value="68143" />
     <string name="key_user_id">${userId}</string>
-    <long name="service_time_column_0" value="${timeCol0}" />
     <string name="KEY_SP_SN">${mac}</string>
     <string name="_free"></string>
     <string name="_special"></string>
@@ -1122,16 +1110,16 @@
     <string name="key_user_identity">4</string>
     <int name="live_last_tab" value="3" />
     <string name="_search"></string>
-    <string name="unitvsiptv_special"></string>
+    <long name="service_time_column_new_10002" value="${nowMs}" />
+    <long name="service_time_column_new_10001" value="${nowMs}" />
     <int name="heartbeat_cache_time" value="120" />
-    <long name="dcs_realtime" value="5777429" />
-    <string name="key_n_bt">${uuidStr}</string>
+    <long name="dcs_realtime" value="3414756" />
+    <long name="service_time_column_new_10006" value="${nowMs}" />
+    <string name="key_n_bt"></string>
     <string name="key_device_id_unitvfree">${userId}</string>
     <string name="cache_key_recommend"></string>
-    <string name="unitvsiptv_search"></string>
-    <string name="68143">946b2cd8-d75c-11f0-b76f-a304a7c797c8LiveDataV6;1766172909</string>
+    <string name="68143">0773ab1250befd3bd99098a956d866b8;1788375945</string>
     <string name="key_renew_flag">0</string>
-    <long name="service_time_recommends" value="${timeRec}" />
 </map>
 `;
 
@@ -1152,12 +1140,8 @@
 
     function generateRandomMAC() {
       const hexDigits = "0123456789ABCDEF";
-      let suffix = [];
-      for (let i = 0; i < 3; i++) {
-        let byte = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
-        suffix.push(byte);
-      }
-      return `9C:00:D3:${suffix.join(':')}`;
+      let byte = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+      return `9C:00:D3:EC:AA:${byte}`;
     }
 
     function generateSingleConfigUI() {

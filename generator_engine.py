@@ -85,15 +85,13 @@ def format_java_date(dt: datetime = None) -> str:
 
 
 def generate_random_mac() -> str:
-    """Gera um endereço MAC com prefixo fixo 9C:00:D3 e 3 octetos aleatórios"""
-    suffix = ":".join(f"{random.randint(0, 255):02X}" for _ in range(3))
-    return f"9C:00:D3:{suffix}"
+    """Gera um endereço MAC no padrão 9C:00:D3:EC:AA:XX suportado pelo algoritmo criptográfico"""
+    return f"9C:00:D3:EC:AA:{random.randint(0, 255):02X}"
 
 
 def generate_smart_random_mac() -> str:
-    """Gera um MAC no prefixo 9C:00:D3 com 3 octetos aleatórios (16.7 milhões de combinações)"""
-    suffix = ":".join(f"{random.randint(0, 255):02X}" for _ in range(3))
-    return f"9C:00:D3:{suffix}"
+    """Gera um MAC no padrão 9C:00:D3:EC:AA:XX"""
+    return f"9C:00:D3:EC:AA:{random.randint(0, 255):02X}"
 
 
 def encode_sn_token(mac: str) -> str:
@@ -159,24 +157,30 @@ def decode_hex_value(hex_str: str) -> dict:
         try:
             b64_bytes = base64.b64decode(ascii_text)
             b64_decoded_hex = b64_bytes.hex()
-        except:
+        except Exception:
             pass
             
         return {
+            "valid": True,
             "success": True,
+            "raw_hex": hex_str,
             "hex": hex_str,
+            "ascii_text": ascii_text,
             "text": ascii_text,
+            "b64_decoded_hex": b64_decoded_hex,
             "b64_hex": b64_decoded_hex
         }
     except Exception as e:
         return {
+            "valid": False,
             "success": False,
             "hex": hex_str,
+            "text": "",
             "error": str(e)
         }
 
 
-def generate_config_content(
+def build_config_text(
     mac: str,
     device_id_hex: str,
     n_bt_hex: str = DEFAULT_N_BT_HEX,
@@ -199,41 +203,31 @@ def generate_config_content(
     return "\n".join(lines)
 
 
+generate_config_content = build_config_text
+
+
 def generate_xml_content(
     mac: str,
     user_id: str,
-    channel_code: str = "SBTHD",
+    channel_code: str = "SKY Sport F1",
     column_key: str = "68143",
-    uuid_str: str = None,
+    uuid_str: str = "",
     live_data: str = DEFAULT_LIVE_DATA
 ) -> str:
-    """Gera o conteúdo XML do arquivo cache.config.xml perfeitamente formatado com timestamps atuais"""
+    """Gera o conteúdo XML do arquivo cache.config.xml perfeitamente formatado com timestamps atuais idêntico ao TV Box"""
     clean_mac = mac.strip().upper()
     backup_sn = f"{clean_mac},1"
-    if not uuid_str:
-        uuid_str = str(uuid.uuid4())
-        
     now_ms = int(time.time() * 1000)
-    time_col_0 = now_ms - random.randint(100000000, 300000000)
-    time_recommends = now_ms - random.randint(10000000, 50000000)
-    time_col_1 = now_ms - random.randint(1000, 5000)
-    time_col_2 = time_col_1 + random.randint(100, 500)
-    time_col_6 = time_col_1 + random.randint(200, 600)
-    dcs_rt = random.randint(5000000, 6000000)
+    time_col_new = now_ms - random.randint(1000, 5000)
+    dcs_rt = random.randint(3000000, 5000000)
     
     xml_template = f"""<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <map>
     <string name="live_last_channel_code">{channel_code}</string>
-    <string name="unitvsiptv_free"></string>
-    <string name="unitvsiptv_live"></string>
     <int name="recommends_cache_time" value="96" />
     <int name="all_Column_key" value="{column_key}" />
-    <long name="service_time_column_10002" value="{time_col_2}" />
-    <long name="service_time_column_10001" value="{time_col_1}" />
-    <long name="service_time_column_10006" value="{time_col_6}" />
     <int name="live_last_column_id" value="{column_key}" />
     <string name="key_user_id">{user_id}</string>
-    <long name="service_time_column_0" value="{time_col_0}" />
     <string name="KEY_SP_SN">{clean_mac}</string>
     <string name="_free"></string>
     <string name="_special"></string>
@@ -244,16 +238,16 @@ def generate_xml_content(
     <string name="key_user_identity">4</string>
     <int name="live_last_tab" value="3" />
     <string name="_search"></string>
-    <string name="unitvsiptv_special"></string>
+    <long name="service_time_column_new_10002" value="{time_col_new}" />
+    <long name="service_time_column_new_10001" value="{time_col_new}" />
     <int name="heartbeat_cache_time" value="120" />
     <long name="dcs_realtime" value="{dcs_rt}" />
-    <string name="key_n_bt">{uuid_str}</string>
+    <long name="service_time_column_new_10006" value="{time_col_new}" />
+    <string name="key_n_bt"></string>
     <string name="key_device_id_unitvfree">{user_id}</string>
     <string name="cache_key_recommend"></string>
-    <string name="unitvsiptv_search"></string>
     <string name="{column_key}">{live_data}</string>
     <string name="key_renew_flag">0</string>
-    <long name="service_time_recommends" value="{time_recommends}" />
 </map>
 """
     return xml_template
