@@ -379,27 +379,49 @@ def get_batch_cloud_configs(count: int = 10):
 
 # --- ENDPOINTS ADB (EMULADOR) ---
 
-def ensure_adb_connected(device: str = "127.0.0.1:21503"):
+current_active_adb_device = "127.0.0.1:21503"
+
+
+def ensure_adb_connected(device: Optional[str] = None):
     """Tenta conectar ao endereço do emulador se não estiver conectado"""
+    global current_active_adb_device
+    target = device or current_active_adb_device or "127.0.0.1:21503"
     try:
-        subprocess.run(["adb", "connect", device], capture_output=True, text=True, timeout=4)
+        subprocess.run(["adb", "connect", target], capture_output=True, text=True, timeout=4)
+        current_active_adb_device = target
     except Exception:
         pass
 
 
 @app.get("/api/adb/devices")
-def get_adb_devices():
-    """Detecta emuladores e dispositivos Android conectados via ADB"""
+def get_adb_devices(device_addr: Optional[str] = None):
+    """Detecta emuladores e dispositivos Android conectados via ADB com auto-descoberta de portas"""
+    global current_active_adb_device
     try:
-        ensure_adb_connected("127.0.0.1:21503")
+        if device_addr:
+            ensure_adb_connected(device_addr)
+            
         res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
-        devices = []
-        for line in res.stdout.splitlines()[1:]:
-            if "\tdevice" in line:
-                devices.append(line.split("\t")[0].strip())
+        devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
+        
+        # Se nenhum conectado, tenta portas comuns (MEmu primário/secundário, LDPlayer, Nox)
+        if not devices:
+            for test_addr in ["127.0.0.1:21503", "127.0.0.1:21513", "127.0.0.1:21523", "127.0.0.1:5555", "127.0.0.1:62001"]:
+                try:
+                    subprocess.run(["adb", "connect", test_addr], capture_output=True, text=True, timeout=1.5)
+                except Exception:
+                    pass
+            res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=3)
+            devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
+            
+        if devices:
+            if current_active_adb_device not in devices:
+                current_active_adb_device = devices[0]
+                
         return {
             "connected": len(devices) > 0,
-            "devices": devices if devices else []
+            "devices": devices if devices else [],
+            "active_device": current_active_adb_device
         }
     except Exception as e:
         return {"connected": False, "devices": [], "error": str(e)}
@@ -407,13 +429,16 @@ def get_adb_devices():
 
 @app.post("/api/adb/reconnect")
 def reconnect_adb(req: Optional[dict] = None):
-    """Força reconexão com o dispositivo ADB"""
-    device = (req or {}).get("device_addr", "127.0.0.1:21503")
+    """Força reconexão com o dispositivo ADB especificado"""
+    global current_active_adb_device
+    device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
         subprocess.run(["adb", "connect", device], capture_output=True, text=True, timeout=5)
         res = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=5)
         devices = [line.split("\t")[0].strip() for line in res.stdout.splitlines()[1:] if "\tdevice" in line]
-        return {"success": True, "connected": len(devices) > 0, "devices": devices}
+        if devices:
+            current_active_adb_device = device if device in devices else devices[0]
+        return {"success": True, "connected": len(devices) > 0, "devices": devices, "active_device": current_active_adb_device}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -421,7 +446,8 @@ def reconnect_adb(req: Optional[dict] = None):
 @app.post("/api/adb/clear-app")
 def clear_app_data(req: Optional[dict] = None):
     """Limpa dados do aplicativo e configs antigas no emulador"""
-    device = (req or {}).get("device_addr", "127.0.0.1:21503")
+    global current_active_adb_device
+    device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
         ensure_adb_connected(device)
         subprocess.run(["adb", "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
@@ -433,7 +459,8 @@ def clear_app_data(req: Optional[dict] = None):
 @app.post("/api/adb/launch-app")
 def launch_app_data(req: Optional[dict] = None):
     """Inicia o UniTV Free no emulador"""
-    device = (req or {}).get("device_addr", "127.0.0.1:21503")
+    global current_active_adb_device
+    device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
         ensure_adb_connected(device)
         subprocess.run(["adb", "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
@@ -540,8 +567,9 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
 @app.post("/api/adb/inject")
 def inject_adb(req: ADBInjectRequest):
     """Injeta a .config diretamente no emulador via ADB e inicia o UniTV Free"""
+    global current_active_adb_device
     try:
-        device = req.device_addr or "127.0.0.1:21503"
+        device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
         temp_dir = os.path.join(BASE_DIR, ".temp")
         os.makedirs(temp_dir, exist_ok=True)
         temp_file = os.path.join(temp_dir, "temp.config")

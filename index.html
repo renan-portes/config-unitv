@@ -1783,7 +1783,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             config_content: configText,
-            device_addr: "127.0.0.1:21503",
+            device_addr: getActiveAdbDevice(),
             clear_cache: true,
             launch_app: true
           })
@@ -2066,7 +2066,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               config_content: item.content,
-              device_addr: "127.0.0.1:21503",
+              device_addr: getActiveAdbDevice(),
               clear_cache: true,
               launch_app: true
             })
@@ -2299,33 +2299,50 @@
       showToast(`Pacote ZIP com todas as ${batchResults.length} configs testadas baixado com sucesso!`);
     }
 
+    function getActiveAdbDevice() {
+      const inputEl = document.getElementById('apps-adb-input');
+      if (inputEl && inputEl.value && inputEl.value.trim()) {
+        return inputEl.value.trim();
+      }
+      const scLabel = document.getElementById('scanner-adb-label');
+      if (scLabel && scLabel.innerText && !scLabel.innerText.includes('Desconectado')) {
+        return scLabel.innerText.trim();
+      }
+      return "127.0.0.1:21503";
+    }
+
     async function checkAdbDevices() {
       try {
-        const res = await fetch('/api/adb/devices');
+        const inputAddr = document.getElementById('apps-adb-input') ? document.getElementById('apps-adb-input').value.trim() : "";
+        const url = inputAddr ? `/api/adb/devices?device_addr=${encodeURIComponent(inputAddr)}` : '/api/adb/devices';
+        const res = await fetch(url);
         const data = await res.json();
         const scLabel = document.getElementById('scanner-adb-label');
         const appsDot = document.getElementById('apps-adb-dot');
         const appsText = document.getElementById('apps-adb-status-text');
+        const appsInput = document.getElementById('apps-adb-input');
 
         if (data.connected && data.devices.length > 0) {
-          const dev = data.devices[0];
+          const dev = data.active_device || data.devices[0];
           if (scLabel) scLabel.innerText = dev;
+          if (appsInput && (!appsInput.value || appsInput.value === "127.0.0.1:21503" || !data.devices.includes(appsInput.value))) {
+            appsInput.value = dev;
+          }
           if (appsDot) appsDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
           if (appsText) appsText.innerText = `Conectado (${dev})`;
         } else {
-          if (scLabel) scLabel.innerText = "127.0.0.1:21503 (Desconectado)";
+          const currentInput = appsInput && appsInput.value ? appsInput.value : "127.0.0.1:21503";
+          if (scLabel) scLabel.innerText = `${currentInput} (Desconectado)`;
           if (appsDot) appsDot.className = "w-2 h-2 rounded-full bg-amber-400";
           if (appsText) appsText.innerText = "Emulador não detectado";
         }
       } catch (e) {
-        if (document.getElementById('scanner-adb-label')) {
-          document.getElementById('scanner-adb-label').innerText = "127.0.0.1:21503";
-        }
+        console.error(e);
       }
     }
 
     async function reconnectAdbManual() {
-      const addr = document.getElementById('apps-adb-input').value.trim() || "127.0.0.1:21503";
+      const addr = getActiveAdbDevice();
       const btn = document.getElementById('btn-adb-reconnect');
       const origHtml = btn.innerHTML;
       btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Conectando...`;
@@ -2339,7 +2356,7 @@
         });
         const data = await res.json();
         if (data.connected) {
-          showToast(`✔ Conectado ao emulador com sucesso: ${data.devices[0] || addr}`);
+          showToast(`✔ Conectado ao emulador com sucesso: ${data.active_device || data.devices[0] || addr}`);
         } else {
           showToast("Emulador não encontrado nesse endereço. Verifique se está aberto.", true);
         }
@@ -2354,7 +2371,7 @@
     }
 
     async function clearAdbCacheManual() {
-      const addr = document.getElementById('apps-adb-input').value.trim() || "127.0.0.1:21503";
+      const addr = getActiveAdbDevice();
       const btn = document.getElementById('btn-adb-clear-app');
       const origHtml = btn.innerHTML;
       btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Limpando...`;
@@ -2382,7 +2399,7 @@
     }
 
     async function launchAdbAppManual() {
-      const addr = document.getElementById('apps-adb-input').value.trim() || "127.0.0.1:21503";
+      const addr = getActiveAdbDevice();
       const btn = document.getElementById('btn-adb-launch-app');
       const origHtml = btn.innerHTML;
       btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Abrindo...`;
