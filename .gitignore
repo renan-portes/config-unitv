@@ -19,3 +19,8 @@ pacote_*/
 .vscode/
 .idea/
 .DS_Store
+
+# PyInstaller
+build/
+dist/
+*.spec

@@ -37,7 +37,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+import sys
+import webbrowser
+import threading
+
+if getattr(sys, 'frozen', False):
+    BASE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 CLOUD_IDS_URL = "https://raw.githubusercontent.com/iurysouza041095-bit/sorteio/main/ids.json"
 cached_cloud_ids = []
 
@@ -628,4 +636,13 @@ if __name__ == "__main__":
     print(f"📡 Acesso Local:    http://localhost:{port}")
     print(f"🌐 Acesso na Rede:  http://{host}:{port}")
     print("=" * 60)
-    uvicorn.run("server:app", host=host, port=port, reload=False)
+
+    def open_browser():
+        time.sleep(1.2)
+        try:
+            webbrowser.open(f"http://localhost:{port}")
+        except Exception:
+            pass
+
+    threading.Thread(target=open_browser, daemon=True).start()
+    uvicorn.run(app, host=host, port=port, reload=False)
