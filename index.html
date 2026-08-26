@@ -1307,7 +1307,12 @@
         const data = await res.json();
         
         const saveRes = await fetch('/api/save-to-disk', {
-          method        if (saveData.success) {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ configs: [data] })
+        });
+        const saveData = await saveRes.json();
+        if (saveData.success) {
           showToast(`Configuração salva na pasta ${folder}!`);
         }
       } catch (e) {
