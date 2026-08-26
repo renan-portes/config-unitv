@@ -85,8 +85,14 @@ def format_java_date(dt: datetime = None) -> str:
 
 
 def generate_random_mac() -> str:
-    """Gera um endereço MAC totalmente aleatório (6 octetos)"""
-    return ":".join(f"{random.randint(0, 255):02X}" for _ in range(6))
+    """Gera um endereço MAC com prefixo fixo 9C:00:D3 e 3 octetos aleatórios"""
+    suffix = ":".join(f"{random.randint(0, 255):02X}" for _ in range(3))
+    return f"9C:00:D3:{suffix}"
+
+
+def generate_smart_random_mac() -> str:
+    """Gera um MAC no padrão nativo 9C:00:D3:EC:AA:XX"""
+    return f"9C:00:D3:EC:AA:{random.randint(0, 255):02X}"
 
 
 def encode_sn_token(mac: str) -> str:

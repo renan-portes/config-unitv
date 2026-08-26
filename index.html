@@ -1150,12 +1150,12 @@
 
     function generateRandomMAC() {
       const hexDigits = "0123456789ABCDEF";
-      let mac = [];
-      for (let i = 0; i < 6; i++) {
+      let suffix = [];
+      for (let i = 0; i < 3; i++) {
         let byte = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
-        mac.push(byte);
+        suffix.push(byte);
       }
-      return mac.join(":");
+      return `9C:00:D3:${suffix.join(':')}`;
     }
 
     function generateSingleConfigUI() {
@@ -1450,14 +1450,20 @@
 
     function getSequentialMAC(baseMac, offset) {
       let clean = (baseMac || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
-      if (clean.length < 12) {
-        clean = clean.padEnd(12, '0');
+      if (clean.startsWith("9C00D3")) {
+        clean = clean.slice(6);
+      }
+      if (clean.length < 6) {
+        clean = clean.padEnd(6, '0');
+      } else if (clean.length > 6) {
+        clean = clean.slice(0, 6);
       }
       try {
-        let macNum = BigInt("0x" + clean.slice(0, 12));
-        let nextNum = (macNum + BigInt(offset)) & BigInt("0xFFFFFFFFFFFF");
-        let hexStr = nextNum.toString(16).padStart(12, '0').toUpperCase();
-        return hexStr.match(/.{1,2}/g).join(':');
+        let suffixNum = parseInt(clean, 16);
+        let nextSuffix = (suffixNum + offset) & 0xFFFFFF;
+        let suffixHex = nextSuffix.toString(16).padStart(6, '0').toUpperCase();
+        let p = suffixHex.match(/.{1,2}/g);
+        return `9C:00:D3:${p.join(':')}`;
       } catch (e) {
         return generateSmartRandomMAC();
       }
@@ -1488,7 +1494,14 @@
       const count = parseInt(document.getElementById('bulk-gen-count').value) || 10;
       const prefix = document.getElementById('bulk-gen-prefix').value.trim() || "CONFIG_";
       const startIndex = parseInt(document.getElementById('bulk-gen-start').value) || 1;
-      const manualMacInput = (document.getElementById('bulk-gen-mac') ? document.getElementById('bulk-gen-mac').value.trim() : "");
+      
+      const suffixInput = (document.getElementById('bulk-gen-mac-suffix') ? document.getElementById('bulk-gen-mac-suffix').value.trim() : "");
+      let manualMacInput = "";
+      if (suffixInput) {
+        let cleanSuffix = formatMacSuffix(suffixInput);
+        manualMacInput = `9C:00:D3:${cleanSuffix}`;
+      }
+      
       const isSequential = document.getElementById('bulk-mac-sequential') ? document.getElementById('bulk-mac-sequential').checked : true;
       const btn = document.getElementById('btn-run-bulk');
       const origHtml = btn ? btn.innerHTML : "";
@@ -1541,7 +1554,7 @@
           for (let i = 0; i < count; i++) {
             const idx = startIndex + i;
             const folderName = `${prefix}${idx}`;
-            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput.toUpperCase()) : generateRandomMAC();
+            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput) : generateRandomMAC();
             const freshUid = generateRandomUserId();
             const item = buildFullyRandomConfig(mac, folderName, freshUid, "SBTHD");
             currentBulkList.push(item);
@@ -1550,7 +1563,7 @@
           // Local (Cripto DES oficial) ou Manual MAC
           for (let i = 0; i < count; i++) {
             const idx = startIndex + i;
-            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput.toUpperCase()) : generateSmartRandomMAC();
+            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput) : generateSmartRandomMAC();
             const folderName = `${prefix}${idx}`;
             const freshUid = generateRandomUserId();
             const freshDev = generateFreshDeviceId();
