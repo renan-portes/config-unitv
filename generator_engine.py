@@ -91,8 +91,9 @@ def generate_random_mac() -> str:
 
 
 def generate_smart_random_mac() -> str:
-    """Gera um MAC no padrão nativo 9C:00:D3:EC:AA:XX"""
-    return f"9C:00:D3:EC:AA:{random.randint(0, 255):02X}"
+    """Gera um MAC no prefixo 9C:00:D3 com 3 octetos aleatórios (16.7 milhões de combinações)"""
+    suffix = ":".join(f"{random.randint(0, 255):02X}" for _ in range(3))
+    return f"9C:00:D3:{suffix}"
 
 
 def encode_sn_token(mac: str) -> str:

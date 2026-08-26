@@ -1199,15 +1199,19 @@
     }
 
     function generateSmartRandomMAC() {
-      // Sorteia o byte final de 00 a FF no prefixo nativo 9C:00:D3:EC:AA (padrão de decodificação de token do UniTV)
-      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      return `9C:00:D3:EC:AA:${lastByte}`;
+      // Sorteia os 3 octetos finais completos (XX:YY:ZZ) de 00 a FF (16.777.216 combinações)
+      const hexDigits = "0123456789ABCDEF";
+      let octets = [];
+      for (let i = 0; i < 3; i++) {
+        let byte = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+        octets.push(byte);
+      }
+      return `9C:00:D3:${octets.join(':')}`;
     }
 
     function randomizeAll() {
-      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      const suffix = `EC:AA:${lastByte}`;
-      const fullMac = `9C:00:D3:${suffix}`;
+      const fullMac = generateSmartRandomMAC();
+      const suffix = fullMac.slice(9);
       const uid = generateRandomUserId();
       const folder = "CONFIG_RANDOM_" + Math.floor(1000 + Math.random() * 9000);
       const freshDev = generateFreshDeviceId();
@@ -1232,9 +1236,8 @@
     }
 
     function randomizeMacOnly() {
-      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      const suffix = `EC:AA:${lastByte}`;
-      const fullMac = `9C:00:D3:${suffix}`;
+      const fullMac = generateSmartRandomMAC();
+      const suffix = fullMac.slice(9);
       
       const suffixEl = document.getElementById('input-mac-suffix');
       const macEl = document.getElementById('input-mac');
@@ -1431,9 +1434,8 @@
     }
 
     function randomizeBulkMacBase() {
-      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-      const suffix = `EC:AA:${lastByte}`;
-      const fullMac = `9C:00:D3:${suffix}`;
+      const fullMac = generateSmartRandomMAC();
+      const suffix = fullMac.slice(9);
       
       const suffixEl = document.getElementById('bulk-gen-mac-suffix');
       const hiddenMac = document.getElementById('bulk-gen-mac');
