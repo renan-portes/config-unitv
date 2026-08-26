@@ -96,157 +96,308 @@
     <!-- NAV TABS -->
     <div class="flex items-center gap-2 border-b border-dark-border overflow-x-auto pb-2 scrollbar-none">
       <button onclick="switchTab('single')" id="tab-btn-single" class="tab-btn active px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-brand-400 bg-brand-500/10 border border-brand-500/30">
-        <i data-lucide="zap" class="w-4 h-4"></i> Gerador Individual
+        <i data-lucide="zap" class="w-4 h-4"></i> Gerador Individual / Lote
       </button>
       <button onclick="switchTab('scanner')" id="tab-btn-scanner" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
-        <i data-lucide="rocket" class="w-4 h-4 text-purple-400"></i> Scanner &amp; Validador de Lotes
+        <i data-lucide="shield-check" class="w-4 h-4 text-purple-400"></i> Scanner &amp; Validador ADB
       </button>
       <button onclick="switchTab('apps')" id="tab-btn-apps" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="smartphone" class="w-4 h-4 text-cyan-400"></i> Conexão ADB &amp; Aplicativos
       </button>
     </div>
 
-    <!-- TAB 1: GERADOR INDIVIDUAL -->
-    <div id="tab-single" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- TAB 1: GERADOR INDIVIDUAL / LOTE -->
+    <div id="tab-single" class="tab-content flex flex-col gap-4">
       
-      <!-- Painel de Configurações -->
-      <div class="lg:col-span-4 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <!-- Sub-navegação: Individual vs Em Lote -->
+      <div class="flex items-center justify-between gap-4 flex-wrap pb-1 border-b border-dark-border/60">
+        <div class="flex items-center gap-1.5 p-1 bg-dark-card border border-dark-border rounded-xl">
+          <button type="button" onclick="switchGenMode('single')" id="gen-mode-btn-single" class="gen-mode-btn active px-4 py-2 rounded-lg font-bold text-xs transition flex items-center gap-2 bg-brand-500/20 text-brand-300 border border-brand-500/30 shadow-sm">
+            <i data-lucide="file-code" class="w-4 h-4"></i> Individual
+          </button>
+          <button type="button" onclick="switchGenMode('bulk')" id="gen-mode-btn-bulk" class="gen-mode-btn px-4 py-2 rounded-lg font-semibold text-xs text-slate-400 hover:text-white transition flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i> Em Lote (Massa)
+          </button>
+        </div>
+
+        <div id="gen-mode-desc" class="text-xs text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-brand-400"></i>
+          <span>Gere configurações únicas ou em lote direto para download sem precisar de emulador ADB.</span>
+        </div>
+      </div>
+
+      <!-- VIEW 1: MODO INDIVIDUAL -->
+      <div id="view-gen-single" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Painel de Configurações Individual -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="sliders" class="w-4 h-4 text-brand-400"></i> Parâmetros da Config
+                </h3>
+                <p class="text-xs text-slate-400">Gere localmente ou puxe do pool online da nuvem</p>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="document.getElementById('single-file-upload').click()" class="px-3 py-2 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs transition border border-dark-border flex items-center gap-1.5" title="Carregar um arquivo .config do seu computador">
+                  <i data-lucide="folder-open" class="w-4 h-4 text-purple-400"></i> Carregar .config
+                </button>
+                <input type="file" id="single-file-upload" accept=".config,.txt,text/plain" class="hidden" onchange="handleSingleFileUpload(event)">
+                <button onclick="generateSingleConfigUI()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Local
+                </button>
+              </div>
+            </div>
+
+            <!-- MAC Address Input -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300">Endereço MAC (Fixo / Random)</label>
+                <button onclick="randomizeMacOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                  <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear MAC
+                </button>
+              </div>
+              <div class="relative">
+                <input type="text" id="input-mac" value="9C:00:D3:EC:AA:01" 
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none uppercase"
+                  oninput="updateSinglePreview()">
+              </div>
+            </div>
+
+            <!-- User ID Input -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300">User ID (key_user_id)</label>
+                <button onclick="randomizeUserIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                  <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear ID
+                </button>
+              </div>
+              <input type="text" id="input-uid" value="545050564"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none"
+                oninput="updateSinglePreview()">
+            </div>
+
+            <!-- Device ID Input -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300">Device ID Base64 (Único)</label>
+                <button onclick="randomizeDeviceIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
+                  <i data-lucide="shuffle" class="w-3 h-3"></i> Novo Device ID
+                </button>
+              </div>
+              <input type="text" id="input-devid" value="0YXNlTTBFS0G22pTPQrY5w=="
+                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-slate-300 focus:border-brand-500 focus:outline-none"
+                oninput="updateSinglePreview()">
+            </div>
+
+            <!-- Folder Name & Model -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Nome da Pasta</label>
+                <input type="text" id="input-folder" value="CONFIG_1"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
+                  oninput="updateSinglePreview()">
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Modelo Aparelho</label>
+                <input type="text" id="input-model" value="SBTHD"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
+                  oninput="updateSinglePreview()">
+              </div>
+            </div>
+
+            <!-- Randomize All & Quick Actions -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
+              <button onclick="randomizeAll()" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition border border-dark-border flex items-center justify-center gap-2">
+                <i data-lucide="dices" class="w-4 h-4 text-purple-400"></i> Sortear Todos os Campos
+              </button>
+              
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="downloadSingleZip()" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center justify-center gap-1.5 text-center">
+                  <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar ZIP
+                </button>
+                <button onclick="saveSingleToDisk()" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 text-center">
+                  <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Salvar no Disco
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Preview do Código & Injeção ADB Individual -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-border">
+              <!-- Tabs do Visualizador -->
+              <div class="flex items-center gap-1.5 p-1 bg-dark-input rounded-xl border border-dark-border">
+                <button onclick="switchPreviewFile('.config')" id="preview-tab-config" class="preview-tab active px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 flex items-center gap-1.5">
+                  <i data-lucide="file-code" class="w-3.5 h-3.5"></i> .config
+                </button>
+                <button onclick="switchPreviewFile('.properties')" id="preview-tab-properties" class="preview-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover flex items-center gap-1.5">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i> .properties
+                </button>
+                <button onclick="switchPreviewFile('cache.config.xml')" id="preview-tab-xml" class="preview-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover flex items-center gap-1.5">
+                  <i data-lucide="code" class="w-3.5 h-3.5"></i> cache.config.xml
+                </button>
+              </div>
+
+              <!-- Copy, Download & Injetar -->
+              <div class="flex items-center gap-2">
+                <button onclick="copyCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
+                </button>
+                <button onclick="downloadCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
+                  <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Baixar
+                </button>
+                <button onclick="injectDirectAdb()" id="btn-single-inject" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs transition shadow-md flex items-center gap-1.5">
+                  <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Injetar no ADB
+                </button>
+              </div>
+            </div>
+
+            <!-- Code View Area -->
+            <div class="mt-4 flex-1 relative min-h-[360px]">
+              <pre class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[460px]" id="code-viewer"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: MODO EM LOTE (GERAÇÃO EM MASSA SEM PRECISAR DE ADB) -->
+      <div id="view-gen-bulk" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Coluna da Esquerda: Parâmetros de Geração em Lote (4 Colunas) -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
             <div>
               <h3 class="text-base font-bold text-white flex items-center gap-2">
-                <i data-lucide="sliders" class="w-4 h-4 text-brand-400"></i> Parâmetros da Config
+                <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> Parâmetros do Lote
               </h3>
-              <p class="text-xs text-slate-400">Gere localmente ou puxe do pool online da nuvem</p>
+              <p class="text-xs text-slate-400 mt-0.5">Gere múltiplos arquivos .config simultaneamente para download em .ZIP</p>
             </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="document.getElementById('single-file-upload').click()" class="px-3 py-2 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs transition border border-dark-border flex items-center gap-1.5" title="Carregar um arquivo .config do seu computador">
-                <i data-lucide="folder-open" class="w-4 h-4 text-purple-400"></i> Carregar .config
-              </button>
-              <input type="file" id="single-file-upload" accept=".config,.txt,text/plain" class="hidden" onchange="handleSingleFileUpload(event)">
-              <button onclick="generateSingleConfigUI()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
-                <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Local
-              </button>
-            </div>
-          </div>
 
-          <!-- MAC Address Input -->
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-semibold text-slate-300">Endereço MAC (Fixo / Random)</label>
-              <button onclick="randomizeMacOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear MAC
-              </button>
+            <!-- Escolha de Origem do Lote -->
+            <div class="flex flex-col gap-1.5 pt-1">
+              <label class="text-xs font-semibold text-slate-300">Origem das Chaves / Configs</label>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" onclick="setBulkGenSource('local')" id="bulk-src-local" class="bulk-src-btn py-2.5 px-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
+                  <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                  <span>Lote Local</span>
+                </button>
+                <button type="button" onclick="setBulkGenSource('cloud')" id="bulk-src-cloud" class="bulk-src-btn py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-cyan-950/50 border border-dark-border text-slate-300 hover:text-cyan-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
+                  <i data-lucide="cloud" class="w-4 h-4 text-cyan-400"></i>
+                  <span>Nuvem (10k)</span>
+                </button>
+                <button type="button" onclick="setBulkGenSource('random')" id="bulk-src-random" class="bulk-src-btn py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-purple-950/50 border border-dark-border text-slate-300 hover:text-purple-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
+                  <i data-lucide="dices" class="w-4 h-4 text-purple-400"></i>
+                  <span>Aleatório</span>
+                </button>
+              </div>
             </div>
-            <div class="relative">
-              <input type="text" id="input-mac" value="9C:00:D3:EC:AA:01" 
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none uppercase"
-                oninput="updateSinglePreview()">
-            </div>
-          </div>
 
-          <!-- User ID Input -->
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-semibold text-slate-300">User ID (key_user_id)</label>
-              <button onclick="randomizeUserIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear ID
-              </button>
-            </div>
-            <input type="text" id="input-uid" value="545050564"
-              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none"
-              oninput="updateSinglePreview()">
-          </div>
-
-          <!-- Device ID Input -->
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-semibold text-slate-300">Device ID Base64 (Único)</label>
-              <button onclick="randomizeDeviceIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                <i data-lucide="shuffle" class="w-3 h-3"></i> Novo Device ID
-              </button>
-            </div>
-            <input type="text" id="input-devid" value="0YXNlTTBFS0G22pTPQrY5w=="
-              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-slate-300 focus:border-brand-500 focus:outline-none"
-              oninput="updateSinglePreview()">
-          </div>
-
-          <!-- Folder Name & Model -->
-          <div class="grid grid-cols-2 gap-3">
+            <!-- Quantidade de Configs -->
             <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">Nome da Pasta</label>
-              <input type="text" id="input-folder" value="CONFIG_1"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
-                oninput="updateSinglePreview()">
+              <label class="text-xs font-semibold text-slate-300">Quantidade para Gerar</label>
+              <select id="bulk-gen-count" class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-medium focus:border-brand-500 focus:outline-none cursor-pointer">
+                <option value="10">10 configurações</option>
+                <option value="20">20 configurações</option>
+                <option value="50">50 configurações</option>
+                <option value="100" selected>100 configurações</option>
+                <option value="250">250 configurações</option>
+                <option value="500">500 configurações</option>
+              </select>
             </div>
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">Modelo Aparelho</label>
-              <input type="text" id="input-model" value="SBTHD"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
-                oninput="updateSinglePreview()">
-            </div>
-          </div>
 
-          <!-- Randomize All & Quick Actions -->
-          <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
-            <button onclick="randomizeAll()" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition border border-dark-border flex items-center justify-center gap-2">
-              <i data-lucide="dices" class="w-4 h-4 text-purple-400"></i> Sortear Todos os Campos
+            <!-- Prefixo & Índice Inicial -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Prefixo da Pasta</label>
+                <input type="text" id="bulk-gen-prefix" value="CONFIG_" class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-mono focus:border-brand-500 focus:outline-none">
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-300">Índice Inicial</label>
+                <input type="number" id="bulk-gen-start" value="1" min="1" class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-mono focus:border-brand-500 focus:outline-none">
+              </div>
+            </div>
+
+            <!-- Botão Principal de Geração -->
+            <button type="button" onclick="runBulkGeneration()" id="btn-run-bulk" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-brand-600 hover:from-indigo-500 hover:to-brand-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Lote de Configurações
             </button>
+
+            <!-- Ações de Exportação em Massa -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
+              <button type="button" onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Baixar Lote Completo (.ZIP)
+              </button>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="saveBulkToDisk()" id="btn-save-bulk-disk" disabled class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-semibold text-[11px] transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400"></i> Salvar no Disco
+                </button>
+                <button type="button" onclick="sendBulkToScanner()" id="btn-send-bulk-scanner" disabled class="py-2.5 px-3 rounded-xl bg-purple-950/50 hover:bg-purple-900 border border-purple-500/40 disabled:opacity-40 disabled:cursor-not-allowed text-purple-200 font-semibold text-[11px] transition flex items-center justify-center gap-1.5" title="Enviar essas configs para a fila do Scanner ADB">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-purple-300"></i> Ir para Scanner
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Coluna da Direita: Tabela do Lote Gerado (8 Colunas) -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1 gap-4">
             
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="downloadSingleZip()" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar ZIP
-              </button>
-              <button onclick="saveSingleToDisk()" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Salvar no Disco
-              </button>
-            </div>
-          </div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-border">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="list-ordered" class="w-5 h-5 text-brand-400"></i> Configurações Geradas no Lote
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Visualize todos os itens gerados e baixe pacotes ZIP com 1 clique</p>
+              </div>
 
-        </div>
-      </div>
-
-      <!-- Preview do Código & Injeção ADB Individual -->
-      <div class="lg:col-span-8 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
-          
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-border">
-            <!-- Tabs do Visualizador -->
-            <div class="flex items-center gap-1.5 p-1 bg-dark-input rounded-xl border border-dark-border">
-              <button onclick="switchPreviewFile('.config')" id="preview-tab-config" class="preview-tab active px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 flex items-center gap-1.5">
-                <i data-lucide="file-code" class="w-3.5 h-3.5"></i> .config
-              </button>
-              <button onclick="switchPreviewFile('.properties')" id="preview-tab-properties" class="preview-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover flex items-center gap-1.5">
-                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> .properties
-              </button>
-              <button onclick="switchPreviewFile('cache.config.xml')" id="preview-tab-xml" class="preview-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover flex items-center gap-1.5">
-                <i data-lucide="code" class="w-3.5 h-3.5"></i> cache.config.xml
-              </button>
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-brand-300 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 font-mono">
+                  Total: <span id="bulk-result-count">0</span> configs
+                </span>
+                <input type="text" id="bulk-search-input" placeholder="Filtrar MAC ou Pasta..." class="px-3 py-1.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-mono focus:border-brand-500 focus:outline-none w-44" oninput="filterBulkTable(this.value)">
+              </div>
             </div>
 
-            <!-- Copy, Download & Injetar -->
-            <div class="flex items-center gap-2">
-              <button onclick="copyCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
-              </button>
-              <button onclick="downloadCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Baixar
-              </button>
-              <button onclick="injectDirectAdb()" id="btn-single-inject" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs transition shadow-md flex items-center gap-1.5">
-                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Injetar no ADB
-              </button>
+            <!-- Tabela de Configurações -->
+            <div class="flex-1 overflow-x-auto rounded-xl border border-dark-border max-h-[460px]">
+              <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-dark-card border-b border-dark-border text-slate-400 sticky top-0 z-10">
+                  <tr>
+                    <th class="px-3 py-2.5 w-12">#</th>
+                    <th class="px-3 py-2.5">Pasta</th>
+                    <th class="px-3 py-2.5">Endereço MAC</th>
+                    <th class="px-3 py-2.5">User ID</th>
+                    <th class="px-3 py-2.5">Device ID</th>
+                    <th class="px-3 py-2.5 text-right w-20">Baixar</th>
+                  </tr>
+                </thead>
+                <tbody id="bulk-table-body" class="divide-y divide-dark-border/40 text-slate-200">
+                  <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-slate-500 font-sans">
+                      Selecione a <strong>Origem</strong> e a <strong>Quantidade</strong> ao lado e clique em <strong>"Gerar Lote de Configurações"</strong>.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          <!-- Code View Area -->
-          <div class="mt-4 flex-1 relative min-h-[360px]">
-            <pre class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[460px]" id="code-viewer"></pre>
           </div>
         </div>
+
       </div>
+
     </div>
 
-    <!-- TAB 2: SCANNER & VALIDADOR DE LOTES (CENTRAL UNIFICADA) -->
+    <!-- TAB 2: SCANNER & VALIDADOR ADB (TESTE NO EMULADOR) -->
     <div id="tab-scanner" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       <!-- Coluna da Esquerda: Controles em 3 Passos (4 Colunas) -->
@@ -1156,17 +1307,275 @@
         const data = await res.json();
         
         const saveRes = await fetch('/api/save-to-disk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ configs: [data] })
-        });
-        const saveData = await saveRes.json();
-        if (saveData.success) {
+          method        if (saveData.success) {
           showToast(`Configuração salva na pasta ${folder}!`);
         }
       } catch (e) {
         showToast("Modo cliente: use 'Baixar ZIP'!", true);
       }
+    }
+
+    // --- CONTROLADOR DO MODO DO GERADOR (INDIVIDUAL / LOTE) ---
+    let currentGenSubMode = 'single'; // 'single' | 'bulk'
+    let currentBulkGenSource = 'local'; // 'local' | 'cloud' | 'random'
+
+    function switchGenMode(mode) {
+      currentGenSubMode = mode;
+      const btnSingle = document.getElementById('gen-mode-btn-single');
+      const btnBulk = document.getElementById('gen-mode-btn-bulk');
+      const viewSingle = document.getElementById('view-gen-single');
+      const viewBulk = document.getElementById('view-gen-bulk');
+      const desc = document.getElementById('gen-mode-desc');
+
+      if (mode === 'single') {
+        if (btnSingle) {
+          btnSingle.className = "gen-mode-btn active px-4 py-2 rounded-lg font-bold text-xs transition flex items-center gap-2 bg-brand-500/20 text-brand-300 border border-brand-500/30 shadow-sm";
+        }
+        if (btnBulk) {
+          btnBulk.className = "gen-mode-btn px-4 py-2 rounded-lg font-semibold text-xs text-slate-400 hover:text-white transition flex items-center gap-2";
+        }
+        if (viewSingle) viewSingle.classList.remove('hidden');
+        if (viewBulk) viewBulk.classList.add('hidden');
+        if (desc) desc.innerHTML = `<i data-lucide="info" class="w-3.5 h-3.5 text-brand-400"></i><span>Gere e baixe arquivos individuais com preview instantâneo.</span>`;
+      } else {
+        if (btnBulk) {
+          btnBulk.className = "gen-mode-btn active px-4 py-2 rounded-lg font-bold text-xs transition flex items-center gap-2 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-sm";
+        }
+        if (btnSingle) {
+          btnSingle.className = "gen-mode-btn px-4 py-2 rounded-lg font-semibold text-xs text-slate-400 hover:text-white transition flex items-center gap-2";
+        }
+        if (viewSingle) viewSingle.classList.add('hidden');
+        if (viewBulk) viewBulk.classList.remove('hidden');
+        if (desc) desc.innerHTML = `<i data-lucide="info" class="w-3.5 h-3.5 text-indigo-400"></i><span>Gere pacotes em massa prontos em ZIP sem precisar de emulador/ADB conectado.</span>`;
+      }
+      lucide.createIcons();
+    }
+
+    function setBulkGenSource(src) {
+      currentBulkGenSource = src;
+      const btnLocal = document.getElementById('bulk-src-local');
+      const btnCloud = document.getElementById('bulk-src-cloud');
+      const btnRandom = document.getElementById('bulk-src-random');
+
+      [btnLocal, btnCloud, btnRandom].forEach(b => {
+        if (b) {
+          b.className = "bulk-src-btn py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-300 hover:text-white font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
+        }
+      });
+
+      if (src === 'local' && btnLocal) {
+        btnLocal.className = "bulk-src-btn py-2.5 px-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
+      } else if (src === 'cloud' && btnCloud) {
+        btnCloud.className = "bulk-src-btn py-2.5 px-2 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
+      } else if (src === 'random' && btnRandom) {
+        btnRandom.className = "bulk-src-btn py-2.5 px-2 rounded-xl bg-purple-950/40 border border-purple-500/40 text-purple-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
+      }
+    }
+
+    async function runBulkGeneration() {
+      const count = parseInt(document.getElementById('bulk-gen-count').value) || 10;
+      const prefix = document.getElementById('bulk-gen-prefix').value.trim() || "CONFIG_";
+      const startIndex = parseInt(document.getElementById('bulk-gen-start').value) || 1;
+      const btn = document.getElementById('btn-run-bulk');
+      const origHtml = btn ? btn.innerHTML : "";
+
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Gerando ${count} Configs...`;
+        btn.disabled = true;
+      }
+
+      currentBulkList = [];
+      const tbody = document.getElementById('bulk-table-body');
+      if (tbody) tbody.innerHTML = "";
+
+      try {
+        if (currentBulkGenSource === 'cloud') {
+          showToast(`Buscando ${count} configurações da nuvem...`);
+          const res = await fetch(`/api/cloud/batch?count=${count}`);
+          const data = await res.json();
+          if (data && data.items && data.items.length > 0) {
+            data.items.forEach((cItem, i) => {
+              const idx = startIndex + i;
+              const folderName = `${prefix}${idx}`;
+              const mac = cItem.mac || generateSmartRandomMAC();
+              
+              const devMatch = cItem.config.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
+              let devIdB64 = devMatch ? devMatch[1] : "-";
+              if (devMatch && devMatch[1]) {
+                let raw = "";
+                for (let k = 0; k < devMatch[1].length; k += 2) {
+                  raw += String.fromCharCode(parseInt(devMatch[1].substr(k, 2), 16));
+                }
+                devIdB64 = raw || devMatch[1];
+              }
+
+              const itemObj = {
+                folder_name: folderName,
+                mac: mac,
+                user_id: "Conta Nuvem",
+                dev_id_b64: devIdB64,
+                files: {
+                  ".config": cItem.config,
+                  ".properties": cItem.config,
+                  "cache.config.xml": ""
+                }
+              };
+              currentBulkList.push(itemObj);
+            });
+          }
+        } else if (currentBulkGenSource === 'random') {
+          for (let i = 0; i < count; i++) {
+            const idx = startIndex + i;
+            const folderName = `${prefix}${idx}`;
+            const mac = generateRandomMAC();
+            const freshUid = generateRandomUserId();
+            const item = buildFullyRandomConfig(mac, folderName, freshUid, "SBTHD");
+            currentBulkList.push(item);
+          }
+        } else {
+          // Local (Cripto DES oficial)
+          for (let i = 0; i < count; i++) {
+            const idx = startIndex + i;
+            const mac = generateSmartRandomMAC();
+            const folderName = `${prefix}${idx}`;
+            const freshUid = generateRandomUserId();
+            const freshDev = generateFreshDeviceId();
+            const item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
+            currentBulkList.push(item);
+          }
+        }
+
+        renderBulkTable(currentBulkList);
+        const countEl = document.getElementById('bulk-result-count');
+        if (countEl) countEl.innerText = currentBulkList.length;
+        const btnZip = document.getElementById('btn-download-bulk-zip');
+        const btnDisk = document.getElementById('btn-save-bulk-disk');
+        const btnScan = document.getElementById('btn-send-bulk-scanner');
+        if (btnZip) btnZip.disabled = (currentBulkList.length === 0);
+        if (btnDisk) btnDisk.disabled = (currentBulkList.length === 0);
+        if (btnScan) btnScan.disabled = (currentBulkList.length === 0);
+        showToast(`✔ Lote de ${currentBulkList.length} configurações gerado com sucesso!`);
+      } catch (err) {
+        console.error(err);
+        showToast("Erro ao gerar lote: " + err.message, true);
+      } finally {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    function renderBulkTable(items) {
+      const tbody = document.getElementById('bulk-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500 font-sans">Nenhuma configuração no lote.</td></tr>`;
+        return;
+      }
+
+      items.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-dark-hover/50 transition";
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-slate-400 font-sans text-xs">${idx + 1}</td>
+          <td class="px-3 py-2 font-medium text-white">${item.folder_name}</td>
+          <td class="px-3 py-2 text-cyan-300 font-semibold">${item.mac}</td>
+          <td class="px-3 py-2 text-amber-300">${item.user_id}</td>
+          <td class="px-3 py-2 text-indigo-300 truncate max-w-[150px]">${item.dev_id_b64 || '-'}</td>
+          <td class="px-3 py-2 text-right">
+            <button onclick="downloadSingleItemFromBulk(${idx})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar .config individual">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function filterBulkTable(query) {
+      query = (query || "").toLowerCase().trim();
+      const rows = document.querySelectorAll('#bulk-table-body tr');
+      rows.forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        if (!query || text.includes(query)) {
+          tr.classList.remove('hidden');
+        } else {
+          tr.classList.add('hidden');
+        }
+      });
+    }
+
+    function downloadSingleItemFromBulk(idx) {
+      const item = currentBulkList[idx];
+      if (!item || !item.files || !item.files['.config']) return;
+      downloadRawFile(item.files['.config'], `${item.folder_name}.config`);
+      showToast(`Arquivo ${item.folder_name}.config baixado!`);
+    }
+
+    async function downloadBulkZip() {
+      if (!currentBulkList || currentBulkList.length === 0) {
+        showToast("Nenhuma configuração no lote para baixar.", true);
+        return;
+      }
+
+      const zip = new JSZip();
+      currentBulkList.forEach((item) => {
+        const folder = zip.folder(item.folder_name);
+        for (const [fname, content] of Object.entries(item.files)) {
+          folder.file(fname, content);
+        }
+        folder.file(`Android/.config`, item.files['.config']);
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `LOTE_${currentBulkList.length}_CONFIGS.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`📦 Pacote ZIP com todas as ${currentBulkList.length} configs baixado com sucesso!`);
+    }
+
+    async function saveBulkToDisk() {
+      if (!currentBulkList || currentBulkList.length === 0) return;
+      try {
+        const res = await fetch('/api/save-to-disk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ configs: currentBulkList })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✔ Todas as ${data.saved_count} pastas foram salvas no disco!`);
+        }
+      } catch (e) {
+        showToast("Modo cliente web: utilize 'Baixar Lote Completo (.ZIP)'!", true);
+      }
+    }
+
+    function sendBulkToScanner() {
+      if (!currentBulkList || currentBulkList.length === 0) return;
+      batchQueue = [];
+      batchResults = [];
+      const tbody = document.getElementById('batch-results-table-body');
+      if (tbody) tbody.innerHTML = "";
+
+      currentBulkList.forEach((item) => {
+        batchQueue.push({
+          name: `${item.folder_name}.config`,
+          content: item.files['.config']
+        });
+      });
+
+      updateBatchCounters();
+      switchTab('scanner');
+      showToast(`🚀 ${currentBulkList.length} configs enviadas para a fila do Scanner ADB!`);
     }
 
     function toggleElement(id, chevronId) {
@@ -1195,11 +1604,13 @@
       const target = document.getElementById(`tab-${tabName}`);
       if (target) {
         target.classList.remove('hidden');
-        if (tabName === 'single' || tabName === 'scanner') {
+        if (tabName === 'single') {
+          target.classList.remove('grid');
+          target.classList.add('flex');
+        } else if (tabName === 'scanner') {
           target.classList.add('grid');
         }
       }
-
       lucide.createIcons();
     }
 
