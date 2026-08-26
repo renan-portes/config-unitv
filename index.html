@@ -153,16 +153,22 @@
             <!-- MAC Address Input -->
             <div class="flex flex-col gap-1.5">
               <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-300">Endereço MAC (Fixo / Random)</label>
+                <label class="text-xs font-semibold text-slate-300">Endereço MAC</label>
                 <button onclick="randomizeMacOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                  <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear MAC
+                  <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear Finais
                 </button>
               </div>
-              <div class="relative">
-                <input type="text" id="input-mac" value="9C:00:D3:EC:AA:01" 
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none uppercase"
-                  oninput="updateSinglePreview()">
+              <div class="flex items-center rounded-xl bg-dark-input border border-dark-border overflow-hidden focus-within:border-brand-500">
+                <span class="px-3.5 py-2.5 bg-dark-card border-r border-dark-border text-slate-300 font-mono text-xs font-bold select-none flex items-center gap-1.5 whitespace-nowrap">
+                  <i data-lucide="lock" class="w-3 h-3 text-brand-400"></i>
+                  9C:00:D3:
+                </span>
+                <input type="text" id="input-mac-suffix" value="EC:AA:01" maxlength="8"
+                  class="w-full px-3.5 py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600"
+                  placeholder="EC:AA:01"
+                  oninput="onSingleMacSuffixInput(this)">
               </div>
+              <input type="hidden" id="input-mac" value="9C:00:D3:EC:AA:01">
             </div>
 
             <!-- User ID Input -->
@@ -301,21 +307,31 @@
             <!-- Endereço MAC Manual / Base (Opcional) -->
             <div class="flex flex-col gap-1.5">
               <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-300">Endereço MAC (Manual / Base)</label>
+                <label class="text-xs font-semibold text-slate-300">Endereço MAC Base (Opcional)</label>
                 <div class="flex items-center gap-2">
                   <button type="button" onclick="randomizeBulkMacBase()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                    <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear
+                    <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear Finais
                   </button>
                   <button type="button" onclick="clearBulkMac()" class="text-[11px] text-slate-400 hover:text-slate-200 hover:underline">
                     Limpar
                   </button>
                 </div>
               </div>
-              <input type="text" id="bulk-gen-mac" placeholder="Ex: 9C:00:D3:EC:AA:01 (ou deixe vazio para sortear)" class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-mono focus:border-brand-500 focus:outline-none uppercase">
+              <div class="flex items-center rounded-xl bg-dark-input border border-dark-border overflow-hidden focus-within:border-brand-500">
+                <span class="px-3.5 py-2.5 bg-dark-card border-r border-dark-border text-slate-300 font-mono text-xs font-bold select-none flex items-center gap-1.5 whitespace-nowrap">
+                  <i data-lucide="lock" class="w-3 h-3 text-indigo-400"></i>
+                  9C:00:D3:
+                </span>
+                <input type="text" id="bulk-gen-mac-suffix" value="EC:AA:01" maxlength="8"
+                  class="w-full px-3.5 py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600"
+                  placeholder="EC:AA:01 ou vazio"
+                  oninput="onBulkMacSuffixInput(this)">
+              </div>
+              <input type="hidden" id="bulk-gen-mac" value="9C:00:D3:EC:AA:01">
               <div class="flex items-center justify-between gap-2 mt-0.5">
                 <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none">
                   <input type="checkbox" id="bulk-mac-sequential" checked class="w-3.5 h-3.5 rounded bg-dark-input border-dark-border text-brand-500 focus:ring-0">
-                  <span>Incrementar MAC sequencialmente (+1)</span>
+                  <span>Incrementar final sequencialmente (+1)</span>
                 </label>
               </div>
             </div>
@@ -1164,6 +1180,22 @@
       showToast(`Novo User ID sorteado: ${uid}`);
     }
 
+    function formatMacSuffix(val) {
+      let clean = (val || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+      if (clean.length > 6) clean = clean.slice(0, 6);
+      let parts = clean.match(/.{1,2}/g);
+      return parts ? parts.join(':') : clean;
+    }
+
+    function onSingleMacSuffixInput(el) {
+      const formatted = formatMacSuffix(el.value);
+      el.value = formatted;
+      const fullMac = formatted ? `9C:00:D3:${formatted}` : "9C:00:D3:EC:AA:01";
+      const hiddenMac = document.getElementById('input-mac');
+      if (hiddenMac) hiddenMac.value = fullMac;
+      updateSinglePreview();
+    }
+
     function generateSmartRandomMAC() {
       // Sorteia o byte final de 00 a FF no prefixo nativo 9C:00:D3:EC:AA (padrão de decodificação de token do UniTV)
       const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
@@ -1171,17 +1203,21 @@
     }
 
     function randomizeAll() {
-      const mac = generateSmartRandomMAC();
+      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      const suffix = `EC:AA:${lastByte}`;
+      const fullMac = `9C:00:D3:${suffix}`;
       const uid = generateRandomUserId();
       const folder = "CONFIG_RANDOM_" + Math.floor(1000 + Math.random() * 9000);
       const freshDev = generateFreshDeviceId();
 
+      const suffixEl = document.getElementById('input-mac-suffix');
       const macEl = document.getElementById('input-mac');
       const uidEl = document.getElementById('input-uid');
       const folderEl = document.getElementById('input-folder');
       const devEl = document.getElementById('input-devid');
 
-      if (macEl) macEl.value = mac;
+      if (suffixEl) suffixEl.value = suffix;
+      if (macEl) macEl.value = fullMac;
       if (uidEl) uidEl.value = uid;
       if (folderEl) folderEl.value = folder;
       if (devEl) devEl.value = freshDev.b64;
@@ -1194,16 +1230,22 @@
     }
 
     function randomizeMacOnly() {
-      const mac = generateSmartRandomMAC();
+      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      const suffix = `EC:AA:${lastByte}`;
+      const fullMac = `9C:00:D3:${suffix}`;
+      
+      const suffixEl = document.getElementById('input-mac-suffix');
       const macEl = document.getElementById('input-mac');
-      if (macEl) macEl.value = mac;
+      if (suffixEl) suffixEl.value = suffix;
+      if (macEl) macEl.value = fullMac;
+      
       const freshDev = generateFreshDeviceId();
       currentDeviceIdHex = freshDev.hex;
       currentDeviceIdB64 = freshDev.b64;
       const devEl = document.getElementById('input-devid');
       if (devEl) devEl.value = freshDev.b64;
       updateSinglePreview();
-      showToast(`Novo MAC ${mac} gerado!`);
+      showToast(`Novo MAC ${fullMac} gerado!`);
     }
 
     function updateSinglePreview() {
@@ -1378,20 +1420,32 @@
       lucide.createIcons();
     }
 
+    function onBulkMacSuffixInput(el) {
+      const formatted = formatMacSuffix(el.value);
+      el.value = formatted;
+      const fullMac = formatted ? `9C:00:D3:${formatted}` : "";
+      const hiddenMac = document.getElementById('bulk-gen-mac');
+      if (hiddenMac) hiddenMac.value = fullMac;
+    }
+
     function randomizeBulkMacBase() {
-      const el = document.getElementById('bulk-gen-mac');
-      if (el) {
-        el.value = generateSmartRandomMAC();
-        showToast(`MAC Base sorteado: ${el.value}`);
-      }
+      const lastByte = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      const suffix = `EC:AA:${lastByte}`;
+      const fullMac = `9C:00:D3:${suffix}`;
+      
+      const suffixEl = document.getElementById('bulk-gen-mac-suffix');
+      const hiddenMac = document.getElementById('bulk-gen-mac');
+      if (suffixEl) suffixEl.value = suffix;
+      if (hiddenMac) hiddenMac.value = fullMac;
+      showToast(`MAC Base sorteado: ${fullMac}`);
     }
 
     function clearBulkMac() {
-      const el = document.getElementById('bulk-gen-mac');
-      if (el) {
-        el.value = "";
-        showToast("Campo MAC limpo. O gerador sorteará automaticamente.");
-      }
+      const suffixEl = document.getElementById('bulk-gen-mac-suffix');
+      const hiddenMac = document.getElementById('bulk-gen-mac');
+      if (suffixEl) suffixEl.value = "";
+      if (hiddenMac) hiddenMac.value = "";
+      showToast("Campo MAC limpo. O gerador sorteará automaticamente.");
     }
 
     function getSequentialMAC(baseMac, offset) {
@@ -1743,7 +1797,14 @@
         const macMatch = content.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) || 
                          content.match(/([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})/);
         if (macMatch) {
-          document.getElementById('input-mac').value = macMatch[1].toUpperCase();
+          const fullMac = macMatch[1].toUpperCase();
+          const hiddenMac = document.getElementById('input-mac');
+          if (hiddenMac) hiddenMac.value = fullMac;
+          const suffixEl = document.getElementById('input-mac-suffix');
+          if (suffixEl) {
+            const parts = fullMac.split(':');
+            suffixEl.value = parts.length === 6 ? parts.slice(3).join(':') : fullMac.slice(-8);
+          }
         }
 
         const devMatch = content.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
