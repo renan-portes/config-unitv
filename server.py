@@ -585,14 +585,20 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=3)
         time.sleep(0.5)
         
-        # 3. Abre o diálogo de perfil calculando a posição proporcional à resolução real da tela
-        width, height = get_screen_size(device)
-        tap_x = int(width * 0.985)
-        tap_y = int(height * 0.083)
+        # 3. Descobre as coordenadas reais do ícone de perfil (mIvPersonal) via UI Dump
+        tap_x, tap_y = 1262, 60
+        try:
+            dump_home = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/home_coords.xml && cat /sdcard/home_coords.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
+            m_bounds = re.search(r'resource-id="[^"]*mIvPersonal"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', dump_home.stdout)
+            if m_bounds:
+                x1, y1, x2, y2 = map(int, m_bounds.groups())
+                tap_x, tap_y = (x1 + x2) // 2, (y1 + y2) // 2
+        except Exception:
+            pass
         subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=3)
         time.sleep(1.5)
         
-        # 4. Dump da hierarquia da tela
+        # 4. Dump da hierarquia da tela do diálogo de perfil
         subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml"], capture_output=True, timeout=5)
         dump_res = subprocess.run([adb_bin, "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=5)
         
