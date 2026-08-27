@@ -5,11 +5,13 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [1.5.0] - 27-08-2026
-### 🚀 Inteligência Coletiva via Banco de Dados (ORM / SQLite)
+### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Sistema de Usuários e Segurança JWT:** Mapeamento do modelo `User` com hashing seguro via `bcrypt` e emissão de tokens `JWT` com controle de papéis (`user` / `admin`).
+- **Isolamento Multi-tenant no Histórico:** Relação `user_id` Foreign Key em `AccountHistory`. Usuários comuns visualizam exclusivamente suas próprias configurações mineradas no endpoint `/api/history`, enquanto administradores possuem visão global.
+- **Proteção de Rotas com Bearer Auth:** Endpoints sensíveis (`/api/adb/inject`, `/api/history`) agora exigem autenticação JWT válida via header `Authorization: Bearer <token>`.
+- **Utilitário de Inicialização de Administrador (`create_admin.py`):** Script CLI independente para criar ou atualizar credenciais do primeiro superusuário do sistema.
 - **Persistência com SQLAlchemy:** Implementação de ORM desacoplado e agnóstico (compatível com SQLite local e PostgreSQL futuro via `DATABASE_URL`).
-- **Modelo AccountHistory:** Armazenamento estruturado de `mac`, `account_id`, `days_active`, `status_message`, `is_valid` e `tested_at`.
 - **Gravação Automática no Fluxo ADB:** Persistência atômica via `session.merge()` ao testar contas no emulador, registrando contas válidas, recicladas e rejeições (EF9, Falha de Acesso, Bloqueios).
-- **Endpoint REST `/api/history`:** Consulta dos últimos registros testados ordenados por data decrescente com suporte a paginação/limite.
 
 ---
 
