@@ -562,7 +562,7 @@
           <!-- Grid de 5 Estatísticas -->
           <div class="grid grid-cols-5 gap-2.5 text-xs font-mono">
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
-              <span class="text-[10px] text-slate-400 uppercase font-semibold">Na Fila</span>
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
               <span id="stat-batch-total" class="text-white font-bold text-lg mt-0.5">0</span>
             </div>
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
@@ -582,7 +582,7 @@
               <span id="stat-batch-approved" class="text-emerald-400 font-bold text-lg mt-0.5">0</span>
             </div>
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
-              <span class="text-[10px] text-slate-400 uppercase font-semibold">Reprovadas</span>
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">Recicladas</span>
               <span id="stat-batch-rejected" class="text-slate-400 font-bold text-lg mt-0.5">0</span>
             </div>
           </div>
@@ -1865,13 +1865,13 @@
     }
 
     function updateBatchCounters() {
-      const total = batchQueue.length;
+      const total = (currentBatchSource === 'cloud' && batchResults.length > 0) ? batchResults.length : (batchQueue.length || batchResults.length);
       const tested = batchResults.length;
-      const virgins = batchResults.filter(r => r.days_raw === 0).length;
+      const virgins = batchResults.filter(r => r.is_target || r.days_raw === 0).length;
       const approved = batchResults.filter(r => r.is_target).length;
       const rejected = batchResults.filter(r => !r.is_target).length;
 
-      document.getElementById('batch-queue-count').innerText = total;
+      document.getElementById('batch-queue-count').innerText = (currentBatchSource === 'cloud') ? tested : (batchQueue.length);
       document.getElementById('stat-batch-total').innerText = total;
       document.getElementById('stat-batch-tested').innerText = tested;
       document.getElementById('stat-batch-virgins').innerText = virgins;
@@ -1883,7 +1883,7 @@
 
       const btnStart = document.getElementById('btn-start-batch');
       if (btnStart) {
-        btnStart.disabled = (total === 0 || isBatchRunning);
+        btnStart.disabled = (batchQueue.length === 0 || isBatchRunning);
       }
       const btnDownloadApp = document.getElementById('btn-download-approved-zip');
       if (btnDownloadApp) {
@@ -1929,7 +1929,7 @@
     }
 
     async function loadBatchFromCloud() {
-      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
+      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 100;
       const btn = document.getElementById('btn-batch-cloud');
       const origHtml = btn ? btn.innerHTML : "";
       if (btn) {
@@ -1940,23 +1940,62 @@
       try {
         batchQueue = [];
         batchResults = [];
-        document.getElementById('batch-results-table-body').innerHTML = "";
+        const tbody = document.getElementById('batch-results-table-body');
+        if (tbody) tbody.innerHTML = "";
+
+        const pBar = document.getElementById('batch-progress-bar');
+        const pPercent = document.getElementById('batch-progress-percent');
+        const pStatus = document.getElementById('batch-progress-status');
+        if (pBar) pBar.style.width = "40%";
+        if (pPercent) pPercent.innerText = "40%";
+        if (pStatus) pStatus.innerText = `Baixando e processando ${qty} contas da nuvem em RAM...`;
 
         const res = await fetch(`/api/cloud/batch?count=${qty}`);
         const data = await res.json();
+        
         if (data && data.items && data.items.length > 0) {
           data.items.forEach((item, idx) => {
-            batchQueue.push({
-              name: `cloud_${item.mac ? item.mac.replace(/:/g, '') : (idx + 1)}.config`,
-              content: item.config
-            });
+            const uidStr = (item.user_id_int && item.user_id_int > 0) ? String(item.user_id_int) : "-";
+            const macAddr = (item.mac && item.mac !== "-") ? item.mac : extractMacFromText(item.config);
+            
+            const resultItem = {
+              index: idx + 1,
+              id: item.id,
+              name: `cloud_${item.id.slice(0, 8)}.config`,
+              mac: macAddr,
+              account_id: uidStr,
+              activation_date: "-",
+              days_raw: item.is_target ? 0 : null,
+              days_active: item.is_target ? "0 dias" : "-",
+              expiration_date: "-",
+              duration_sec: (item.duration_sec !== undefined && item.duration_sec !== null) ? String(item.duration_sec) : "0.1",
+              is_target: Boolean(item.is_target),
+              is_valid: Boolean(item.is_target),
+              status: item.status,
+              config: item.config,
+              content: item.config,
+              user_id_int: item.user_id_int || 0
+            };
+
+            batchResults.push(resultItem);
+            appendBatchTableRow(resultItem);
           });
+
           updateBatchCounters();
-          showToast(`${batchQueue.length} configs da nuvem carregadas na fila!`);
+          
+          if (pBar) pBar.style.width = "100%";
+          if (pPercent) pPercent.innerText = "100%";
+          if (pStatus) pStatus.innerText = `⚡ Varredura em lote da nuvem concluída (${data.items.length} contas em ${data.duration_total_sec || '0.5'}s)!`;
+
+          const virginsCount = batchResults.filter(r => r.is_target).length;
+          showToast(`⚡ ${data.items.length} contas da nuvem processadas em ${data.duration_total_sec}s! (${virginsCount} Virgens 0 Dias)`);
         } else {
+          if (pStatus) pStatus.innerText = "Nenhuma configuração retornada pela nuvem.";
           showToast("Falha ao carregar lote da nuvem.", true);
         }
       } catch (e) {
+        const pStatus = document.getElementById('batch-progress-status');
+        if (pStatus) pStatus.innerText = "Erro ao conectar à nuvem.";
         showToast("Erro ao carregar da nuvem: " + e.message, true);
       } finally {
         if (btn) {
@@ -2284,7 +2323,7 @@
     function downloadSingleBatchConfig(index) {
       const item = batchResults[index] || batchQueue[index];
       if (!item) return;
-      const xmlContent = generateXmlTemplate(item.mac);
+      const xmlContent = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(item.mac);
       const blob = new Blob([xmlContent], { type: 'text/xml;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -2304,9 +2343,9 @@
 
       const zip = new JSZip();
       approved.forEach((item, idx) => {
-        const daysClean = String(item.days_raw !== null ? item.days_raw : (item.days_active || "0")).replace(/[^0-9]/g, '') || "0";
-        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS`;
-        const xmlContent = generateXmlTemplate(item.mac);
+        const idVal = (item.user_id_int && item.user_id_int > 0) ? item.user_id_int : (item.account_id && item.account_id !== "-" ? item.account_id : (item.id ? item.id.slice(0, 8) : (idx + 1)));
+        const folderName = `CONFIG_${idVal}_0DIAS`;
+        const xmlContent = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(item.mac);
         zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
 
@@ -2317,7 +2356,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com ${approved.length} configs aprovadas (apenas cache.config.xml) baixado com sucesso!`);
+      showToast(`Pacote ZIP com ${approved.length} configs aprovadas (CONFIG_{ID}_0DIAS/cache.config.xml) baixado com sucesso!`);
     }
 
     async function downloadAllBatchZip() {

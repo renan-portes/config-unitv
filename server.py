@@ -292,7 +292,11 @@ def save_to_disk(req: SaveDiskRequest):
 # --- POOL DA NUVEM (10.231 CONFIGS) ---
 
 def load_cloud_ids() -> list:
-    """Carrega a lista de IDs localmente de ids.json ou faz fallback para URL remota"""
+    """Carrega a lista de IDs localmente de ids.json ou faz fallback para URL remota (com cache em RAM)"""
+    global cached_cloud_ids
+    if cached_cloud_ids:
+        return cached_cloud_ids
+
     local_file = os.path.join(BASE_DIR, "ids.json")
     if os.path.exists(local_file):
         try:
@@ -300,16 +304,21 @@ def load_cloud_ids() -> list:
                 data = json.load(f)
                 ids = data.get("arquivos", [])
                 if ids:
+                    cached_cloud_ids = ids
                     return ids
         except Exception as e:
             print(f"Aviso ao ler ids.json local: {e}")
             
     try:
         r = requests.get(CLOUD_IDS_URL, timeout=10)
-        return r.json().get("arquivos", [])
+        ids = r.json().get("arquivos", [])
+        if ids:
+            cached_cloud_ids = ids
+            return ids
     except Exception as e:
         print(f"Aviso ao buscar ids remotos: {e}")
         return []
+    return []
 
 
 @app.get("/api/cloud/random")
@@ -348,41 +357,88 @@ def get_random_cloud_config():
 
 
 @app.get("/api/cloud/batch")
-def get_batch_cloud_configs(count: int = 10):
-    """Retorna múltiplas configurações da nuvem em paralelo super rápido"""
+def get_batch_cloud_configs(count: int = 100):
+    """
+    Ticket #4: Download paralelo de configurações do Google Drive e parsing 100% em memória RAM.
+    Utiliza ThreadPoolExecutor com 15 a 20 workers para velocidade máxima e aplica o Filtro de Ouro:
+      - int(user_id) >= 567000000 -> is_target=True (✨ Virgem / 0 Dias)
+      - int(user_id) < 567000000  -> is_target=False (🗑️ Reciclada)
+    """
+    t_start = time.time()
     try:
         ids = load_cloud_ids()
         if not ids:
-            raise HTTPException(status_code=500, detail="Pool de IDs da nuvem vazio ou indisponível")
+            raise HTTPException(status_code=503, detail="Pool de IDs da nuvem vazio ou indisponível")
             
-        chosen_ids = random.sample(ids, min(count, len(ids), 50))
+        actual_count = max(1, min(count, len(ids)))
+        chosen_ids = random.sample(ids, actual_count)
         
         def fetch_one(id_str):
             try:
+                t_req = time.time()
                 url = f"https://drive.google.com/uc?export=download&id={id_str}"
-                r = requests.get(url, timeout=6)
-                if r.ok and "key_device_id_unitvfree" in r.text:
+                r = requests.get(url, timeout=8)
+                req_time = round(time.time() - t_req, 2)
+                
+                if r.ok and r.text:
                     text = r.text
-                    mac_m = re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n]+)', text) or re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text)
-                    mac = mac_m.group(1).upper() if mac_m else engine.generate_smart_random_mac()
+                    
+                    # Regex para extração de MAC (KEY_SP_SN / SP_SN_BACKUP / key_mac / padrão MAC)
+                    mac_m = (re.search(r'name=["\']KEY_SP_SN["\'][^>]*>([^<]+)<', text) or
+                             re.search(r'name=["\']SP_SN_BACKUP["\'][^>]*>([^<]+)<', text) or
+                             re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n<"]+)', text) or
+                             re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text))
+                    mac = mac_m.group(1).upper() if mac_m else "-"
+                    
+                    # Regex para extração de key_user_id
+                    uid_m = (re.search(r'name=["\']key_user_id["\'][^>]*>([0-9]+)<', text) or
+                             re.search(r'key_user_id[=:]\s*([0-9]+)', text) or
+                             re.search(r'user_id[=:]\s*([0-9]+)', text))
+                    
+                    user_id_int = 0
+                    if uid_m:
+                        try:
+                            user_id_int = int(uid_m.group(1))
+                        except (ValueError, TypeError):
+                            user_id_int = 0
+                    
+                    # Regra de Negócio: O Filtro de Ouro
+                    if user_id_int >= 567000000:
+                        is_target = True
+                        status = "✨ 0 DIAS (VIRGEM)"
+                    else:
+                        is_target = False
+                        status = "🗑️ Reciclada"
+                        
                     return {
                         "id": id_str,
                         "mac": mac,
+                        "user_id_int": user_id_int,
+                        "status": status,
+                        "is_target": is_target,
+                        "duration_sec": req_time,
                         "config": text
                     }
             except Exception:
                 pass
             return None
 
-        with ThreadPoolExecutor(max_workers=min(count, 15)) as executor:
+        # Utiliza entre 15 e 20 workers para concorrência ideal
+        workers = min(max(15, min(actual_count, 20)), 20)
+        with ThreadPoolExecutor(max_workers=workers) as executor:
             results = list(executor.map(fetch_one, chosen_ids))
 
         valid_results = [res for res in results if res is not None]
+        total_duration = round(time.time() - t_start, 2)
+        
         return {
             "count": len(valid_results),
             "total_available": len(ids),
+            "duration_total_sec": total_duration,
             "items": valid_results
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar lote na nuvem: {str(e)}")
 
