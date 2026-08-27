@@ -473,8 +473,8 @@
       <div class="lg:col-span-8 flex flex-col gap-4">
         <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1 gap-4">
           
-          <!-- Grid de 5 Estatísticas -->
-          <div class="grid grid-cols-5 gap-2.5 text-xs font-mono">
+          <!-- Grid de 4 Estatísticas -->
+          <div class="grid grid-cols-4 gap-2.5 text-xs font-mono">
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
               <span class="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
               <span id="stat-batch-total" class="text-white font-bold text-lg mt-0.5">0</span>
@@ -488,12 +488,6 @@
                 <i data-lucide="sparkles" class="w-3 h-3"></i> 0 Dias
               </span>
               <span id="stat-batch-virgins" class="text-amber-300 font-bold text-lg mt-0.5">0</span>
-            </div>
-            <div class="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between">
-              <span class="text-[10px] text-emerald-400 uppercase font-bold flex items-center gap-1">
-                <i data-lucide="star" class="w-3 h-3"></i> Aprovadas
-              </span>
-              <span id="stat-batch-approved" class="text-emerald-400 font-bold text-lg mt-0.5">0</span>
             </div>
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
               <span class="text-[10px] text-slate-400 uppercase font-semibold">Recicladas</span>
@@ -521,7 +515,7 @@
                   Todas (<span id="filter-all-count">0</span>)
                 </button>
                 <button type="button" onclick="setTableFilter('approved')" id="btn-filter-approved" class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover transition">
-                  ⭐ Aprovadas (<span id="filter-app-count">0</span>)
+                  ✨ 0 Dias (<span id="filter-app-count">0</span>)
                 </button>
               </div>
               <button onclick="clearBatchTable()" class="text-[11px] text-slate-400 hover:text-slate-200 transition">
@@ -529,7 +523,7 @@
               </button>
             </div>
 
-            <!-- Tabela de Resultados -->
+            <!-- Tabela de Resultados (8 Colunas) -->
             <div class="overflow-auto max-h-[380px] rounded-xl border border-dark-border flex-1">
               <table class="w-full text-left text-xs text-slate-300">
                 <thead class="bg-dark-input text-slate-400 uppercase font-semibold sticky top-0">
@@ -538,9 +532,7 @@
                     <th class="px-2.5 py-2.5">Origem / Arquivo</th>
                     <th class="px-2.5 py-2.5 text-cyan-300">Endereço MAC</th>
                     <th class="px-2.5 py-2.5">ID Conta</th>
-                    <th class="px-2.5 py-2.5">Ativada em</th>
                     <th class="px-2.5 py-2.5">Dias Ativos</th>
-                    <th class="px-2.5 py-2.5 text-indigo-300">Expira em</th>
                     <th class="px-2.5 py-2.5 text-amber-300">Tempo (s)</th>
                     <th class="px-2.5 py-2.5">Resultado</th>
                     <th class="px-2.5 py-2.5 text-right">Ação</th>
@@ -548,7 +540,7 @@
                 </thead>
                 <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
                   <tr>
-                    <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
+                    <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">
                       Selecione a quantidade de configurações e clique em <strong>"Iniciar Scanner"</strong> para minerar e validar em tempo real.
                     </td>
                   </tr>
@@ -1720,7 +1712,7 @@
 
     // --- SCANNER & MINERADOR DIRETO ADB ---
     let batchQueue = []; // array of { name: string, mac: string, xml_content: string, content: string }
-    let batchResults = []; // array of { index, name, mac, content, account_id, activation_date, days_raw, days_active, is_target, is_valid, status }
+    let batchResults = []; // array of { index, name, mac, content, account_id, days_raw, days_active, duration_sec, is_target, is_valid, status }
     let isBatchRunning = false;
     let currentTableFilter = 'all'; // 'all' | 'approved'
 
@@ -1729,18 +1721,16 @@
       const tested = batchResults.length;
       const total = isBatchRunning || tested > 0 ? (batchQueue.length || tested) : qty;
       const virgins = batchResults.filter(r => r.days_raw === 0 || r.is_target).length;
-      const approved = batchResults.filter(r => r.is_target).length;
       const rejected = batchResults.filter(r => !r.is_target).length;
 
       document.getElementById('batch-queue-count').innerText = isBatchRunning || tested > 0 ? (batchQueue.length - tested > 0 ? batchQueue.length - tested : 0) : qty;
       document.getElementById('stat-batch-total').innerText = total;
       document.getElementById('stat-batch-tested').innerText = tested;
       document.getElementById('stat-batch-virgins').innerText = virgins;
-      document.getElementById('stat-batch-approved').innerText = approved;
       document.getElementById('stat-batch-rejected').innerText = rejected;
 
       document.getElementById('filter-all-count').innerText = tested;
-      document.getElementById('filter-app-count').innerText = approved;
+      document.getElementById('filter-app-count').innerText = virgins;
 
       const btnStart = document.getElementById('btn-start-batch');
       if (btnStart) {
@@ -1748,7 +1738,7 @@
       }
       const btnDownloadApp = document.getElementById('btn-download-approved-zip');
       if (btnDownloadApp) {
-        btnDownloadApp.disabled = (approved === 0);
+        btnDownloadApp.disabled = (virgins === 0);
       }
       const btnDownloadAll = document.getElementById('btn-download-all-zip');
       if (btnDownloadAll) {
@@ -1765,27 +1755,6 @@
       }
     }
 
-    function calculateExpirationDate(actDateStr, daysActive) {
-      if (!actDateStr || actDateStr === "-" || daysActive === null || daysActive === undefined) return "-";
-      try {
-        const parts = actDateStr.split('-');
-        if (parts.length === 3) {
-          const d = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10) - 1;
-          const y = parseInt(parts[2], 10);
-          const dt = new Date(y, m, d);
-          dt.setDate(dt.getDate() + parseInt(daysActive, 10));
-          const day = String(dt.getDate()).padStart(2, '0');
-          const month = String(dt.getMonth() + 1).padStart(2, '0');
-          const year = dt.getFullYear();
-          return `${day}-${month}-${year}`;
-        }
-      } catch (e) {
-        return "-";
-      }
-      return "-";
-    }
-
     function extractMacFromText(text) {
       if (!text) return "-";
       const m = text.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) ||
@@ -1799,7 +1768,6 @@
 
       const qty = parseInt(document.getElementById('batch-qty').value, 10) || 10;
       
-      // Gera as configurações locais na hora para o teste ADB direto
       batchQueue = [];
       for (let i = 0; i < qty; i++) {
         const mac = generateSmartRandomMAC();
@@ -1881,7 +1849,6 @@
           }
 
           const macAddr = (info.mac && info.mac !== "-") ? info.mac : (item.mac || extractMacFromText(item.content) || "-");
-          const expiraDate = (info.expiration_date && info.expiration_date !== "-") ? info.expiration_date : calculateExpirationDate(info.activation_date, days);
 
           const resultItem = {
             index: i + 1,
@@ -1889,10 +1856,8 @@
             mac: macAddr,
             content: item.content,
             account_id: info.account_id || (uidInt > 0 ? String(uidInt) : "-"),
-            activation_date: info.activation_date || "-",
             days_raw: days,
             days_active: (days !== null) ? `${days} dias` : "-",
-            expiration_date: expiraDate,
             duration_sec: durationSec,
             is_target: isTarget,
             is_valid: (info.is_valid !== false && uidInt >= 567000000),
@@ -1921,10 +1886,8 @@
             mac: item.mac || extractMacFromText(item.content),
             content: item.content,
             account_id: "-",
-            activation_date: "-",
             days_raw: null,
             days_active: "-",
-            expiration_date: "-",
             duration_sec: durationSec,
             is_target: false,
             is_valid: false,
@@ -1990,9 +1953,7 @@
           </div>
         </td>
         <td class="px-2.5 py-2 text-amber-300 font-bold font-mono">${item.account_id}</td>
-        <td class="px-2.5 py-2 text-slate-300 font-mono text-[10px]">${item.activation_date}</td>
-        <td class="px-2.5 py-2 font-bold ${item.days_raw === 0 ? 'text-amber-300 font-extrabold text-xs' : (item.is_target ? 'text-emerald-400' : 'text-slate-400')}">${item.days_active}</td>
-        <td class="px-2.5 py-2 text-indigo-300 font-mono text-[10px]">${item.expiration_date}</td>
+        <td class="px-2.5 py-2 font-bold ${item.days_raw === 0 || item.is_target ? 'text-amber-300 font-extrabold text-xs' : 'text-slate-400'}">${item.days_active}</td>
         <td class="px-2.5 py-2">
           <span class="px-1.5 py-0.5 rounded text-[10px] font-mono ${durBadge}">${item.duration_sec}s</span>
         </td>
@@ -2033,7 +1994,7 @@
       batchResults = [];
       document.getElementById('batch-results-table-body').innerHTML = `
         <tr>
-          <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
+          <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">
             Selecione a quantidade de configurações e clique em <strong>"Iniciar Scanner"</strong> para minerar e validar em tempo real.
           </td>
         </tr>
