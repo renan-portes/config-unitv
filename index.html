@@ -1564,7 +1564,7 @@
 
     // --- SINGLE CONFIG DIRECT INJECT ---
     async function injectDirectAdb() {
-      const configText = currentSingleFiles['.config'] || "";
+      const configText = currentSingleFiles['cache.config.xml'] || "";
       if (!configText) {
         showToast("Gere ou carregue uma configuração primeiro.", true);
         return;
@@ -1580,7 +1580,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            config_content: configText,
+            xml_content: configText,
             device_addr: getActiveAdbDevice(),
             clear_cache: true,
             launch_app: true

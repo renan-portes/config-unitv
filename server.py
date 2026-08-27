@@ -977,23 +977,26 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         has_access_error = False
         
         try:
-            # Executa a rotina de Bypass Semântico de Tutoriais/Overlays
+            # Fast-Bypass (Ação Imediata por Hardware): Limpa a tela instantaneamente antes do parsing
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4; sleep 0.5; input keyevent 23; sleep 0.5; input keyevent 4"], timeout=4)
+            
+            # Executa a rotina complementar de Bypass Semântico de Tutoriais/Overlays
             dismiss_tutorials_semantic(device, max_attempts=4)
             
             # Aguarda 2 segundos para a interface principal "respirar"
             time.sleep(2.0)
             
-            # CORREÇÃO 2: Loop de tentativas no clique de perfil (Retry Mechanism)
+            # Loop de tentativas no clique de perfil (Retry Mechanism)
             click_profile_semantic(device, max_retries=3)
             
-            # 3. Loop Inteligente de OCR com Teimosia Automática e Cliques de Backup (CORREÇÃO 3)
-            for attempt in range(12):  # Até 18 segundos de espera total e tentativas
+            # 3. Loop Inteligente de OCR com Tolerância Ampliada (Até 20 tentativas / ~30 segundos)
+            for attempt in range(20):
                 time.sleep(1.5)
                 dump_str = get_emulator_ui_dump(device)
                 
-                # Se a tela de perfil ainda não estiver aberta após 4-5 segundos, dispara clique de backup (CORREÇÃO 3)
+                # Se a tela de perfil ainda não estiver aberta após 4-5 segundos, dispara clique de backup
                 if not is_profile_screen_open(dump_str):
-                    if attempt in (3, 6):  # ~4.5s e ~9s
+                    if attempt in (3, 6, 10):  # ~4.5s, ~9s e ~15s
                         click_profile_semantic(device, max_retries=2)
                     continue
                     
