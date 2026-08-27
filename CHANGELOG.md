@@ -4,6 +4,13 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.5.0] - 27-08-2026
+### 🚀 Inteligência Coletiva via Banco de Dados (ORM / SQLite)
+- **Persistência com SQLAlchemy:** Implementação de ORM desacoplado e agnóstico (compatível com SQLite local e PostgreSQL futuro via `DATABASE_URL`).
+- **Modelo AccountHistory:** Armazenamento estruturado de `mac`, `account_id`, `days_active`, `status_message`, `is_valid` e `tested_at`.
+- **Gravação Automática no Fluxo ADB:** Persistência atômica via `session.merge()` ao testar contas no emulador, registrando contas válidas, recicladas e rejeições (EF9, Falha de Acesso, Bloqueios).
+- **Endpoint REST `/api/history`:** Consulta dos últimos registros testados ordenados por data decrescente com suporte a paginação/limite.
+
 ---
 
 ## [1.4.0] - 27-08-2026

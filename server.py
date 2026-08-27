@@ -23,6 +23,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 import generator_engine as engine
 
@@ -52,6 +54,82 @@ else:
 apps_dir = os.path.join(BASE_DIR, "apps")
 if os.path.exists(apps_dir):
     app.mount("/apps", StaticFiles(directory=apps_dir), name="apps")
+
+
+# --- CONFIGURAÇÃO DE BANCO DE DADOS (ORM / AGNOSTIC DATABASE) ---
+# A URL de conexão está isolada para fácil migração futura para PostgreSQL (Docker/Portainer/Proxmox)
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'mining_history.db')}")
+
+# Configuração agnóstica para SQLite e PostgreSQL
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+db_engine = create_engine(DATABASE_URL, connect_args=connect_args, echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+Base = declarative_base()
+
+
+class AccountHistory(Base):
+    __tablename__ = "account_history"
+
+    mac = Column(String(50), primary_key=True, index=True)
+    account_id = Column(String(50), nullable=True)
+    days_active = Column(Integer, nullable=True)
+    status_message = Column(String(255), nullable=True)
+    is_valid = Column(Boolean, default=False, nullable=False)
+    tested_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def to_dict(self):
+        return {
+            "mac": self.mac,
+            "account_id": self.account_id,
+            "days_active": self.days_active,
+            "status_message": self.status_message,
+            "is_valid": self.is_valid,
+            "tested_at": self.tested_at.isoformat() if self.tested_at else None
+        }
+
+
+# Inicializa as tabelas no banco de dados
+Base.metadata.create_all(bind=db_engine)
+
+
+def save_account_history(
+    mac: str,
+    account_id: Optional[str] = None,
+    days_active: Optional[int] = None,
+    status_message: Optional[str] = None,
+    is_valid: bool = False
+) -> Optional[AccountHistory]:
+    """
+    Persiste ou atualiza atomicamente o histórico de teste de um MAC usando session.merge().
+    MACs rejeitados (EF9, Falha no acesso, Bloqueio, etc.) são gravados com is_valid=False.
+    """
+    if not mac or mac == "-" or not isinstance(mac, str):
+        return None
+
+    mac_clean = mac.strip().upper()
+    if len(mac_clean) < 12:
+        return None
+
+    session = SessionLocal()
+    try:
+        record = AccountHistory(
+            mac=mac_clean,
+            account_id=str(account_id) if (account_id and str(account_id) != "-") else None,
+            days_active=days_active if isinstance(days_active, int) else None,
+            status_message=status_message or "Desconhecido",
+            is_valid=bool(is_valid),
+            tested_at=datetime.utcnow()
+        )
+        merged = session.merge(record)
+        session.commit()
+        session.refresh(merged)
+        return merged
+    except Exception as e:
+        session.rollback()
+        print(f"[DB History Error] Falha ao persistir histórico para o MAC {mac_clean}: {e}")
+        return None
+    finally:
+        session.close()
 
 
 # --- MODELOS DE REQUISIÇÃO ---
@@ -99,6 +177,23 @@ class ADBInjectRequest(BaseModel):
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "config-generator", "version": "1.5.0", "mode": "local-adb"}
+
+
+@app.get("/api/history")
+def get_mining_history(limit: int = 1000):
+    """Retorna o histórico de MACs testados ordenados por tested_at decrescente (padrão: últimos 1000)"""
+    session = SessionLocal()
+    try:
+        limit_val = min(max(1, limit), 5000)
+        records = session.query(AccountHistory).order_by(AccountHistory.tested_at.desc()).limit(limit_val).all()
+        return {
+            "total": len(records),
+            "history": [r.to_dict() for r in records]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao consultar histórico: {str(e)}")
+    finally:
+        session.close()
 
 
 @app.get("/api/configs")
@@ -922,13 +1017,19 @@ def click_profile_semantic(device: str, max_retries: int = 4) -> bool:
     return is_profile_screen_open(get_emulator_ui_dump(device))
 
 
-def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
+def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None, target_mac: Optional[str] = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
     com Smart Wait orientado a eventos, Retry Loop no clique do perfil,
-    detecção precoce de erros e salvamento no padrão CONFIG_{IDCONTA}_{DIAS}DIAS.
+    detecção precoce de erros, salvamento no padrão CONFIG_{IDCONTA}_{DIAS}DIAS
+    e gravação automática no banco de dados ORM (AccountHistory).
     """
     try:
+        if not target_mac and expected_config_content:
+            m_mac_exp = re.search(r'SP_SN_BACKUP">([0-9A-Fa-f:]{17})', expected_config_content) or re.search(r'KEY_SP_SN">([0-9A-Fa-f:]{17})', expected_config_content)
+            if m_mac_exp:
+                target_mac = m_mac_exp.group(1).upper()
+
         adb_bin = get_adb_cmd()
         grant_all_app_permissions(device)
         
@@ -957,10 +1058,19 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             if nbt_m:
                 key_n_bt = nbt_m.group(1)
 
+        final_mac = (app_mac if (app_mac and app_mac != "-") else target_mac) or "-"
+
         # Se detectou erro explícito na tela inicial durante o Smart Wait
         if early_error:
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=2)
             user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
+            save_account_history(
+                mac=final_mac,
+                account_id=str(user_id_int) if user_id_int > 0 else None,
+                days_active=None,
+                status_message=early_error,
+                is_valid=False
+            )
             return {
                 "found": False,
                 "account_id": str(user_id_int) if user_id_int > 0 else "-",
@@ -970,7 +1080,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "expiration_date": "-",
                 "status_message": early_error,
                 "is_valid": False,
-                "mac": app_mac or "-",
+                "mac": final_mac or "-",
                 "key_n_bt": key_n_bt,
                 "folder_name": f"CONFIG_{user_id_int}_ERRO" if user_id_int > 0 else "CONFIG_ERRO_REJEITADA"
             }
@@ -978,6 +1088,14 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         # Se não há key_user_id no XML nem renderizou a Home, a conta foi rejeitada
         if not account_id and not home_ready:
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=2)
+            err_msg = "❌ EF9: Falha ao fazer login"
+            save_account_history(
+                mac=final_mac,
+                account_id=None,
+                days_active=None,
+                status_message=err_msg,
+                is_valid=False
+            )
             return {
                 "found": False,
                 "account_id": "-",
@@ -985,9 +1103,9 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "activation_date": "-",
                 "days_active": None,
                 "expiration_date": "-",
-                "status_message": "❌ EF9: Falha ao fazer login",
+                "status_message": err_msg,
                 "is_valid": False,
-                "mac": app_mac or "-",
+                "mac": final_mac or "-",
                 "key_n_bt": key_n_bt,
                 "folder_name": "CONFIG_ERRO_EF9"
             }
@@ -1047,6 +1165,13 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             is_valid = False
             status_msg = status_msg or "❌ Falha no Acesso / Inválida"
             folder_name = f"CONFIG_{user_id_int}_{days_active or 0}DIAS" if user_id_int > 0 else "CONFIG_ERRO_EF9"
+            save_account_history(
+                mac=final_mac,
+                account_id=str(user_id_int) if user_id_int > 0 else None,
+                days_active=days_active,
+                status_message=status_msg,
+                is_valid=False
+            )
             return {
                 "found": False,
                 "account_id": str(user_id_int) if user_id_int > 0 else "-",
@@ -1056,7 +1181,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "expiration_date": "-",
                 "status_message": status_msg,
                 "is_valid": False,
-                "mac": app_mac or "-",
+                "mac": final_mac or "-",
                 "key_n_bt": key_n_bt,
                 "folder_name": folder_name
             }
@@ -1111,6 +1236,14 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         with open(dest_xml_file, "w", encoding="utf-8") as f:
             f.write(final_xml_content)
 
+        save_account_history(
+            mac=final_mac,
+            account_id=str(user_id_int),
+            days_active=days_active,
+            status_message=status_msg,
+            is_valid=is_valid
+        )
+
         return {
             "found": True,
             "account_id": str(user_id_int),
@@ -1120,11 +1253,20 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             "expiration_date": expiration_date,
             "status_message": status_msg,
             "is_valid": is_valid,
-            "mac": app_mac or "-",
+            "mac": final_mac or "-",
             "key_n_bt": key_n_bt,
             "folder_name": folder_name
         }
     except Exception as e:
+        err_msg = f"❌ Erro na inspeção: {str(e)}"
+        if target_mac and target_mac != "-":
+            save_account_history(
+                mac=target_mac,
+                account_id=None,
+                days_active=None,
+                status_message=err_msg,
+                is_valid=False
+            )
         return {"found": False, "error": str(e)}
 
 
@@ -1185,7 +1327,7 @@ def inject_adb(req: ADBInjectRequest):
             logs.append("UniTV Free iniciado no emulador...")
             
             logs.append("Aguardando carregamento da interface (Smart Wait)...")
-            account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)
+            account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content, target_mac=mac)
             
             if account_info and account_info.get("found"):
                 if account_info.get("account_id"):
@@ -1209,10 +1351,9 @@ def inject_adb(req: ADBInjectRequest):
 
 @app.get("/api/adb/account-info")
 @app.post("/api/adb/account-info")
-def get_account_info_endpoint(device_addr: Optional[str] = "127.0.0.1:21503"):
+def get_account_info_endpoint(device_addr: Optional[str] = "127.0.0.1:21503", mac: Optional[str] = None):
     """Endpoint para ler sob demanda os dados e dias ativos da conta no emulador"""
-    return inspect_emulator_account_info(device_addr or "127.0.0.1:21503")
-
+    return inspect_emulator_account_info(device_addr or "127.0.0.1:21503", target_mac=mac)
 
 # --- SERVIR INTERFACE HTML & ASSETS ---
 
