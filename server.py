@@ -13,6 +13,7 @@ import base64
 import random
 import subprocess
 import requests
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Optional, List
@@ -673,10 +674,18 @@ def parse_profile_dump(dump_xml_str: str) -> tuple[Optional[str], Optional[int],
             normalized_texts.append(norm)
             
     all_text_combined = " ".join(normalized_texts)
+    lower_combined = all_text_combined.lower()
     
-    if any(k in all_text_combined for k in ["Falha no acesso", "tente novamente", "rejeitada", "EF9"]):
+    if any(k in lower_combined for k in ["falha no acesso", "tente novamente", "rejeitada", "ef9", "a conta foi bloqueada", "bloqueada", "device limit", "limite de dispositivo"]):
         has_access_error = True
-        status_msg = "❌ Falha no Acesso / Chute Rejeitado"
+        if "bloqueada" in lower_combined:
+            status_msg = "❌ A conta foi bloqueada"
+        elif "device limit" in lower_combined or "limite" in lower_combined:
+            status_msg = "❌ Device limit excedido"
+        elif "ef9" in lower_combined or "falha ao fazer login" in lower_combined:
+            status_msg = "❌ EF9: Falha ao fazer login"
+        else:
+            status_msg = "❌ Falha no Acesso / Rejeitada"
         
     # 1. Busca data de ativação (logo após 'ativada em')
     m_date = re.search(r'ativada\s+em\s*[:\s]*([0-9]{2}[\-\/][0-9]{2}[\-\/][0-9]{4})', all_text_combined, re.IGNORECASE)
@@ -721,6 +730,21 @@ def parse_bounds(bounds_str: str) -> Optional[tuple[int, int]]:
     return None
 
 
+def get_device_screen_resolution(device: str) -> tuple[int, int]:
+    """Captura a resolução real da tela do dispositivo via adb shell wm size (ex: 1600x900)"""
+    try:
+        adb_bin = get_adb_cmd()
+        res = subprocess.run([adb_bin, "-s", device, "shell", "wm size"], capture_output=True, text=True, errors='ignore', timeout=3)
+        out = res.stdout or ""
+        m = re.findall(r'(?:Physical size|Override size):\s*(\d+)x(\d+)', out)
+        if m:
+            w, h = map(int, m[-1])
+            return w, h
+    except Exception:
+        pass
+    return 1600, 900
+
+
 def is_unitv_in_foreground(device: str) -> bool:
     """Verifica se uma janela do UniTV está em primeiro plano"""
     adb_bin = get_adb_cmd()
@@ -741,20 +765,47 @@ def ensure_unitv_foreground(device: str):
 def get_emulator_ui_dump(device: str) -> str:
     """Captura e limpa o dump XML do uiautomator no emulador"""
     adb_bin = get_adb_cmd()
-    r = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
-    return clean_xml_output(r.stdout or "")
+    try:
+        subprocess.run([adb_bin, "-s", device, "shell", "rm -f /sdcard/window_dump.xml"], capture_output=True, timeout=2)
+        subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump --compressed /sdcard/window_dump.xml || uiautomator dump /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
+        r_cat = subprocess.run([adb_bin, "-s", device, "shell", "cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=3)
+        return clean_xml_output(r_cat.stdout or "")
+    except Exception:
+        return ""
+
+
+def check_screen_error(dump_xml_str: str) -> Optional[str]:
+    """
+    Analisa o XML do uiautomator na tela inicial para identificar erros de bloqueio,
+    limite de dispositivos ou falhas de autenticação precoces.
+    """
+    if not dump_xml_str:
+        return None
+    decoded_xml = html.unescape(dump_xml_str)
+    raw_texts = re.findall(r'(?:text|content-desc)="([^"]*)"', decoded_xml)
+    combined = " ".join(raw_texts).lower()
+    
+    if "a conta foi bloqueada" in combined or "conta bloqueada" in combined or "bloqueada" in combined:
+        return "❌ A conta foi bloqueada"
+    if "device limit" in combined or "limite de dispositivo" in combined or "dispositivo não autorizado" in combined or "excedeu o limite" in combined:
+        return "❌ Device limit excedido"
+    if "ef9" in combined or "falha ao fazer login" in combined or "falha de login" in combined:
+        return "❌ EF9: Falha ao fazer login"
+    if "falha no acesso" in combined or "rejeitada" in combined or "tente novamente" in combined or "conta inválida" in combined:
+        return "❌ Falha no Acesso / Rejeitada"
+    return None
 
 
 def is_profile_screen_open(xml_text: str) -> bool:
     """Verifica se o fragmento/diálogo de perfil já está carregado e visível na tela"""
     if not xml_text:
         return False
-    return any(k in xml_text for k in ["personalFragment", "tvUserName", "tvExpiredTime", "Sua conta foi ativada em", "Meus Favoritos", "Minha Lista"])
+    return any(k in xml_text for k in ["personalFragment", "PersonalFragment", "tvUserName", "tvExpiredTime", "Sua conta foi ativada em", "Meus Favoritos", "Minha Lista", "mTvUserTitle"])
 
 
 def find_guide_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int], str]]:
     """
-    Localiza semanticamente o botão 'Próximo', 'OK' ou overlays de tutorial no dump XML (CORREÇÃO 1).
+    Localiza semanticamente o botão 'Próximo', 'OK' ou overlays de tutorial no dump XML.
     Retorna: ((center_x, center_y), descricao)
     """
     if not xml_text:
@@ -787,7 +838,7 @@ def find_guide_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int], s
 
 def find_profile_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int], str]]:
     """
-    Localiza semanticamente o botão de perfil no dump XML (CORREÇÃO 2).
+    Localiza semanticamente o botão de perfil no dump XML.
     Retorna: ((center_x, center_y), descricao)
     """
     if not xml_text:
@@ -823,7 +874,7 @@ def find_profile_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int],
                 m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
                 if m:
                     x1, y1, x2, y2 = map(int, m.groups())
-                    if clickable and y1 < 120 and y2 <= 120 and x1 >= 1100 and x2 <= 1400:
+                    if clickable and y1 < 180 and x1 >= 1000:
                         cx = (x1 + x2) // 2
                         cy = (y1 + y2) // 2
                         candidates.append(((cx, cy), f"header bounds='{bounds}'"))
@@ -834,9 +885,27 @@ def find_profile_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int],
     return None
 
 
+def is_home_screen_rendered(xml_text: str) -> bool:
+    """Verifica se a tela principal (Home) do aplicativo UniTV está carregada e visível"""
+    if not xml_text:
+        return False
+    if is_profile_screen_open(xml_text):
+        return True
+    # Ignora a tela de Splash/Boas-vindas (que contém apenas mTextAppName e mTextVersion)
+    if "mTextVersion" in xml_text and "mIvPersonal" not in xml_text and "mGridTab" not in xml_text:
+        return False
+    if any(k in xml_text for k in ["mLayoutPersonal", "mIvPersonal", "PersonalFragment", "personalFragment"]):
+        return True
+    if find_profile_button_in_xml(xml_text) is not None:
+        return True
+    if any(k in xml_text for k in ["mRlTabItem", "mGridTab", "mLvChannelList", "mLayoutChannel", "mLayoutVod"]):
+        return True
+    return False
+
+
 def dismiss_tutorials_semantic(device: str, max_attempts: int = 5) -> bool:
     """
-    Bypass semântico de tutoriais e overlays via UiAutomator (CORREÇÃO 1):
+    Bypass semântico de tutoriais e overlays via UiAutomator:
     Analisa a árvore XML, localiza botões como 'Próximo', 'OK' ou viewpagers de guia
     e clica no ponto central exato dos bounds.
     """
@@ -880,10 +949,46 @@ def dismiss_tutorial_and_overlays(device: str):
     return dismiss_tutorials_semantic(device)
 
 
-def click_profile_semantic(device: str, max_retries: int = 2) -> bool:
+def wait_for_home_or_error(device: str, max_attempts: int = 15, delay_per_attempt: float = 1.5) -> tuple[bool, Optional[str]]:
     """
-    Localiza e clica no botão de perfil de forma semântica e ágil:
-    Tenta encontrar e clicar com intervalos curtos (1.0s) sem atrasos desnecessários.
+    Polling dinâmico via uiautomator dump aguardando a renderização da tela principal (Home)
+    ou a identificação imediata de erros/bloqueios na tela inicial.
+    Retorna: (is_home_ready, error_message)
+    """
+    adb_bin = get_adb_cmd()
+    ensure_unitv_foreground(device)
+    
+    for attempt in range(1, max_attempts + 1):
+        xml_dump = get_emulator_ui_dump(device)
+        
+        if xml_dump:
+            # 1. Verifica erros/bloqueios explícitos na tela inicial
+            err = check_screen_error(xml_dump)
+            if err:
+                return False, err
+                
+            # 2. Verifica se algum tutorial / diálogo de permissão está bloqueando a tela
+            guide_match = find_guide_button_in_xml(xml_dump)
+            if guide_match:
+                (cx, cy), desc = guide_match
+                subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
+                time.sleep(1.0)
+                continue
+                
+            # 3. Verifica se a Home já está renderizada ou Perfil já aberto
+            if is_home_screen_rendered(xml_dump):
+                return True, None
+
+        time.sleep(delay_per_attempt)
+        
+    return False, "❌ Timeout: Tela inicial não renderizada"
+
+
+def click_profile_semantic(device: str, max_retries: int = 4) -> bool:
+    """
+    Localiza e clica no botão de perfil com Retry Loop blindado:
+    Se o clique não abrir o perfil (personalFragment), repete o clique dinamicamente até abrir.
+    Usa coordenadas responsivas (wm size) no fallback.
     """
     adb_bin = get_adb_cmd()
     ensure_unitv_foreground(device)
@@ -897,20 +1002,23 @@ def click_profile_semantic(device: str, max_retries: int = 2) -> bool:
         if profile_match:
             (cx, cy), desc = profile_match
             subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
-            time.sleep(1.0)
-            
-            # Verifica se o clique abriu a tela de perfil
-            check_dump = get_emulator_ui_dump(device)
-            if is_profile_screen_open(check_dump):
-                return True
         else:
-            # Fallback rápido caso esteja em foco
-            if is_unitv_in_foreground(device):
-                subprocess.run([adb_bin, "-s", device, "shell", "input tap 1262 60"], timeout=2)
-                time.sleep(1.0)
-                if is_profile_screen_open(get_emulator_ui_dump(device)):
-                    return True
-            time.sleep(0.5)
+            # Fallback responsivo baseado na resolução real do dispositivo
+            w, h = get_device_screen_resolution(device)
+            if w >= h: # Landscape
+                fx = int(w * 0.95)
+                fy = int(h * 0.08)
+            else: # Portrait
+                fx = int(w * 0.90)
+                fy = int(h * 0.05)
+            subprocess.run([adb_bin, "-s", device, "shell", f"input tap {fx} {fy}"], timeout=2)
+            
+        time.sleep(1.2)
+        
+        # Verifica se o clique abriu a tela de perfil
+        check_dump = get_emulator_ui_dump(device)
+        if is_profile_screen_open(check_dump):
+            return True
             
     return is_profile_screen_open(get_emulator_ui_dump(device))
 
@@ -918,14 +1026,17 @@ def click_profile_semantic(device: str, max_retries: int = 2) -> bool:
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com Smart Wipe (OTIMIZAÇÃO 1), Corte Extremo de Delays (OTIMIZAÇÃO 2)
-    e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
+    com Smart Wait orientado a eventos, Retry Loop no clique do perfil,
+    detecção precoce de erros e salvamento no padrão CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
         adb_bin = get_adb_cmd()
         grant_all_app_permissions(device)
         
-        # 1. Leitura direta do cache.config.xml no shared_prefs
+        # 1. Espera Dinâmica da Home (Smart Wait) e Detecção Precoce de Erro
+        home_ready, early_error = wait_for_home_or_error(device, max_attempts=15, delay_per_attempt=1.5)
+        
+        # Leitura do cache.config.xml no shared_prefs
         xml_stdout = ""
         for pkg in UNITV_PACKAGES:
             r_xml = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=3)
@@ -947,8 +1058,26 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             if nbt_m:
                 key_n_bt = nbt_m.group(1)
 
-        # Se não há key_user_id no XML, a conta foi rejeitada (EF9 / Falha no Login)
-        if not account_id:
+        # Se detectou erro explícito na tela inicial durante o Smart Wait
+        if early_error:
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=2)
+            user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
+            return {
+                "found": False,
+                "account_id": str(user_id_int) if user_id_int > 0 else "-",
+                "user_id_int": user_id_int,
+                "activation_date": "-",
+                "days_active": None,
+                "expiration_date": "-",
+                "status_message": early_error,
+                "is_valid": False,
+                "mac": app_mac or "-",
+                "key_n_bt": key_n_bt,
+                "folder_name": f"CONFIG_{user_id_int}_ERRO" if user_id_int > 0 else "CONFIG_ERRO_REJEITADA"
+            }
+
+        # Se não há key_user_id no XML nem renderizou a Home, a conta foi rejeitada
+        if not account_id and not home_ready:
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=2)
             return {
                 "found": False,
@@ -964,29 +1093,24 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Clique Semântico Imediato no Perfil (OTIMIZAÇÃO 2)
+        # 2. Clique de Perfil Blindado (Retry Loop)
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
-            # Envia KEYCODE_BACK rápido caso haja algum popup residual
-            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
-            time.sleep(0.5)
+            click_profile_semantic(device, max_retries=4)
             
-            # Clica no ícone de perfil diretamente
-            click_profile_semantic(device, max_retries=2)
-            
-            # 3. Loop Inteligente de OCR Rápido
-            for attempt in range(15):
+            # 3. Loop de Leitura do Diálogo do Perfil
+            for attempt in range(12):
                 time.sleep(0.8)
                 dump_str = get_emulator_ui_dump(device)
                 
-                # Se a tela de perfil ainda não abriu após 2-3 segundos, dispara clique de backup
+                # Se a tela de perfil fechou ou não abriu, refaz o clique
                 if not is_profile_screen_open(dump_str):
-                    if attempt in (2, 5):  # ~1.6s e ~4.0s
-                        click_profile_semantic(device, max_retries=1)
+                    if attempt in (2, 5, 8):
+                        click_profile_semantic(device, max_retries=2)
                     continue
                     
                 parsed_date, parsed_days, parsed_status, parsed_access_error = parse_profile_dump(dump_str)
@@ -1006,7 +1130,18 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         except Exception:
             pass
 
-        # 4. Validação Estrita do ID e dos Dias Ativos
+        # 4. Releitura de confirmação do cache.config.xml
+        for pkg in UNITV_PACKAGES:
+            r_xml = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=3)
+            if r_xml.stdout and "<map>" in r_xml.stdout:
+                xml_stdout = r_xml.stdout
+                break
+        if xml_stdout:
+            uid_match = re.search(r'name="key_user_id"[^>]*>([0-9]+)<', xml_stdout)
+            if uid_match and uid_match.group(1).strip():
+                account_id = uid_match.group(1).strip()
+
+        # 5. Validação Estrita do ID e dos Dias Ativos
         user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
         
         if not account_id or user_id_int == 0 or has_access_error:
@@ -1056,11 +1191,11 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             except Exception:
                 pass
 
-        # 5. Nomenclatura Dinâmica Estrita: CONFIG_{IDCONTA}_{DIAS}DIAS
+        # 6. Nomenclatura Dinâmica Estrita: CONFIG_{IDCONTA}_{DIAS}DIAS
         days_val = days_active if days_active is not None else 0
         folder_name = f"CONFIG_{user_id_int}_{days_val}DIAS"
 
-        # 6. Salva backup na pasta configs/CONFIG_{ID}_{DIAS}DIAS/ contendo EXCLUSIVAMENTE o cache.config.xml
+        # 7. Salva backup na pasta configs/CONFIG_{ID}_{DIAS}DIAS/ contendo EXCLUSIVAMENTE o cache.config.xml
         save_dir = os.path.join(BASE_DIR, "configs", folder_name)
         os.makedirs(save_dir, exist_ok=True)
         
@@ -1100,7 +1235,7 @@ def inject_adb(req: ADBInjectRequest):
     Injeta arquivos de configuração no emulador Android via ADB:
     1. Executa Limpeza Profunda (Deep Wipe) estrita do emulador
     2. Envia exclusivamente o novo cache.config.xml
-    3. Abre o app, aguarda o carregamento generoso (10-12s) e executa inspeção semântica com retry
+    3. Abre o app e aciona Smart Wait orientado a eventos
     """
     device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
     adb_bin = get_adb_cmd()
@@ -1150,11 +1285,7 @@ def inject_adb(req: ADBInjectRequest):
                 subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
             logs.append("UniTV Free iniciado no emulador...")
             
-            # OTIMIZAÇÃO 2: Atraso reduzido para 4.5 segundos (Home direta sem tutoriais)
-            time.sleep(4.5)
-            handle_app_lifecycle_and_guide(device, max_wait_sec=4)
-            
-            logs.append("Executando leitura semântica ultra-rápida...")
+            logs.append("Aguardando carregamento da interface (Smart Wait)...")
             account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)
             
             if account_info and account_info.get("found"):
@@ -1164,6 +1295,8 @@ def inject_adb(req: ADBInjectRequest):
                     logs.append(f"📅 Ativada em: {account_info['activation_date']} ({account_info.get('days_active', 0)} dias ativa)")
                 if account_info.get("status_message"):
                     logs.append(f"💬 Status: {account_info['status_message']}")
+            elif account_info and account_info.get("status_message"):
+                logs.append(f"💬 Status: {account_info['status_message']}")
             
         return {
             "success": True,
