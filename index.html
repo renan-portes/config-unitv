@@ -591,28 +591,6 @@
             </button>
           </div>
         </div>
-
-        <!-- Instruções de Conexão Remota VPS / Servidor Cloud -->
-        <div class="p-4 rounded-xl bg-dark-input/60 border border-cyan-500/20 flex flex-col gap-2.5 text-xs">
-          <div class="flex items-center justify-between cursor-pointer" onclick="toggleElement('remote-adb-help', 'remote-adb-chevron')">
-            <div class="flex items-center gap-2 text-cyan-300 font-semibold">
-              <i data-lucide="globe" class="w-4 h-4"></i>
-              <span>Como conectar o Emulador do seu PC ao site na Nuvem (<code>config.servidor.xyz.br</code>)?</span>
-            </div>
-            <i data-lucide="chevron-down" id="remote-adb-chevron" class="w-4 h-4 text-slate-400 transition-transform"></i>
-          </div>
-          <div id="remote-adb-help" class="hidden flex flex-col gap-2 pt-2 border-t border-dark-border/60 text-slate-300 leading-relaxed text-[11px]">
-            <p>Quando o painel está rodando no servidor na Nuvem (VPS), o servidor não acessa o seu <code>127.0.0.1</code> local diretamente sem uma ponte de rede. Escolha uma das formas simples abaixo:</p>
-            <ul class="list-disc pl-4 space-y-1.5 text-slate-400">
-              <li><strong class="text-white">Opção 1 (Pinggy / Mais Rápido sem instalar nada):</strong> No PowerShell do seu PC Windows, rode:
-                <code class="block mt-1 p-2 rounded bg-black/40 text-cyan-300 font-mono text-[10px] select-all">ssh -p 443 -R0:localhost:21503 qr@a.pinggy.io</code>
-                Copie o endereço TCP gerado (ex: <code>tcp.pinggy.io:12345</code>), cole no campo acima e clique em <strong>Reconectar ADB</strong>!
-              </li>
-              <li><strong class="text-white">Opção 2 (Tailscale / ZeroTier):</strong> Use a rede VPN Tailscale entre a sua máquina e o servidor VPS. Basta colar o IP Tailscale da sua máquina (ex: <code>100.85.20.10:21503</code>).</li>
-              <li><strong class="text-white">Opção 3 (Modo Local):</strong> Se rodar o gerador direto no seu computador via <code>Iniciar_Gerador.bat</code>, o <code>127.0.0.1:21503</code> funciona automaticamente com zero configuração.</li>
-            </ul>
-          </div>
-        </div>
       </div>
 
       <!-- CARD 2: CENTRAL DE DOWNLOADS DE APLICATIVOS -->
@@ -688,61 +666,6 @@
             <a href="https://github.com/renan-portes/config-unitv/raw/refs/heads/main/apps/UniTV%20Free%205.1.0.apk" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-white font-semibold text-xs transition flex items-center justify-center gap-2">
               <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar APK
             </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- CARD 3: GUIA DE INSTALAÇÃO & DICAS DO ANDROID -->
-      <div class="glass-panel rounded-2xl border border-dark-border overflow-hidden">
-        <div onclick="toggleElement('guide-content-body', 'guide-chevron')" class="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-dark-hover/50 transition user-select-none">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
-              <i data-lucide="help-circle" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                Guia de Instalação & Dicas do Android
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">Dicas Importantes</span>
-              </h3>
-              <p class="text-xs text-slate-400">Limpeza prévia, aviso sobre Google Backup e arquivos ocultos</p>
-            </div>
-          </div>
-          <i data-lucide="chevron-down" id="guide-chevron" class="w-5 h-5 text-slate-400 transition-transform duration-300"></i>
-        </div>
-
-        <div id="guide-content-body" class="p-5 pt-0 border-t border-dark-border/60 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
-          
-          <!-- Dica 1: Limpeza -->
-          <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-amber-400 font-semibold">
-              <i data-lucide="trash-2" class="w-4 h-4 shrink-0"></i>
-              <span>1. Limpeza de Instalação</span>
-            </div>
-            <p class="text-slate-400 leading-relaxed text-[11px]">
-              Para evitar conflitos, desinstale o app completamente. Apague os arquivos antigos <code>.config</code>, <code>.properties</code> e a pasta <code>Alarms/system_uf</code> do armazenamento interno.
-            </p>
-          </div>
-
-          <!-- Dica 2: Google Backup -->
-          <div class="p-4 rounded-xl bg-dark-input border border-amber-500/30 bg-amber-950/10 flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-amber-300 font-semibold">
-              <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
-              <span>2. Google Backup Automático</span>
-            </div>
-            <p class="text-slate-400 leading-relaxed text-[11px]">
-              Se a opção "Restauração Automática de Apps" estiver ligada no Android (<em>Configurações → Google → Backup</em>), o sistema pode restaurar os dados antigos da conta ao reinstalar. Desative antes de testar nova config.
-            </p>
-          </div>
-
-          <!-- Dica 3: Arquivos Ocultos -->
-          <div class="p-4 rounded-xl bg-dark-input border border-dark-border flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-emerald-400 font-semibold">
-              <i data-lucide="folder-check" class="w-4 h-4 shrink-0"></i>
-              <span>3. Arquivos Ocultos (.)</span>
-            </div>
-            <p class="text-slate-400 leading-relaxed text-[11px]">
-              Arquivos iniciados com ponto (<code>.config</code>) são ocultos. No seu gerenciador de arquivos (ex: MiXplorer, ZArchiver, X-plore), ative <strong>"Mostrar arquivos ocultos"</strong> para confirmar a cópia em <code>/storage/emulated/0/Android/.config</code>.
-            </p>
           </div>
         </div>
       </div>
@@ -1572,16 +1495,6 @@
       updateBatchCounters();
       switchTab('scanner');
       showToast(`🚀 ${currentBulkList.length} configs enviadas para a fila do Scanner ADB!`);
-    }
-
-    function toggleElement(id, chevronId) {
-      const el = document.getElementById(id);
-      const ch = chevronId ? document.getElementById(chevronId) : null;
-      if (!el) return;
-      el.classList.toggle('hidden');
-      if (ch) {
-        ch.classList.toggle('rotate-180');
-      }
     }
 
     function switchTab(tabName) {
