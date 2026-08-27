@@ -163,10 +163,28 @@
                   <i data-lucide="lock" class="w-3 h-3 text-brand-400"></i>
                   9C:00:D3:
                 </span>
-                <input type="text" id="input-mac-suffix" value="" maxlength="8"
-                  class="w-full px-3.5 py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600"
-                  placeholder="XX:YY:00 (ou vazio para aleatório)"
-                  oninput="onSingleMacSuffixInput(this)">
+                <div class="flex items-center flex-1 px-2 gap-1 font-mono text-xs text-slate-500">
+                  <input type="text" id="input-mac-b1" maxlength="2"
+                    class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-brand-300"
+                    placeholder="XX"
+                    oninput="onSingleMacOctetInput(this, 0)"
+                    onkeydown="handleMacInputKey(event, this, 'input-mac-b', 0)"
+                    onpaste="handleMacInputPaste(event, 'input-mac-b')">
+                  <span>:</span>
+                  <input type="text" id="input-mac-b2" maxlength="2"
+                    class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-brand-300"
+                    placeholder="YY"
+                    oninput="onSingleMacOctetInput(this, 1)"
+                    onkeydown="handleMacInputKey(event, this, 'input-mac-b', 1)"
+                    onpaste="handleMacInputPaste(event, 'input-mac-b')">
+                  <span>:</span>
+                  <input type="text" id="input-mac-b3" maxlength="2"
+                    class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-brand-300"
+                    placeholder="ZZ"
+                    oninput="onSingleMacOctetInput(this, 2)"
+                    onkeydown="handleMacInputKey(event, this, 'input-mac-b', 2)"
+                    onpaste="handleMacInputPaste(event, 'input-mac-b')">
+                </div>
               </div>
               <input type="hidden" id="input-mac" value="">
             </div>
@@ -270,10 +288,28 @@
                   <i data-lucide="lock" class="w-3 h-3 text-indigo-400"></i>
                   9C:00:D3:
                 </span>
-                <input type="text" id="bulk-gen-mac-suffix" value="" maxlength="8"
-                  class="w-full px-3.5 py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600"
-                  placeholder="XX:YY:00 (ou vazio para aleatório)"
-                  oninput="onBulkMacSuffixInput(this)">
+                <div class="flex items-center flex-1 px-2 gap-1 font-mono text-xs text-slate-500">
+                  <input type="text" id="bulk-gen-mac-b1" maxlength="2"
+                    class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-indigo-300"
+                    placeholder="XX"
+                    oninput="onBulkMacOctetInput(this, 0)"
+                    onkeydown="handleMacInputKey(event, this, 'bulk-gen-mac-b', 0)"
+                    onpaste="handleMacInputPaste(event, 'bulk-gen-mac-b')">
+                  <span>:</span>
+                  <input type="text" id="bulk-gen-mac-b2" maxlength="2"
+                    class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-indigo-300"
+                    placeholder="YY"
+                    oninput="onBulkMacOctetInput(this, 1)"
+                    onkeydown="handleMacInputKey(event, this, 'bulk-gen-mac-b', 1)"
+                    onpaste="handleMacInputPaste(event, 'bulk-gen-mac-b')">
+                  <span>:</span>
+                  <input type="text" id="bulk-gen-mac-b3" maxlength="2"
+                    class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-indigo-300"
+                    placeholder="ZZ"
+                    oninput="onBulkMacOctetInput(this, 2)"
+                    onkeydown="handleMacInputKey(event, this, 'bulk-gen-mac-b', 2)"
+                    onpaste="handleMacInputPaste(event, 'bulk-gen-mac-b')">
+                </div>
               </div>
               <input type="hidden" id="bulk-gen-mac" value="">
               <div class="flex items-center justify-between gap-2 mt-0.5">
@@ -1016,47 +1052,138 @@
       showToast(`Novo User ID sorteado: ${uid}`);
     }
 
-    function formatMacSuffix(val) {
-      let clean = (val || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
-      if (clean.length > 6) clean = clean.slice(0, 6);
-      let parts = clean.match(/.{1,2}/g);
-      return parts ? parts.join(':') : clean;
+    function randomByteHex() {
+      const hexDigits = "0123456789ABCDEF";
+      return hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
     }
 
-    function onSingleMacSuffixInput(el) {
-      const formatted = formatMacSuffix(el.value);
-      el.value = formatted;
-      const fullMac = formatted ? `9C:00:D3:${formatted}` : generateSmartRandomMAC();
-      const hiddenMac = document.getElementById('input-mac');
-      if (hiddenMac) hiddenMac.value = fullMac;
+    function cleanHexByte(val) {
+      return (val || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase().slice(0, 2);
+    }
+
+    function handleMacInputKey(e, el, prefix, index) {
+      if (e.key === 'Backspace' && el.value === '' && index > 0) {
+        const prev = document.getElementById(`${prefix}${index}`);
+        if (prev) {
+          prev.focus();
+          prev.select();
+        }
+      } else if (e.key === 'ArrowRight' && el.selectionStart === el.value.length && index < 2) {
+        const next = document.getElementById(`${prefix}${index + 2}`);
+        if (next) {
+          next.focus();
+          next.select();
+        }
+      } else if (e.key === 'ArrowLeft' && el.selectionStart === 0 && index > 0) {
+        const prev = document.getElementById(`${prefix}${index}`);
+        if (prev) {
+          prev.focus();
+          prev.select();
+        }
+      }
+    }
+
+    function handleMacInputPaste(e, prefix) {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text');
+      let clean = (pasted || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+      if (clean.startsWith("9C00D3")) clean = clean.slice(6);
+      if (clean.length > 6) clean = clean.slice(0, 6);
+      
+      const b1 = clean.slice(0, 2);
+      const b2 = clean.slice(2, 4);
+      const b3 = clean.slice(4, 6);
+      
+      const el1 = document.getElementById(`${prefix}1`);
+      const el2 = document.getElementById(`${prefix}2`);
+      const el3 = document.getElementById(`${prefix}3`);
+      
+      if (el1) el1.value = b1;
+      if (el2) el2.value = b2;
+      if (el3) el3.value = b3;
+      
+      if (prefix === 'input-mac-b') {
+        resolveSingleMAC(false);
+        updateSinglePreview();
+      } else {
+        updateBulkHiddenMac();
+      }
+    }
+
+    function formatMacSuffix(b1, b2, b3) {
+      if (Array.isArray(b1)) {
+        b3 = b1[2];
+        b2 = b1[1];
+        b1 = b1[0];
+      } else if (typeof b1 === 'string' && b2 === undefined && b3 === undefined) {
+        let clean = (b1 || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+        if (clean.startsWith("9C00D3")) clean = clean.slice(6);
+        if (clean.length > 6) clean = clean.slice(0, 6);
+        let parts = clean.match(/.{1,2}/g);
+        return parts ? parts.join(':') : clean;
+      }
+      const cleanB1 = cleanHexByte(b1);
+      const cleanB2 = cleanHexByte(b2);
+      const cleanB3 = cleanHexByte(b3);
+      return [cleanB1, cleanB2, cleanB3];
+    }
+
+    function onSingleMacOctetInput(el, index) {
+      el.value = cleanHexByte(el.value);
+      if (el.value.length === 2 && index < 2) {
+        const next = document.getElementById('input-mac-b' + (index + 2));
+        if (next) {
+          next.focus();
+          next.select();
+        }
+      }
+      resolveSingleMAC(false);
       updateSinglePreview();
+    }
+
+    function resolveSingleMAC(forceRandomizeEmpty = false) {
+      const b1El = document.getElementById('input-mac-b1');
+      const b2El = document.getElementById('input-mac-b2');
+      const b3El = document.getElementById('input-mac-b3');
+      const hiddenMac = document.getElementById('input-mac');
+
+      const inB1 = b1El ? cleanHexByte(b1El.value) : "";
+      const inB2 = b2El ? cleanHexByte(b2El.value) : "";
+      const inB3 = b3El ? cleanHexByte(b3El.value) : "";
+
+      let curOctets = ["", "", ""];
+      if (hiddenMac && hiddenMac.value && hiddenMac.value.startsWith("9C:00:D3:")) {
+        const parts = hiddenMac.value.split(':');
+        if (parts.length === 6) {
+          curOctets = [parts[3], parts[4], parts[5]];
+        }
+      }
+
+      const outB1 = inB1 ? inB1.padStart(2, '0') : ((!forceRandomizeEmpty && curOctets[0]) ? curOctets[0] : randomByteHex());
+      const outB2 = inB2 ? inB2.padStart(2, '0') : ((!forceRandomizeEmpty && curOctets[1]) ? curOctets[1] : randomByteHex());
+      const outB3 = inB3 ? inB3.padStart(2, '0') : ((!forceRandomizeEmpty && curOctets[2]) ? curOctets[2] : randomByteHex());
+
+      const fullMac = `9C:00:D3:${outB1}:${outB2}:${outB3}`;
+      if (hiddenMac) hiddenMac.value = fullMac;
+      return fullMac;
     }
 
     function generateSmartRandomMAC() {
       // Sorteia os 3 octetos finais completos (XX:YY:ZZ) de 00 a FF (16.777.216 combinações)
-      const hexDigits = "0123456789ABCDEF";
-      let octets = [];
-      for (let i = 0; i < 3; i++) {
-        let byte = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
-        octets.push(byte);
-      }
-      return `9C:00:D3:${octets.join(':')}`;
+      return `9C:00:D3:${randomByteHex()}:${randomByteHex()}:${randomByteHex()}`;
     }
 
     function randomizeAll() {
-      const fullMac = generateSmartRandomMAC();
-      const suffix = fullMac.slice(9);
+      const fullMac = resolveSingleMAC(true);
       const uid = generateRandomUserId();
       const folder = "CONFIG_RANDOM_" + Math.floor(1000 + Math.random() * 9000);
       const freshDev = generateFreshDeviceId();
 
-      const suffixEl = document.getElementById('input-mac-suffix');
       const macEl = document.getElementById('input-mac');
       const uidEl = document.getElementById('input-uid');
       const folderEl = document.getElementById('input-folder');
       const devEl = document.getElementById('input-devid');
 
-      if (suffixEl) suffixEl.value = suffix;
       if (macEl) macEl.value = fullMac;
       if (uidEl) uidEl.value = uid;
       if (folderEl) folderEl.value = folder;
@@ -1070,13 +1197,7 @@
     }
 
     function randomizeMacOnly() {
-      const fullMac = generateSmartRandomMAC();
-      const suffix = fullMac.slice(9);
-      
-      const suffixEl = document.getElementById('input-mac-suffix');
-      const macEl = document.getElementById('input-mac');
-      if (suffixEl) suffixEl.value = suffix;
-      if (macEl) macEl.value = fullMac;
+      const fullMac = resolveSingleMAC(true);
       
       const freshDev = generateFreshDeviceId();
       currentDeviceIdHex = freshDev.hex;
@@ -1094,7 +1215,7 @@
       const modelEl = document.getElementById('input-model');
       const devEl = document.getElementById('input-devid');
 
-      const mac = (macEl && macEl.value.trim()) ? macEl.value.trim() : generateSmartRandomMAC();
+      const mac = (macEl && macEl.value.trim()) ? macEl.value.trim() : resolveSingleMAC(false);
       const folder = folderEl ? folderEl.value.trim() : "CONFIG_1";
       const uid = uidEl ? uidEl.value.trim() : "545050564";
       const model = modelEl ? modelEl.value.trim() : "SBTHD";
@@ -1270,61 +1391,87 @@
       lucide.createIcons();
     }
 
-    function onBulkMacSuffixInput(el) {
-      const formatted = formatMacSuffix(el.value);
-      el.value = formatted;
-      const fullMac = formatted ? `9C:00:D3:${formatted}` : "";
+    function onBulkMacOctetInput(el, index) {
+      el.value = cleanHexByte(el.value);
+      if (el.value.length === 2 && index < 2) {
+        const next = document.getElementById('bulk-gen-mac-b' + (index + 2));
+        if (next) {
+          next.focus();
+          next.select();
+        }
+      }
+      updateBulkHiddenMac();
+    }
+
+    function updateBulkHiddenMac() {
+      const el1 = document.getElementById('bulk-gen-mac-b1');
+      const el2 = document.getElementById('bulk-gen-mac-b2');
+      const el3 = document.getElementById('bulk-gen-mac-b3');
+      const b1 = el1 ? cleanHexByte(el1.value) : "";
+      const b2 = el2 ? cleanHexByte(el2.value) : "";
+      const b3 = el3 ? cleanHexByte(el3.value) : "";
       const hiddenMac = document.getElementById('bulk-gen-mac');
-      if (hiddenMac) hiddenMac.value = fullMac;
+      if (hiddenMac) {
+        if (b1 || b2 || b3) {
+          hiddenMac.value = `9C:00:D3:${b1 || 'XX'}:${b2 || 'YY'}:${b3 || 'ZZ'}`;
+        } else {
+          hiddenMac.value = "";
+        }
+      }
     }
 
     function randomizeBulkMacBase() {
-      const fullMac = generateSmartRandomMAC();
-      const suffix = fullMac.slice(9);
-      
-      const suffixEl = document.getElementById('bulk-gen-mac-suffix');
-      const hiddenMac = document.getElementById('bulk-gen-mac');
-      if (suffixEl) suffixEl.value = suffix;
-      if (hiddenMac) hiddenMac.value = fullMac;
-      showToast(`MAC Base sorteado: ${fullMac}`);
+      const el1 = document.getElementById('bulk-gen-mac-b1');
+      const el2 = document.getElementById('bulk-gen-mac-b2');
+      const el3 = document.getElementById('bulk-gen-mac-b3');
+
+      const hasEmpty = (el1 && !el1.value.trim()) || (el2 && !el2.value.trim()) || (el3 && !el3.value.trim());
+      if (hasEmpty) {
+        if (el1 && !el1.value.trim()) el1.value = randomByteHex();
+        if (el2 && !el2.value.trim()) el2.value = randomByteHex();
+        if (el3 && !el3.value.trim()) el3.value = "00";
+      } else {
+        if (el1) el1.value = randomByteHex();
+        if (el2) el2.value = randomByteHex();
+        if (el3) el3.value = "00";
+      }
+      updateBulkHiddenMac();
+      const b1 = el1 ? el1.value : "";
+      const b2 = el2 ? el2.value : "";
+      const b3 = el3 ? el3.value : "";
+      showToast(`MAC Base sorteado: 9C:00:D3:${b1}:${b2}:${b3}`);
     }
 
     function clearBulkMac() {
-      const suffixEl = document.getElementById('bulk-gen-mac-suffix');
+      const el1 = document.getElementById('bulk-gen-mac-b1');
+      const el2 = document.getElementById('bulk-gen-mac-b2');
+      const el3 = document.getElementById('bulk-gen-mac-b3');
       const hiddenMac = document.getElementById('bulk-gen-mac');
-      if (suffixEl) suffixEl.value = "";
+      if (el1) el1.value = "";
+      if (el2) el2.value = "";
+      if (el3) el3.value = "";
       if (hiddenMac) hiddenMac.value = "";
-      showToast("Campo MAC limpo. O gerador sorteará automaticamente.");
+      showToast("Campos MAC limpos. O gerador sorteará automaticamente.");
     }
 
-    function getSequentialMAC(baseInput, offset, defaultOctets) {
-      let clean = (baseInput || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
-      if (clean.startsWith("9C00D3")) {
-        clean = clean.slice(6);
+    function getSequentialMAC(baseOctets, offset, defaultOctets) {
+      let inB1 = "", inB2 = "", inB3 = "";
+      if (Array.isArray(baseOctets)) {
+        inB1 = cleanHexByte(baseOctets[0]);
+        inB2 = cleanHexByte(baseOctets[1]);
+        inB3 = cleanHexByte(baseOctets[2]);
+      } else if (typeof baseOctets === 'string') {
+        let clean = baseOctets.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+        if (clean.startsWith("9C00D3")) clean = clean.slice(6);
+        inB1 = clean.slice(0, 2);
+        inB2 = clean.slice(2, 4);
+        inB3 = clean.slice(4, 6);
       }
-      let b1 = "00", b2 = "00", startB3 = 0;
-      if (clean.length >= 6) {
-        b1 = clean.slice(0, 2);
-        b2 = clean.slice(2, 4);
-        startB3 = parseInt(clean.slice(4, 6), 16) || 0;
-      } else if (clean.length >= 4) {
-        b1 = clean.slice(0, 2);
-        b2 = clean.slice(2, 4);
-        startB3 = 0;
-      } else if (clean.length >= 2) {
-        b1 = clean.slice(0, 2);
-        b2 = defaultOctets ? defaultOctets[1] : "00";
-        startB3 = 0;
-      } else {
-        if (defaultOctets) {
-          b1 = defaultOctets[0];
-          b2 = defaultOctets[1];
-        } else {
-          b1 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-          b2 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
-        }
-        startB3 = 0;
-      }
+
+      let b1 = inB1 ? inB1.padStart(2, '0') : (defaultOctets ? defaultOctets[0] : randomByteHex());
+      let b2 = inB2 ? inB2.padStart(2, '0') : (defaultOctets ? defaultOctets[1] : randomByteHex());
+      let startB3 = inB3 ? parseInt(inB3, 16) : ((defaultOctets && defaultOctets[2] !== undefined) ? parseInt(defaultOctets[2], 16) || 0 : 0);
+
       let b3 = (startB3 + offset) % 256;
       let b3Hex = b3.toString(16).padStart(2, '0').toUpperCase();
       return `9C:00:D3:${b1}:${b2}:${b3Hex}`;
@@ -1363,7 +1510,11 @@
       const prefix = document.getElementById('bulk-gen-prefix').value.trim() || "CONFIG_";
       const startIndex = parseInt(document.getElementById('bulk-gen-start').value) || 1;
       
-      const suffixInput = (document.getElementById('bulk-gen-mac-suffix') ? document.getElementById('bulk-gen-mac-suffix').value.trim() : "");
+      const b1Val = document.getElementById('bulk-gen-mac-b1') ? cleanHexByte(document.getElementById('bulk-gen-mac-b1').value) : "";
+      const b2Val = document.getElementById('bulk-gen-mac-b2') ? cleanHexByte(document.getElementById('bulk-gen-mac-b2').value) : "";
+      const b3Val = document.getElementById('bulk-gen-mac-b3') ? cleanHexByte(document.getElementById('bulk-gen-mac-b3').value) : "";
+      const baseOctets = [b1Val, b2Val, b3Val];
+
       const isSequential = document.getElementById('bulk-mac-sequential') ? document.getElementById('bulk-mac-sequential').checked : true;
       const btn = document.getElementById('btn-run-bulk');
       const origHtml = btn ? btn.innerHTML : "";
@@ -1378,23 +1529,22 @@
       if (tbody) tbody.innerHTML = "";
 
       try {
-        const hexDigits = "0123456789ABCDEF";
-        const randB1 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
-        const randB2 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
-        const defaultOctets = [randB1, randB2];
+        const randB1 = randomByteHex();
+        const randB2 = randomByteHex();
+        const randB3 = "00";
+        const defaultOctets = [randB1, randB2, randB3];
 
         for (let i = 0; i < count; i++) {
           const idx = startIndex + i;
           const folderName = `${prefix}${idx}`;
           let mac;
           if (isSequential) {
-            mac = getSequentialMAC(suffixInput, i, defaultOctets);
+            mac = getSequentialMAC(baseOctets, i, defaultOctets);
           } else {
-            if (suffixInput) {
-              mac = getSequentialMAC(suffixInput, Math.floor(Math.random() * 256), defaultOctets);
-            } else {
-              mac = generateSmartRandomMAC();
-            }
+            const itemB1 = b1Val ? b1Val.padStart(2, '0') : randomByteHex();
+            const itemB2 = b2Val ? b2Val.padStart(2, '0') : randomByteHex();
+            const itemB3 = b3Val ? b3Val.padStart(2, '0') : randomByteHex();
+            mac = `9C:00:D3:${itemB1}:${itemB2}:${itemB3}`;
           }
           const item = buildSingleConfig(mac, folderName);
           currentBulkList.push(item);
@@ -1655,10 +1805,14 @@
           const fullMac = macMatch[1].toUpperCase();
           const hiddenMac = document.getElementById('input-mac');
           if (hiddenMac) hiddenMac.value = fullMac;
-          const suffixEl = document.getElementById('input-mac-suffix');
-          if (suffixEl) {
-            const parts = fullMac.split(':');
-            suffixEl.value = parts.length === 6 ? parts.slice(3).join(':') : fullMac.slice(-8);
+          const parts = fullMac.split(':');
+          if (parts.length === 6) {
+            const b1El = document.getElementById('input-mac-b1');
+            const b2El = document.getElementById('input-mac-b2');
+            const b3El = document.getElementById('input-mac-b3');
+            if (b1El) b1El.value = parts[3];
+            if (b2El) b2El.value = parts[4];
+            if (b3El) b3El.value = parts[5];
           }
         }
 
