@@ -49,9 +49,6 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-CLOUD_IDS_URL = "https://raw.githubusercontent.com/iurysouza041095-bit/sorteio/main/ids.json"
-cached_cloud_ids = []
-
 apps_dir = os.path.join(BASE_DIR, "apps")
 if os.path.exists(apps_dir):
     app.mount("/apps", StaticFiles(directory=apps_dir), name="apps")
@@ -101,7 +98,7 @@ class ADBInjectRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "config-generator", "version": "1.4.0", "mode": "local-cloud-adb"}
+    return {"status": "ok", "service": "config-generator", "version": "1.5.0", "mode": "local-adb"}
 
 
 @app.get("/api/configs")
@@ -287,160 +284,6 @@ def save_to_disk(req: SaveDiskRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# --- POOL DA NUVEM (10.231 CONFIGS) ---
-
-def load_cloud_ids() -> list:
-    """Carrega a lista de IDs localmente de ids.json ou faz fallback para URL remota (com cache em RAM)"""
-    global cached_cloud_ids
-    if cached_cloud_ids:
-        return cached_cloud_ids
-
-    local_file = os.path.join(BASE_DIR, "ids.json")
-    if os.path.exists(local_file):
-        try:
-            with open(local_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                ids = data.get("arquivos", [])
-                if ids:
-                    cached_cloud_ids = ids
-                    return ids
-        except Exception as e:
-            print(f"Aviso ao ler ids.json local: {e}")
-            
-    try:
-        r = requests.get(CLOUD_IDS_URL, timeout=10)
-        ids = r.json().get("arquivos", [])
-        if ids:
-            cached_cloud_ids = ids
-            return ids
-    except Exception as e:
-        print(f"Aviso ao buscar ids remotos: {e}")
-        return []
-    return []
-
-
-@app.get("/api/cloud/random")
-def get_random_cloud_config():
-    """Puxa uma configuração fresca aleatória do pool da nuvem (10.231 disponíveis)"""
-    global cached_cloud_ids
-    try:
-        if not cached_cloud_ids:
-            cached_cloud_ids = load_cloud_ids()
-            
-        if not cached_cloud_ids:
-            raise HTTPException(status_code=503, detail="Não foi possível obter a lista da nuvem")
-            
-        chosen_id = random.choice(cached_cloud_ids)
-        dl_url = f"https://drive.google.com/uc?export=download&id={chosen_id}"
-        res = requests.get(dl_url, timeout=10)
-        content = res.text
-        
-        # Build structure compatible with generator
-        folder_name = f"CONFIG_CLOUD_{chosen_id[:6]}"
-        files = {
-            ".config": content,
-            ".properties": content,
-            "cache.config.xml": ""
-        }
-        
-        return {
-            "source": "cloud",
-            "file_id": chosen_id,
-            "total_available": len(cached_cloud_ids),
-            "folder_name": folder_name,
-            "files": files
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar na nuvem: {str(e)}")
-
-
-@app.get("/api/cloud/batch")
-def get_batch_cloud_configs(count: int = 100):
-    """
-    Ticket #4: Download paralelo de configurações do Google Drive e parsing 100% em memória RAM.
-    Utiliza ThreadPoolExecutor com 15 a 20 workers para velocidade máxima e aplica o Filtro de Ouro:
-      - int(user_id) >= 567000000 -> is_target=True (✨ Virgem / 0 Dias)
-      - int(user_id) < 567000000  -> is_target=False (🗑️ Reciclada)
-    """
-    t_start = time.time()
-    try:
-        ids = load_cloud_ids()
-        if not ids:
-            raise HTTPException(status_code=503, detail="Pool de IDs da nuvem vazio ou indisponível")
-            
-        actual_count = max(1, min(count, len(ids)))
-        chosen_ids = random.sample(ids, actual_count)
-        
-        def fetch_one(id_str):
-            try:
-                t_req = time.time()
-                url = f"https://drive.google.com/uc?export=download&id={id_str}"
-                r = requests.get(url, timeout=8)
-                req_time = round(time.time() - t_req, 2)
-                
-                if r.ok and r.text:
-                    text = r.text
-                    
-                    # Regex para extração de MAC (KEY_SP_SN / SP_SN_BACKUP / key_mac / padrão MAC)
-                    mac_m = (re.search(r'name=["\']KEY_SP_SN["\'][^>]*>([^<]+)<', text) or
-                             re.search(r'name=["\']SP_SN_BACKUP["\'][^>]*>([^<]+)<', text) or
-                             re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n<"]+)', text) or
-                             re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text))
-                    mac = mac_m.group(1).upper() if mac_m else "-"
-                    
-                    # Regex para extração de key_user_id
-                    uid_m = (re.search(r'name=["\']key_user_id["\'][^>]*>([0-9]+)<', text) or
-                             re.search(r'key_user_id[=:]\s*([0-9]+)', text) or
-                             re.search(r'user_id[=:]\s*([0-9]+)', text))
-                    
-                    user_id_int = 0
-                    if uid_m:
-                        try:
-                            user_id_int = int(uid_m.group(1))
-                        except (ValueError, TypeError):
-                            user_id_int = 0
-                    
-                    # Regra de Negócio: O Filtro de Ouro
-                    if user_id_int >= 567000000:
-                        is_target = True
-                        status = "✨ 0 DIAS (VIRGEM)"
-                    else:
-                        is_target = False
-                        status = "🗑️ Reciclada"
-                        
-                    return {
-                        "id": id_str,
-                        "mac": mac,
-                        "user_id_int": user_id_int,
-                        "status": status,
-                        "is_target": is_target,
-                        "duration_sec": req_time,
-                        "config": text
-                    }
-            except Exception:
-                pass
-            return None
-
-        # Utiliza entre 15 e 20 workers para concorrência ideal
-        workers = min(max(15, min(actual_count, 20)), 20)
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            results = list(executor.map(fetch_one, chosen_ids))
-
-        valid_results = [res for res in results if res is not None]
-        total_duration = round(time.time() - t_start, 2)
-        
-        return {
-            "count": len(valid_results),
-            "total_available": len(ids),
-            "duration_total_sec": total_duration,
-            "items": valid_results
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar lote na nuvem: {str(e)}")
 
 
 # --- ENDPOINTS ADB (EMULADOR) ---

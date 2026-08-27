@@ -73,10 +73,10 @@
               Gerador de .config IPTV
             </h1>
             <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gerador Ativo & Nuvem 10k
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gerador Ativo
             </span>
           </div>
-          <p class="text-xs text-slate-400">Geração de Arquivos .config • Nuvem 10k & Chaves Aleatórias</p>
+          <p class="text-xs text-slate-400">Geração de Arquivos .config • Validador ADB &amp; Mineração Local</p>
         </div>
       </div>
 
@@ -137,7 +137,7 @@
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
                   <i data-lucide="sliders" class="w-4 h-4 text-brand-400"></i> Parâmetros da Config
                 </h3>
-                <p class="text-xs text-slate-400">Gere localmente ou puxe do pool online da nuvem</p>
+                <p class="text-xs text-slate-400">Gere arquivos .config com chaves e MACs locais</p>
               </div>
               <div class="flex items-center gap-2 flex-wrap">
                 <button onclick="document.getElementById('single-file-upload').click()" class="px-3 py-2 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs transition border border-dark-border flex items-center gap-1.5" title="Carregar um arquivo .config do seu computador">
@@ -249,29 +249,8 @@
               <p class="text-xs text-slate-400 mt-0.5">Gere múltiplos arquivos .config simultaneamente para download em .ZIP</p>
             </div>
 
-            <!-- Escolha de Origem do Lote (2 Opções) -->
-            <div class="flex flex-col gap-1.5 pt-1">
-              <label class="text-xs font-semibold text-slate-300">Origem das Configurações</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button type="button" onclick="setBulkGenSource('cloud')" id="bulk-src-cloud" class="bulk-src-btn py-3 px-3 rounded-xl bg-cyan-950/50 border border-cyan-500/50 text-cyan-300 font-bold text-xs transition flex flex-col items-center justify-center gap-1.5 text-center shadow-sm">
-                  <div class="flex items-center gap-1.5">
-                    <i data-lucide="cloud" class="w-4 h-4 text-cyan-400"></i>
-                    <span>Puxar da Nuvem</span>
-                  </div>
-                  <span class="text-[10px] font-normal text-cyan-400/80">Pool de 10.231 contas prontas</span>
-                </button>
-                <button type="button" onclick="setBulkGenSource('random')" id="bulk-src-random" class="bulk-src-btn py-3 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-300 hover:text-white font-bold text-xs transition flex flex-col items-center justify-center gap-1.5 text-center">
-                  <div class="flex items-center gap-1.5">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
-                    <span>Gerador Aleatório</span>
-                  </div>
-                  <span class="text-[10px] font-normal text-slate-400">Novas contas (9C:00:D3:...)</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Endereço MAC Manual / Base (Ativo no Gerador Aleatório) -->
-            <div id="bulk-mac-container" class="flex flex-col gap-1.5 opacity-50 pointer-events-none transition">
+            <!-- Endereço MAC Manual / Base (Geração Sequencial ou Aleatória) -->
+            <div id="bulk-mac-container" class="flex flex-col gap-1.5 pt-1">
               <div class="flex items-center justify-between">
                 <label class="text-xs font-semibold text-slate-300">Endereço MAC Base (Opcional)</label>
                 <div class="flex items-center gap-2">
@@ -423,17 +402,17 @@
     <!-- TAB 2: SCANNER & VALIDADOR ADB (TESTE NO EMULADOR) -->
     <div id="tab-scanner" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Coluna da Esquerda: Controles em 3 Passos (4 Colunas) -->
+      <!-- Coluna da Esquerda: Controles do Minerador & Scanner ADB (4 Colunas) -->
       <div class="lg:col-span-4 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-5">
+        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
           
           <!-- Cabeçalho do Card -->
           <div class="flex items-center justify-between border-b border-dark-border pb-3">
             <div>
               <h2 class="text-base font-bold text-white flex items-center gap-2">
-                <i data-lucide="rocket" class="w-5 h-5 text-purple-400"></i> Scanner de Contas
+                <i data-lucide="zap" class="w-5 h-5 text-purple-400"></i> Minerador &amp; Scanner ADB
               </h2>
-              <p class="text-xs text-slate-400 mt-0.5">Teste em massa com validação de dias e auto-filtro</p>
+              <p class="text-xs text-slate-400 mt-0.5">Geração local e injeção ADB em tempo real</p>
             </div>
             <span class="text-xs px-2.5 py-1 rounded-lg bg-dark-card border border-dark-border font-mono text-slate-300 flex items-center gap-1.5" title="Dispositivo ADB Ativo">
               <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -441,96 +420,31 @@
             </span>
           </div>
 
-          <!-- PASSO 1: ESCOLHA A ORIGEM -->
-          <div class="flex flex-col gap-2.5">
+          <!-- Quantidade para testar -->
+          <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-white flex items-center gap-1.5">
-                <span class="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center text-[11px] font-bold">1</span>
-                Origem das Configurações
-              </label>
+              <label class="text-xs font-bold text-white">Quantidade para Testar:</label>
               <span class="text-[11px] text-slate-400">
-                Fila: <strong id="batch-queue-count" class="text-white font-mono">0</strong> itens
+                Fila: <strong id="batch-queue-count" class="text-white font-mono">10</strong> itens
               </span>
             </div>
-
-            <!-- 3 Botões de Origem -->
-            <div class="grid grid-cols-3 gap-1.5">
-              <button type="button" onclick="setBatchSource('cloud')" id="btn-batch-cloud" class="batch-source-btn py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-cyan-950/50 border border-dark-border text-slate-300 hover:text-cyan-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
-                <i data-lucide="cloud-download" class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition"></i>
-                <span>Nuvem (10k)</span>
-              </button>
-
-              <button type="button" onclick="setBatchSource('pc')" id="btn-batch-pc" class="batch-source-btn py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-purple-950/50 border border-dark-border text-slate-300 hover:text-purple-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
-                <i data-lucide="folder-up" class="w-4 h-4 text-purple-400 group-hover:scale-110 transition"></i>
-                <span>Arquivos PC</span>
-              </button>
-              <input type="file" id="batch-multi-input" multiple accept=".config,.txt,text/plain" class="hidden" onchange="handleBatchMultiUpload(event)">
-
-              <button type="button" onclick="setBatchSource('local')" id="btn-batch-local" class="batch-source-btn py-2.5 px-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group">
-                <i data-lucide="zap" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition"></i>
-                <span>Lote Local</span>
-              </button>
-            </div>
-
-            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-              <span>Quantidade para puxar / gerar:</span>
-              <select id="batch-cloud-qty" onchange="onBatchQtyChange()" class="bg-dark-input text-white rounded-lg border border-dark-border px-2 py-1 text-xs font-medium focus:border-brand-500 cursor-pointer">
-                <option value="10">10 itens</option>
-                <option value="20">20 itens</option>
-                <option value="50">50 itens</option>
-                <option value="100" selected>100 itens</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- PASSO 2: DEFINA SEU ALVO -->
-          <div class="flex flex-col gap-3 pt-3 border-t border-dark-border">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-white flex items-center gap-1.5">
-                <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center text-[11px] font-bold">2</span>
-                Meta de Dias Ativos (Alvo)
-              </label>
-              <span class="text-xs font-bold text-amber-400 font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-                ≤ <span id="batch-target-label">70</span> dias
-              </span>
-            </div>
-
-            <!-- Botões de Seleção Rápida (Presets) -->
-            <div class="grid grid-cols-4 gap-1.5">
-              <button type="button" onclick="setTargetQuick(0)" id="preset-target-0" class="preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center">
-                ✨ 0 Dias
-              </button>
-              <button type="button" onclick="setTargetQuick(30)" id="preset-target-30" class="preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center">
-                ≤ 30d
-              </button>
-              <button type="button" onclick="setTargetQuick(70)" id="preset-target-70" class="preset-target-btn active py-1.5 px-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition text-center">
-                ≤ 70d
-              </button>
-              <button type="button" onclick="setTargetQuick(100)" id="preset-target-100" class="preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center">
-                ≤ 100d
-              </button>
-            </div>
-
-            <!-- Slider Manual -->
-            <input type="range" id="batch-target-days" min="0" max="500" value="70" step="5"
-              class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-amber-500"
-              oninput="syncTargetSlider(this.value)">
+            <select id="batch-qty" onchange="onBatchQtyChange()" class="w-full bg-dark-input text-white rounded-xl border border-dark-border px-3.5 py-2.5 text-xs font-semibold focus:border-purple-500 cursor-pointer">
+              <option value="10" selected>10 Configurações</option>
+              <option value="50">50 Configurações</option>
+              <option value="100">100 Configurações</option>
+              <option value="200">200 Configurações</option>
+            </select>
 
             <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 hover:text-white pt-1">
               <input type="checkbox" id="batch-stop-on-virgin" checked class="w-4 h-4 rounded bg-dark-input text-amber-500 border-dark-border accent-amber-500">
-              <span class="text-[11px] text-amber-300/90 font-medium">Pausar scanner se encontrar <strong>Conta 0 Dias Virgem</strong></span>
+              <span class="text-[11px] text-amber-300/90 font-medium">Pausar se encontrar <strong>Conta 0 Dias (Virgem)</strong></span>
             </label>
           </div>
 
-          <!-- PASSO 3: EXECUÇÃO & DOWNLOAD -->
+          <!-- Ações: Iniciar, Parar e Downloads -->
           <div class="flex flex-col gap-2.5 pt-3 border-t border-dark-border">
-            <label class="text-xs font-bold text-white flex items-center gap-1.5">
-              <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[11px] font-bold">3</span>
-              Execução &amp; Download
-            </label>
-
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="startBatchScanner()" id="btn-start-batch" disabled
+              <button onclick="startBatchScanner()" id="btn-start-batch"
                 class="py-3 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
                 <i data-lucide="play" class="w-4 h-4"></i> Iniciar Scanner
               </button>
@@ -543,7 +457,7 @@
             <div class="grid grid-cols-2 gap-2">
               <button onclick="downloadApprovedBatchZip()" id="btn-download-approved-zip" disabled
                 class="py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-[11px] shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-200"></i> Baixar Aprovadas (.ZIP)
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-200"></i> Baixar 0 Dias (.ZIP)
               </button>
               <button onclick="downloadAllBatchZip()" id="btn-download-all-zip" disabled
                 class="py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 hover:text-white font-bold text-[11px] transition flex items-center justify-center gap-1.5 text-center">
@@ -635,7 +549,7 @@
                 <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
                   <tr>
                     <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
-                      Selecione a <strong>Origem</strong> (Nuvem, PC ou Lote Local), defina sua <strong>Meta</strong> e clique em <strong>"Iniciar Scanner"</strong>.
+                      Selecione a quantidade de configurações e clique em <strong>"Iniciar Scanner"</strong> para minerar e validar em tempo real.
                     </td>
                   </tr>
                 </tbody>
@@ -848,7 +762,7 @@
       <div class="flex items-center gap-2">
         <span class="text-slate-300 font-medium">Gerador de Configurações</span>
         <span>•</span>
-        <span>Nuvem 10k & Local</span>
+        <span>Mineração Local &amp; Validador ADB</span>
       </div>
       <div class="flex items-center gap-3">
         <a href="https://github.com/renan-portes/config-unitv" target="_blank" rel="noopener noreferrer" 
@@ -1357,7 +1271,6 @@
 
     // --- CONTROLADOR DO MODO DO GERADOR (INDIVIDUAL / LOTE) ---
     let currentGenSubMode = 'single'; // 'single' | 'bulk'
-    let currentBulkGenSource = 'cloud'; // 'cloud' | 'random'
 
     function switchGenMode(mode) {
       currentGenSubMode = mode;
@@ -1477,34 +1390,6 @@
       return `9C:00:D3:${b1}:${b2}:${b3Hex}`;
     }
 
-    function setBulkGenSource(src) {
-      currentBulkGenSource = src;
-      const btnCloud = document.getElementById('bulk-src-cloud');
-      const btnRandom = document.getElementById('bulk-src-random');
-      const macContainer = document.getElementById('bulk-mac-container');
-
-      if (btnCloud) {
-        btnCloud.className = (src === 'cloud')
-          ? "bulk-src-btn py-3 px-3 rounded-xl bg-cyan-950/50 border border-cyan-500/50 text-cyan-300 font-bold text-xs transition flex flex-col items-center justify-center gap-1.5 text-center shadow-sm"
-          : "bulk-src-btn py-3 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-300 hover:text-white font-bold text-xs transition flex flex-col items-center justify-center gap-1.5 text-center";
-      }
-
-      if (btnRandom) {
-        btnRandom.className = (src === 'random')
-          ? "bulk-src-btn py-3 px-3 rounded-xl bg-purple-950/50 border border-purple-500/50 text-purple-300 font-bold text-xs transition flex flex-col items-center justify-center gap-1.5 text-center shadow-sm"
-          : "bulk-src-btn py-3 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-300 hover:text-white font-bold text-xs transition flex flex-col items-center justify-center gap-1.5 text-center";
-      }
-
-      if (macContainer) {
-        if (src === 'cloud') {
-          macContainer.classList.add('opacity-50', 'pointer-events-none');
-        } else {
-          macContainer.classList.remove('opacity-50', 'pointer-events-none');
-        }
-      }
-      lucide.createIcons();
-    }
-
     async function runBulkGeneration() {
       const count = parseInt(document.getElementById('bulk-gen-count').value) || 10;
       const prefix = document.getElementById('bulk-gen-prefix').value.trim() || "CONFIG_";
@@ -1520,11 +1405,7 @@
       const origHtml = btn ? btn.innerHTML : "";
 
       if (btn) {
-        if (currentBulkGenSource === 'cloud') {
-          btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Baixando da Nuvem...`;
-        } else {
-          btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Gerando ${count} Configs...`;
-        }
+        btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Gerando ${count} Configs...`;
         btn.disabled = true;
       }
 
@@ -1533,51 +1414,25 @@
       if (tbody) tbody.innerHTML = "";
 
       try {
-        if (currentBulkGenSource === 'cloud') {
-          const res = await fetch(`/api/cloud/batch?count=${count}`);
-          const data = await res.json();
-          if (data && data.items && data.items.length > 0) {
-            data.items.forEach((item, i) => {
-              const idx = startIndex + i;
-              const folderName = `${prefix}${idx}`;
-              const mac = (item.mac && item.mac !== "-") ? item.mac : extractMacFromText(item.config);
-              const xmlText = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(mac);
-              currentBulkList.push({
-                folder_name: folderName,
-                mac: mac,
-                drive_id: item.id,
-                user_id_int: item.user_id_int || 0,
-                files: {
-                  'cache.config.xml': xmlText
-                }
-              });
-            });
-            showToast(`✔ Lote de ${currentBulkList.length} configurações puxado da Nuvem com sucesso!`);
-          } else {
-            showToast("Falha ao puxar lote da nuvem.", true);
-          }
-        } else {
-          const randB1 = randomByteHex();
-          const randB2 = randomByteHex();
-          const randB3 = "00";
-          const defaultOctets = [randB1, randB2, randB3];
+        const randB1 = randomByteHex();
+        const randB2 = randomByteHex();
+        const randB3 = "00";
+        const defaultOctets = [randB1, randB2, randB3];
 
-          for (let i = 0; i < count; i++) {
-            const idx = startIndex + i;
-            const folderName = `${prefix}${idx}`;
-            let mac;
-            if (isSequential) {
-              mac = getSequentialMAC(baseOctets, i, defaultOctets);
-            } else {
-              const itemB1 = b1Val ? b1Val.padStart(2, '0') : randomByteHex();
-              const itemB2 = b2Val ? b2Val.padStart(2, '0') : randomByteHex();
-              const itemB3 = b3Val ? b3Val.padStart(2, '0') : randomByteHex();
-              mac = `9C:00:D3:${itemB1}:${itemB2}:${itemB3}`;
-            }
-            const item = buildSingleConfig(mac, folderName);
-            currentBulkList.push(item);
+        for (let i = 0; i < count; i++) {
+          const idx = startIndex + i;
+          const folderName = `${prefix}${idx}`;
+          let mac;
+          if (isSequential) {
+            mac = getSequentialMAC(baseOctets, i, defaultOctets);
+          } else {
+            const itemB1 = b1Val ? b1Val.padStart(2, '0') : randomByteHex();
+            const itemB2 = b2Val ? b2Val.padStart(2, '0') : randomByteHex();
+            const itemB3 = b3Val ? b3Val.padStart(2, '0') : randomByteHex();
+            mac = `9C:00:D3:${itemB1}:${itemB2}:${itemB3}`;
           }
-          showToast(`✔ Lote de ${currentBulkList.length} configurações gerado com sucesso!`);
+          const item = buildSingleConfig(mac, folderName);
+          currentBulkList.push(item);
         }
 
         renderBulkTable(currentBulkList);
@@ -1589,6 +1444,7 @@
         if (btnZip) btnZip.disabled = (currentBulkList.length === 0);
         if (btnDisk) btnDisk.disabled = (currentBulkList.length === 0);
         if (btnScan) btnScan.disabled = (currentBulkList.length === 0);
+        showToast(`✔ Lote de ${currentBulkList.length} configurações gerado com sucesso!`);
       } catch (err) {
         console.error(err);
         showToast("Erro ao gerar lote: " + err.message, true);
@@ -1862,46 +1718,21 @@
       reader.readAsText(file);
     }
 
-    // --- SCANNER & VALIDADOR EM LOTE ---
-    let batchQueue = []; // array of { name: string, content: string }
-    let batchResults = []; // array of { index, name, content, account_id, activation_date, days_raw, days_active, is_target, is_valid, status }
+    // --- SCANNER & MINERADOR DIRETO ADB ---
+    let batchQueue = []; // array of { name: string, mac: string, xml_content: string, content: string }
+    let batchResults = []; // array of { index, name, mac, content, account_id, activation_date, days_raw, days_active, is_target, is_valid, status }
     let isBatchRunning = false;
     let currentTableFilter = 'all'; // 'all' | 'approved'
 
-    function setTargetQuick(days) {
-      document.getElementById('batch-target-days').value = days;
-      document.getElementById('batch-target-label').innerText = days;
-      
-      document.querySelectorAll('.preset-target-btn').forEach(btn => {
-        btn.className = "preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center";
-      });
-      const activePreset = document.getElementById(`preset-target-${days}`);
-      if (activePreset) {
-        activePreset.className = "preset-target-btn active py-1.5 px-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition text-center";
-      }
-    }
-
-    function syncTargetSlider(val) {
-      document.getElementById('batch-target-label').innerText = val;
-      const numVal = parseInt(val, 10);
-      document.querySelectorAll('.preset-target-btn').forEach(btn => {
-        btn.className = "preset-target-btn py-1.5 px-1 rounded-lg text-[10px] font-bold bg-dark-input hover:bg-slate-700 border border-dark-border text-slate-300 transition text-center";
-      });
-      const activePreset = document.getElementById(`preset-target-${numVal}`);
-      if (activePreset) {
-        activePreset.className = "preset-target-btn active py-1.5 px-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition text-center";
-      }
-    }
-
     function updateBatchCounters() {
-      const cloudQty = parseInt(document.getElementById('batch-cloud-qty') ? document.getElementById('batch-cloud-qty').value : "100", 10) || 100;
-      const total = (currentBatchSource === 'cloud' && batchResults.length === 0) ? cloudQty : (batchResults.length || batchQueue.length);
+      const qty = parseInt(document.getElementById('batch-qty') ? document.getElementById('batch-qty').value : "10", 10) || 10;
       const tested = batchResults.length;
-      const virgins = batchResults.filter(r => r.is_target || r.days_raw === 0).length;
+      const total = isBatchRunning || tested > 0 ? (batchQueue.length || tested) : qty;
+      const virgins = batchResults.filter(r => r.days_raw === 0 || r.is_target).length;
       const approved = batchResults.filter(r => r.is_target).length;
       const rejected = batchResults.filter(r => !r.is_target).length;
 
-      document.getElementById('batch-queue-count').innerText = (currentBatchSource === 'cloud' && batchResults.length === 0) ? cloudQty : (batchQueue.length || tested);
+      document.getElementById('batch-queue-count').innerText = isBatchRunning || tested > 0 ? (batchQueue.length - tested > 0 ? batchQueue.length - tested : 0) : qty;
       document.getElementById('stat-batch-total').innerText = total;
       document.getElementById('stat-batch-tested').innerText = tested;
       document.getElementById('stat-batch-virgins').innerText = virgins;
@@ -1913,7 +1744,7 @@
 
       const btnStart = document.getElementById('btn-start-batch');
       if (btnStart) {
-        btnStart.disabled = (currentBatchSource === 'cloud' ? isBatchRunning : (batchQueue.length === 0 || isBatchRunning));
+        btnStart.disabled = isBatchRunning;
       }
       const btnDownloadApp = document.getElementById('btn-download-approved-zip');
       if (btnDownloadApp) {
@@ -1925,118 +1756,13 @@
       }
     }
 
-    let currentBatchSource = 'local'; // 'local' | 'cloud' | 'pc'
-
-    function setBatchSource(src) {
-      currentBatchSource = src;
-      const btnCloud = document.getElementById('btn-batch-cloud');
-      const btnPc = document.getElementById('btn-batch-pc');
-      const btnLocal = document.getElementById('btn-batch-local');
-
-      [btnCloud, btnPc, btnLocal].forEach(b => {
-        if (b) {
-          b.className = "batch-source-btn py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-300 hover:text-white font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
-        }
-      });
-
-      if (src === 'cloud') {
-        if (btnCloud) btnCloud.className = "batch-source-btn py-2.5 px-2 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
-        const qty = parseInt(document.getElementById('batch-cloud-qty').value, 10) || 100;
-        batchQueue = [];
-        batchResults = [];
-        const tbody = document.getElementById('batch-results-table-body');
-        if (tbody) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
-                Origem <strong>Nuvem (Pool de 10k)</strong> selecionada (${qty} contas na fila). Defina sua Meta e clique em <strong>"Iniciar Scanner"</strong>.
-              </td>
-            </tr>
-          `;
-        }
-        updateBatchCounters();
-        const pBar = document.getElementById('batch-progress-bar');
-        const pPercent = document.getElementById('batch-progress-percent');
-        const pStatus = document.getElementById('batch-progress-status');
-        if (pBar) pBar.style.width = "0%";
-        if (pPercent) pPercent.innerText = "0%";
-        if (pStatus) pStatus.innerText = `Origem Nuvem selecionada (${qty} contas na fila). Clique em "Iniciar Scanner".`;
-      } else if (src === 'local') {
-        if (btnLocal) btnLocal.className = "batch-source-btn py-2.5 px-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
-        loadBatchLocal();
-      } else if (src === 'pc') {
-        if (btnPc) btnPc.className = "batch-source-btn py-2.5 px-2 rounded-xl bg-purple-950/40 border border-purple-500/40 text-purple-300 font-semibold text-[11px] transition flex flex-col items-center justify-center gap-1 text-center group";
-      }
-      lucide.createIcons();
-    }
-
     function onBatchQtyChange() {
-      if (currentBatchSource === 'cloud') {
-        const qty = parseInt(document.getElementById('batch-cloud-qty').value, 10) || 100;
-        updateBatchCounters();
-        const pStatus = document.getElementById('batch-progress-status');
-        if (pStatus && (!batchResults || batchResults.length === 0)) {
-          pStatus.innerText = `Origem Nuvem selecionada (${qty} contas na fila). Clique em "Iniciar Scanner".`;
-        }
-        const tbody = document.getElementById('batch-results-table-body');
-        if (tbody && (!batchResults || batchResults.length === 0)) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
-                Origem <strong>Nuvem (Pool de 10k)</strong> selecionada (${qty} contas na fila). Defina sua Meta e clique em <strong>"Iniciar Scanner"</strong>.
-              </td>
-            </tr>
-          `;
-        }
-      } else if (currentBatchSource === 'local') {
-        loadBatchLocal();
+      const qty = parseInt(document.getElementById('batch-qty').value, 10) || 10;
+      if (!isBatchRunning && batchResults.length === 0) {
+        document.getElementById('batch-queue-count').innerText = qty;
+        document.getElementById('stat-batch-total').innerText = qty;
+        document.getElementById('batch-progress-status').innerText = `Pronto para minerar e testar ${qty} configurações.`;
       }
-    }
-
-    function loadBatchLocal() {
-      const qty = parseInt(document.getElementById('batch-cloud-qty').value) || 10;
-      batchQueue = [];
-      batchResults = [];
-      document.getElementById('batch-results-table-body').innerHTML = "";
-
-      for (let i = 0; i < qty; i++) {
-        const mac = generateSmartRandomMAC();
-        const folderName = `CONFIG_${i + 1}_${mac.replace(/:/g, '')}`;
-        const item = buildSingleConfig(mac, folderName);
-
-        batchQueue.push({
-          name: `${folderName}_cache.config.xml`,
-          mac: mac,
-          xml_content: item.files['cache.config.xml'],
-          content: item.files['cache.config.xml']
-        });
-      }
-
-      updateBatchCounters();
-      showToast(`⚡ ${batchQueue.length} configs geradas localmente na fila!`);
-    }
-
-    function handleBatchMultiUpload(event) {
-      const files = Array.from(event.target.files);
-      if (!files || files.length === 0) return;
-
-      batchQueue = [];
-      batchResults = [];
-      document.getElementById('batch-results-table-body').innerHTML = "";
-
-      let loadedCount = 0;
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          batchQueue.push({ name: file.name, content: e.target.result });
-          loadedCount++;
-          if (loadedCount === files.length) {
-            updateBatchCounters();
-            showToast(`${files.length} arquivos carregados na fila de teste!`);
-          }
-        };
-        reader.readAsText(file);
-      });
     }
 
     function calculateExpirationDate(actDateStr, daysActive) {
@@ -2069,88 +1795,23 @@
     }
 
     async function startBatchScanner() {
-      if (currentBatchSource === 'cloud') {
-        const qty = parseInt(document.getElementById('batch-cloud-qty').value, 10) || 100;
-        isBatchRunning = true;
-        batchResults = [];
-        const tbody = document.getElementById('batch-results-table-body');
-        if (tbody) tbody.innerHTML = "";
+      if (isBatchRunning) return;
 
-        document.getElementById('btn-start-batch').disabled = true;
-        document.getElementById('btn-stop-batch').disabled = false;
-
-        const pBar = document.getElementById('batch-progress-bar');
-        const pPercent = document.getElementById('batch-progress-percent');
-        const pStatus = document.getElementById('batch-progress-status');
-        if (pBar) pBar.style.width = "40%";
-        if (pPercent) pPercent.innerText = "40%";
-        if (pStatus) pStatus.innerText = `Baixando e analisando ${qty} contas da Nuvem em RAM...`;
-
-        try {
-          const res = await fetch(`/api/cloud/batch?count=${qty}`);
-          const data = await res.json();
-          
-          if (data && data.items && data.items.length > 0) {
-            data.items.forEach((item, idx) => {
-              const uidStr = (item.user_id_int && item.user_id_int > 0) ? String(item.user_id_int) : "-";
-              const macAddr = (item.mac && item.mac !== "-") ? item.mac : extractMacFromText(item.config);
-              
-              const resultItem = {
-                index: idx + 1,
-                id: item.id,
-                name: `cloud_${item.id.slice(0, 8)}.config`,
-                mac: macAddr,
-                account_id: uidStr,
-                activation_date: "-",
-                days_raw: item.is_target ? 0 : null,
-                days_active: item.is_target ? "0 dias" : "-",
-                expiration_date: "-",
-                duration_sec: (item.duration_sec !== undefined && item.duration_sec !== null) ? String(item.duration_sec) : "0.1",
-                is_target: Boolean(item.is_target),
-                is_valid: Boolean(item.is_target),
-                status: item.status,
-                config: item.config,
-                content: item.config,
-                user_id_int: item.user_id_int || 0
-              };
-
-              batchResults.push(resultItem);
-              appendBatchTableRow(resultItem);
-            });
-
-            updateBatchCounters();
-            
-            if (pBar) pBar.style.width = "100%";
-            if (pPercent) pPercent.innerText = "100%";
-            if (pStatus) pStatus.innerText = `⚡ Varredura em lote da nuvem concluída (${data.items.length} contas em ${data.duration_total_sec || '0.5'}s)!`;
-
-            const virginsCount = batchResults.filter(r => r.is_target).length;
-            showToast(`⚡ ${data.items.length} contas da nuvem processadas em ${data.duration_total_sec}s! (${virginsCount} Virgens 0 Dias)`);
-          } else {
-            if (pStatus) pStatus.innerText = "Nenhuma configuração retornada pela nuvem.";
-            showToast("Falha ao carregar lote da nuvem.", true);
-          }
-        } catch (e) {
-          const pStatus = document.getElementById('batch-progress-status');
-          if (pStatus) pStatus.innerText = "Erro ao conectar à nuvem.";
-          showToast("Erro ao carregar da nuvem: " + e.message, true);
-        } finally {
-          isBatchRunning = false;
-          document.getElementById('btn-start-batch').disabled = false;
-          document.getElementById('btn-stop-batch').disabled = true;
-          lucide.createIcons();
-        }
-        return;
+      const qty = parseInt(document.getElementById('batch-qty').value, 10) || 10;
+      
+      // Gera as configurações locais na hora para o teste ADB direto
+      batchQueue = [];
+      for (let i = 0; i < qty; i++) {
+        const mac = generateSmartRandomMAC();
+        const folderName = `CONFIG_${i + 1}_${mac.replace(/:/g, '')}`;
+        const item = buildSingleConfig(mac, folderName);
+        batchQueue.push({
+          name: `${folderName}_cache.config.xml`,
+          mac: mac,
+          xml_content: item.files['cache.config.xml'],
+          content: item.files['cache.config.xml']
+        });
       }
-
-      // --- Modo Local / PC (Injeção via ADB) ---
-      if (batchQueue.length === 0) {
-        showToast("Nenhuma configuração na fila para testar.", true);
-        return;
-      }
-
-      const val = document.getElementById('batch-target-days').value;
-      const targetDays = (val !== "" && !isNaN(val)) ? parseInt(val, 10) : 70;
 
       isBatchRunning = true;
       batchResults = [];
@@ -2160,6 +1821,7 @@
       document.getElementById('btn-stop-batch').disabled = false;
 
       const total = batchQueue.length;
+      document.getElementById('stat-batch-total').innerText = total;
 
       for (let i = 0; i < total; i++) {
         if (!isBatchRunning) {
@@ -2171,7 +1833,7 @@
         const percent = Math.round(((i + 1) / total) * 100);
         document.getElementById('batch-progress-percent').innerText = `${percent}%`;
         document.getElementById('batch-progress-bar').style.width = `${percent}%`;
-        document.getElementById('batch-progress-status').innerText = `Testando ${i + 1} de ${total}: ${item.name}...`;
+        document.getElementById('batch-progress-status').innerText = `Testando ${i + 1} de ${total}: ${item.mac}...`;
 
         const tStart = performance.now();
 
@@ -2207,11 +1869,12 @@
             statusText = "🗑️ Reciclada (< 567M)";
           } else if (info.days_active !== null && info.days_active !== undefined && info.is_valid !== false) {
             days = info.days_active;
-            if (days <= targetDays) {
+            if (days === 0) {
               isTarget = true;
-              statusText = (days === 0) ? "✨ 0 DIAS (VIRGEM)" : "⭐ APROVADA";
+              statusText = "✨ 0 DIAS (VIRGEM)";
             } else {
-              statusText = `❌ ${days}d (> ${targetDays}d)`;
+              isTarget = false;
+              statusText = `🗑️ ${days}d (Reciclada)`;
             }
           } else {
             statusText = (info.status_message && info.status_message.includes("rejeitada")) ? "❌ Chute Rejeitado" : (info.status_message || "❌ Falha no Acesso");
@@ -2240,7 +1903,7 @@
           appendBatchTableRow(resultItem);
           updateBatchCounters();
 
-          if (uidInt >= 567000000 && isTarget) {
+          if (isTarget) {
             showToast("✨ CONTA VIRGEM DE 0 DIAS ENCONTRADA! ID: " + (info.account_id || uidInt));
             const stopOnVirgin = document.getElementById('batch-stop-on-virgin');
             if (stopOnVirgin && stopOnVirgin.checked) {
@@ -2255,7 +1918,7 @@
           const errItem = {
             index: i + 1,
             name: item.name,
-            mac: extractMacFromText(item.content),
+            mac: item.mac || extractMacFromText(item.content),
             content: item.content,
             account_id: "-",
             activation_date: "-",
@@ -2277,7 +1940,7 @@
       document.getElementById('btn-start-batch').disabled = false;
       document.getElementById('btn-stop-batch').disabled = true;
       if (document.getElementById('batch-progress-status').innerText.indexOf("pausado") === -1) {
-        document.getElementById('batch-progress-status').innerText = "Varredura em lote finalizada!";
+        document.getElementById('batch-progress-status').innerText = "Varredura e mineração concluídas!";
       }
       showToast("Varredura em lote concluída!");
       lucide.createIcons();
@@ -2370,8 +2033,8 @@
       batchResults = [];
       document.getElementById('batch-results-table-body').innerHTML = `
         <tr>
-          <td colspan="7" class="px-4 py-12 text-center text-slate-500 font-sans">
-            Selecione a <strong>Origem</strong> (Nuvem, PC ou Lote Local), defina sua <strong>Meta</strong> e clique em <strong>"Iniciar Scanner"</strong>.
+          <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
+            Selecione a quantidade de configurações e clique em <strong>"Iniciar Scanner"</strong> para minerar e validar em tempo real.
           </td>
         </tr>
       `;
@@ -2579,7 +2242,7 @@
           const dot = document.getElementById('status-dot');
           const txt = document.getElementById('status-text');
           if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
-          if (txt) txt.innerText = "Servidor & Nuvem Online";
+          if (txt) txt.innerText = "Servidor Online";
           checkAdbDevices();
         } else {
           const dot = document.getElementById('status-dot');
@@ -2599,8 +2262,7 @@
       lucide.createIcons();
       randomizeAll();
       checkServer();
-      setTargetQuick(70);
-      setBatchSource('local');
+      onBatchQtyChange();
     });
   </script>
 </body>

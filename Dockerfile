@@ -21,7 +21,6 @@ COPY generator_engine.py .
 COPY server.py .
 COPY index.html .
 COPY logo.png .
-COPY ids.json .
 COPY Conectar_Emulador_Remoto.bat .
 COPY apps/ ./apps/
 

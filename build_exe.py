@@ -26,15 +26,12 @@ def build():
     # 2. Arquivos de dados a serem empacotados
     index_html = os.path.join(base_dir, "index.html")
     logo_png = os.path.join(base_dir, "logo.png")
-    ids_json = os.path.join(base_dir, "ids.json")
     
     datas = []
     if os.path.exists(index_html):
         datas.append(f"{index_html};.")
     if os.path.exists(logo_png):
         datas.append(f"{logo_png};.")
-    if os.path.exists(ids_json):
-        datas.append(f"{ids_json};.")
         
     apps_dir = os.path.join(base_dir, "apps")
     if os.path.exists(apps_dir):
