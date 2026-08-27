@@ -884,39 +884,47 @@ def dismiss_tutorial_and_overlays(device: str):
     return dismiss_tutorials_semantic(device)
 
 
-def click_profile_semantic(device: str) -> bool:
+def click_profile_semantic(device: str, max_retries: int = 3) -> bool:
     """
-    Localiza e clica no botão de perfil de forma semântica (CORREÇÃO 2):
-    Extrai as coordenadas centrais (bounds) de mIvPersonal / mLayoutPersonal / content-desc='Profile'
-    garantindo que o clique ocorra estritamente dentro da aplicação UniTV.
+    Localiza e clica no botão de perfil com mecanismo de repetição / Teimosia Automática (CORREÇÃO 2):
+    Tenta encontrar e clicar a cada 2 segundos por até max_retries tentativas.
+    Se na primeira tentativa o botão não for encontrado, reexecuta o bypass de tutorial.
     """
     adb_bin = get_adb_cmd()
     ensure_unitv_foreground(device)
     
-    xml_dump = get_emulator_ui_dump(device)
-    if is_profile_screen_open(xml_dump):
-        return True
-        
-    profile_match = find_profile_button_in_xml(xml_dump)
-    if profile_match:
-        (cx, cy), desc = profile_match
-        subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
-        time.sleep(1.5)
-        return True
-        
+    for attempt in range(1, max_retries + 1):
+        xml_dump = get_emulator_ui_dump(device)
+        if is_profile_screen_open(xml_dump):
+            return True
+            
+        profile_match = find_profile_button_in_xml(xml_dump)
+        if profile_match:
+            (cx, cy), desc = profile_match
+            subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
+            time.sleep(2.0)
+            
+            # Verifica se o clique abriu a tela de perfil
+            check_dump = get_emulator_ui_dump(device)
+            if is_profile_screen_open(check_dump):
+                return True
+        else:
+            # Se o botão de perfil não foi achado, executa o bypass de tutoriais novamente
+            dismiss_tutorials_semantic(device, max_attempts=3)
+            time.sleep(2.0)
+            
     # Fallback apenas se o botão não foi achado no XML mas o app está em primeiro plano
     if is_unitv_in_foreground(device):
         subprocess.run([adb_bin, "-s", device, "shell", "input tap 1262 60"], timeout=2)
-        time.sleep(1.5)
-        return True
+        time.sleep(2.0)
         
-    return False
+    return is_profile_screen_open(get_emulator_ui_dump(device))
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com Bypass Semântico de Tutorial (CORREÇÃO 1), Clique Semântico no Perfil (CORREÇÃO 2)
+    com Teimosia Automática (Retry Loop e Cliques de Backup), Atrasos Generosos
     e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
@@ -962,30 +970,31 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Bypass Semântico de Tutorial e Clique Semântico no Perfil (CORREÇÕES 1 & 2)
+        # 2. Bypass Semântico de Tutorial e Loop de Tentativas no Clique (CORREÇÕES 1 & 2)
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
-            # CORREÇÃO 1: Executa a rotina de Bypass Semântico de Tutoriais/Overlays
-            dismiss_tutorials_semantic(device)
+            # Executa a rotina de Bypass Semântico de Tutoriais/Overlays
+            dismiss_tutorials_semantic(device, max_attempts=4)
             
-            # Aguarda 1.5s para a interface principal estabilizar
-            time.sleep(1.5)
+            # Aguarda 2 segundos para a interface principal "respirar"
+            time.sleep(2.0)
             
-            # CORREÇÃO 2: Executa o clique semântico no ícone de perfil
-            click_profile_semantic(device)
+            # CORREÇÃO 2: Loop de tentativas no clique de perfil (Retry Mechanism)
+            click_profile_semantic(device, max_retries=3)
             
-            # 3. Loop Inteligente de OCR: Aguarda a tela de perfil carregar antes de ler
-            for attempt in range(8):
-                time.sleep(1.0)
+            # 3. Loop Inteligente de OCR com Teimosia Automática e Cliques de Backup (CORREÇÃO 3)
+            for attempt in range(12):  # Até 18 segundos de espera total e tentativas
+                time.sleep(1.5)
                 dump_str = get_emulator_ui_dump(device)
                 
-                # Se a tela de perfil ainda não estiver aberta, tenta clicar novamente
-                if not is_profile_screen_open(dump_str) and attempt == 2:
-                    click_profile_semantic(device)
+                # Se a tela de perfil ainda não estiver aberta após 4-5 segundos, dispara clique de backup (CORREÇÃO 3)
+                if not is_profile_screen_open(dump_str):
+                    if attempt in (3, 6):  # ~4.5s e ~9s
+                        click_profile_semantic(device, max_retries=2)
                     continue
                     
                 parsed_date, parsed_days, parsed_status, parsed_access_error = parse_profile_dump(dump_str)
@@ -1005,7 +1014,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         except Exception:
             pass
 
-        # 3. Validação Estrita do ID e dos Dias Ativos
+        # 4. Validação Estrita do ID e dos Dias Ativos
         user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
         
         if not account_id or user_id_int == 0 or has_access_error:
@@ -1055,11 +1064,11 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             except Exception:
                 pass
 
-        # 4. Nomenclatura Dinâmica Estrita: CONFIG_{IDCONTA}_{DIAS}DIAS (POLIMENTO 2)
+        # 5. Nomenclatura Dinâmica Estrita: CONFIG_{IDCONTA}_{DIAS}DIAS
         days_val = days_active if days_active is not None else 0
         folder_name = f"CONFIG_{user_id_int}_{days_val}DIAS"
 
-        # 5. Salva backup na pasta configs/CONFIG_{ID}_{DIAS}DIAS/ contendo EXCLUSIVAMENTE o cache.config.xml
+        # 6. Salva backup na pasta configs/CONFIG_{ID}_{DIAS}DIAS/ contendo EXCLUSIVAMENTE o cache.config.xml
         save_dir = os.path.join(BASE_DIR, "configs", folder_name)
         os.makedirs(save_dir, exist_ok=True)
         
@@ -1099,7 +1108,7 @@ def inject_adb(req: ADBInjectRequest):
     Injeta arquivos de configuração no emulador Android via ADB:
     1. Executa Limpeza Profunda (Deep Wipe) estrita do emulador
     2. Envia exclusivamente o novo cache.config.xml
-    3. Abre o app, aguarda o carregamento inicial (7-10s) e executa o bypass de tutoriais
+    3. Abre o app, aguarda o carregamento generoso (10-12s) e executa inspeção semântica com retry
     """
     device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
     adb_bin = get_adb_cmd()
@@ -1126,7 +1135,7 @@ def inject_adb(req: ADBInjectRequest):
         ensure_adb_connected(device)
         logs.append(f"Conectando ao dispositivo ADB: {device}")
         
-        # Executa Limpeza Profunda Obrigatória (CORREÇÃO 1)
+        # Executa Limpeza Profunda Obrigatória
         deep_wipe_emulator(device)
         logs.append("Limpeza profunda (am force-stop, pm clear, rm backups, rm shared_prefs) realizada com sucesso")
             
@@ -1149,11 +1158,11 @@ def inject_adb(req: ADBInjectRequest):
                 subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
             logs.append("UniTV Free iniciado no emulador...")
             
-            # Aguarda o tempo de carregamento inicial (7 a 10 segundos) para o tutorial aparecer completamente
-            time.sleep(8.0)
-            handle_app_lifecycle_and_guide(device, max_wait_sec=8)
+            # CORREÇÃO 1: Atraso generoso inicial (11 segundos) para renderização completa
+            time.sleep(11.0)
+            handle_app_lifecycle_and_guide(device, max_wait_sec=10)
             
-            logs.append("Executando rotina de bypass e lendo credenciais...")
+            logs.append("Executando rotina semântica de bypass e lendo credenciais...")
             account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)
             
             if account_info and account_info.get("found"):
