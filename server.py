@@ -28,7 +28,7 @@ import generator_engine as engine
 app = FastAPI(
     title="Gerador de .config IPTV (Local, Nuvem & ADB)",
     description="API e Painel Web para geração de .config, .properties e cache.config.xml com suporte a injeção ADB no emulador e pool da nuvem",
-    version="1.3.1"
+    version="1.4.0"
 )
 
 app.add_middleware(
@@ -100,7 +100,7 @@ class ADBInjectRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "config-generator", "version": "1.3.1", "mode": "local-cloud-adb"}
+    return {"status": "ok", "service": "config-generator", "version": "1.4.0", "mode": "local-cloud-adb"}
 
 
 @app.get("/api/configs")
@@ -1212,7 +1212,7 @@ if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "8000"))
     print("=" * 60)
-    print(f"🚀 Servidor do Gerador Local + Nuvem (10k) & ADB iniciado!")
+    print(f"🚀 Servidor do Gerador Local + Nuvem (10k) & ADB (v1.4.0) iniciado!")
     print(f"📡 Acesso Local:    http://localhost:{port}")
     print(f"🌐 Acesso na Rede:  http://{host}:{port}")
     print("=" * 60)

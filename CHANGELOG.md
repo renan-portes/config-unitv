@@ -6,6 +6,19 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [1.4.0] - 27-08-2026
+### 🚀 Funcionalidades & Otimizações (Performance Leap)
+- **Smart Wipe Engine:** Substituição do `pm clear` destrutivo pela limpeza cirúrgica de caches ocultos. Redução do tempo de injeção e leitura ADB de ~70s para ~13s por configuração.
+- **Bypass Semântico (UiAutomator):** Novo motor de processamento XML em memória para localização dinâmica e bypass de tutoriais, pop-ups e cliques baseados em semântica de texto (abandonando coordenadas fixas).
+- **OCR com Teimosia Automática:** Aumento da tolerância e normalização de entidades HTML e quebras de linha (`\n`) garantindo precisão absoluta na leitura de contas antigas e virgens.
+- **Nomenclatura Estrita:** As exportações em lote agora seguem um padrão ultra-limpo: `CONFIG_{IDCONTA}_{DIAS}DIAS`.
+
+### 🐛 Correções de Bugs
+- Correção do botão 'Injetar no ADB' da aba Individual, refatorado para ler e transmitir apenas o conteúdo de `cache.config.xml`.
+- Remoção total da geração inútil dos arquivos legados `.config` e `.properties` na exportação final.
+
+---
+
 ## [1.3.1] - 2026-08-26
 
 ### ✨ Adicionado
