@@ -420,10 +420,60 @@
             </span>
           </div>
 
-          <!-- Quantidade para testar -->
+          <!-- Endereço MAC Base (Opcional) -->
+          <div id="scanner-mac-container" class="flex flex-col gap-1.5 pt-1">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-slate-300">Endereço MAC Base (Opcional)</label>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="randomizeScannerMacBase()" class="text-[11px] text-purple-400 hover:underline flex items-center gap-1">
+                  <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear Finais
+                </button>
+                <button type="button" onclick="clearScannerMac()" class="text-[11px] text-slate-400 hover:text-slate-200 hover:underline">
+                  Limpar
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center rounded-xl bg-dark-input border border-dark-border overflow-hidden focus-within:border-purple-500">
+              <span class="px-3.5 py-2.5 bg-dark-card border-r border-dark-border text-slate-300 font-mono text-xs font-bold select-none flex items-center gap-1.5 whitespace-nowrap">
+                <i data-lucide="lock" class="w-3 h-3 text-purple-400"></i>
+                9C:00:D3:
+              </span>
+              <div class="flex items-center flex-1 px-2 gap-1 font-mono text-xs text-slate-500">
+                <input type="text" id="scanner-mac-b1" maxlength="2"
+                  class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-purple-300"
+                  placeholder="XX"
+                  oninput="onScannerMacOctetInput(this, 0)"
+                  onkeydown="handleMacInputKey(event, this, 'scanner-mac-b', 0)"
+                  onpaste="handleMacInputPaste(event, 'scanner-mac-b')">
+                <span>:</span>
+                <input type="text" id="scanner-mac-b2" maxlength="2"
+                  class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-purple-300"
+                  placeholder="YY"
+                  oninput="onScannerMacOctetInput(this, 1)"
+                  onkeydown="handleMacInputKey(event, this, 'scanner-mac-b', 1)"
+                  onpaste="handleMacInputPaste(event, 'scanner-mac-b')">
+                <span>:</span>
+                <input type="text" id="scanner-mac-b3" maxlength="2"
+                  class="w-full text-center py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600 focus:text-purple-300"
+                  placeholder="ZZ"
+                  oninput="onScannerMacOctetInput(this, 2)"
+                  onkeydown="handleMacInputKey(event, this, 'scanner-mac-b', 2)"
+                  onpaste="handleMacInputPaste(event, 'scanner-mac-b')">
+              </div>
+            </div>
+            <input type="hidden" id="scanner-gen-mac" value="">
+            <div class="flex items-center justify-between gap-2 mt-0.5">
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none">
+                <input type="checkbox" id="scanner-mac-sequential" checked class="w-3.5 h-3.5 rounded bg-dark-input border-dark-border text-purple-500 focus:ring-0">
+                <span>Incrementar final sequencialmente (+1)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ciclos de Mineração -->
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-white">Quantidade para Testar:</label>
+              <label class="text-xs font-bold text-white">Ciclos de Mineração:</label>
               <span class="text-[11px] text-slate-400">
                 Fila: <strong id="batch-queue-count" class="text-white font-mono">10</strong> itens
               </span>
@@ -446,7 +496,7 @@
             <div class="grid grid-cols-2 gap-2">
               <button onclick="startBatchScanner()" id="btn-start-batch"
                 class="py-3 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
-                <i data-lucide="play" class="w-4 h-4"></i> Iniciar Scanner
+                <i data-lucide="play" class="w-4 h-4"></i> Iniciar Mineração ADB
               </button>
               <button onclick="stopBatchScanner()" id="btn-stop-batch" disabled
                 class="py-3 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 disabled:opacity-40 disabled:cursor-not-allowed text-rose-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-2">
@@ -541,7 +591,7 @@
                 <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
                   <tr>
                     <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">
-                      Selecione a quantidade de configurações e clique em <strong>"Iniciar Scanner"</strong> para minerar e validar em tempo real.
+                      1. Defina um MAC base (opcional) para focar a busca. | 2. Escolha os ciclos. | 3. Inicie a mineração.
                     </td>
                   </tr>
                 </tbody>
@@ -934,6 +984,8 @@
       if (prefix === 'input-mac-b') {
         resolveSingleMAC(false);
         updateSinglePreview();
+      } else if (prefix === 'scanner-mac-b') {
+        updateScannerHiddenMac();
       } else {
         updateBulkHiddenMac();
       }
@@ -1280,6 +1332,63 @@
       if (el3) el3.value = "";
       if (hiddenMac) hiddenMac.value = "";
       showToast("Campos MAC limpos. O gerador sorteará automaticamente.");
+    }
+
+    function onScannerMacOctetInput(el, index) {
+      el.value = cleanHexByte(el.value);
+      if (el.value.length === 2 && index < 2) {
+        const next = document.getElementById('scanner-mac-b' + (index + 2));
+        if (next) {
+          next.focus();
+          next.select();
+        }
+      }
+      updateScannerHiddenMac();
+    }
+
+    function updateScannerHiddenMac() {
+      const el1 = document.getElementById('scanner-mac-b1');
+      const el2 = document.getElementById('scanner-mac-b2');
+      const el3 = document.getElementById('scanner-mac-b3');
+      const b1 = el1 ? cleanHexByte(el1.value) : "";
+      const b2 = el2 ? cleanHexByte(el2.value) : "";
+      const b3 = el3 ? cleanHexByte(el3.value) : "";
+      const hiddenMac = document.getElementById('scanner-gen-mac');
+      if (hiddenMac) {
+        if (b1 || b2 || b3) {
+          hiddenMac.value = `9C:00:D3:${b1 || 'XX'}:${b2 || 'YY'}:${b3 || 'ZZ'}`;
+        } else {
+          hiddenMac.value = "";
+        }
+      }
+    }
+
+    function randomizeScannerMacBase() {
+      const el1 = document.getElementById('scanner-mac-b1');
+      const el2 = document.getElementById('scanner-mac-b2');
+      const el3 = document.getElementById('scanner-mac-b3');
+
+      if (el1) el1.value = randomByteHex();
+      if (el2) el2.value = randomByteHex();
+      if (el3) el3.value = "00";
+
+      updateScannerHiddenMac();
+      const b1 = el1 ? el1.value : "";
+      const b2 = el2 ? el2.value : "";
+      const b3 = el3 ? el3.value : "";
+      showToast(`MAC Base do Scanner sorteado: 9C:00:D3:${b1}:${b2}:${b3}`);
+    }
+
+    function clearScannerMac() {
+      const el1 = document.getElementById('scanner-mac-b1');
+      const el2 = document.getElementById('scanner-mac-b2');
+      const el3 = document.getElementById('scanner-mac-b3');
+      const hiddenMac = document.getElementById('scanner-gen-mac');
+      if (el1) el1.value = "";
+      if (el2) el2.value = "";
+      if (el3) el3.value = "";
+      if (hiddenMac) hiddenMac.value = "";
+      showToast("MAC Base limpo. O minerador gerará MACs 100% aleatórios.");
     }
 
     function getSequentialMAC(baseOctets, offset, defaultOctets) {
@@ -1680,10 +1789,34 @@
       if (isBatchRunning) return;
 
       const qty = parseInt(document.getElementById('batch-qty').value, 10) || 10;
+      const b1Val = document.getElementById('scanner-mac-b1') ? cleanHexByte(document.getElementById('scanner-mac-b1').value) : "";
+      const b2Val = document.getElementById('scanner-mac-b2') ? cleanHexByte(document.getElementById('scanner-mac-b2').value) : "";
+      const b3Val = document.getElementById('scanner-mac-b3') ? cleanHexByte(document.getElementById('scanner-mac-b3').value) : "";
+      const isSequential = document.getElementById('scanner-mac-sequential') ? document.getElementById('scanner-mac-sequential').checked : true;
+      const hasBase = !!(b1Val || b2Val || b3Val);
+      const baseOctets = [b1Val, b2Val, b3Val];
+
+      const randB1 = randomByteHex();
+      const randB2 = randomByteHex();
+      const randB3 = "00";
+      const defaultOctets = [randB1, randB2, randB3];
       
       batchQueue = [];
       for (let i = 0; i < qty; i++) {
-        const mac = generateSmartRandomMAC();
+        let mac;
+        if (hasBase) {
+          if (isSequential) {
+            mac = getSequentialMAC(baseOctets, i, defaultOctets);
+          } else {
+            const itemB1 = b1Val ? b1Val.padStart(2, '0') : randomByteHex();
+            const itemB2 = b2Val ? b2Val.padStart(2, '0') : randomByteHex();
+            const itemB3 = b3Val ? b3Val.padStart(2, '0') : randomByteHex();
+            mac = `9C:00:D3:${itemB1}:${itemB2}:${itemB3}`;
+          }
+        } else {
+          mac = generateSmartRandomMAC();
+        }
+
         const folderName = `CONFIG_${i + 1}_${mac.replace(/:/g, '')}`;
         const item = buildSingleConfig(mac, folderName);
         batchQueue.push({
@@ -1908,7 +2041,7 @@
       document.getElementById('batch-results-table-body').innerHTML = `
         <tr>
           <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">
-            Selecione a quantidade de configurações e clique em <strong>"Iniciar Scanner"</strong> para minerar e validar em tempo real.
+            1. Defina um MAC base (opcional) para focar a busca. | 2. Escolha os ciclos. | 3. Inicie a mineração.
           </td>
         </tr>
       `;
