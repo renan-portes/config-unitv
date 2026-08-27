@@ -25,8 +25,6 @@ echo [3/3] Iniciando servidor do Gerador...
 echo.
 echo Servidor ativo em: http://localhost:8000
 echo.
-echo Abrindo navegador automaticamente...
-start http://localhost:8000
 
 python server.py
 

@@ -144,8 +144,8 @@
                   <i data-lucide="folder-open" class="w-4 h-4 text-purple-400"></i> Carregar .config
                 </button>
                 <input type="file" id="single-file-upload" accept=".config,.txt,text/plain" class="hidden" onchange="handleSingleFileUpload(event)">
-                <button onclick="generateSingleConfigUI()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
-                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Local
+                <button onclick="randomizeAll()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Aleatório
                 </button>
               </div>
             </div>
@@ -163,110 +163,56 @@
                   <i data-lucide="lock" class="w-3 h-3 text-brand-400"></i>
                   9C:00:D3:
                 </span>
-                <input type="text" id="input-mac-suffix" value="EC:AA:01" maxlength="8"
+                <input type="text" id="input-mac-suffix" value="" maxlength="8"
                   class="w-full px-3.5 py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600"
-                  placeholder="EC:AA:01"
+                  placeholder="XX:YY:00 (ou vazio para aleatório)"
                   oninput="onSingleMacSuffixInput(this)">
               </div>
-              <input type="hidden" id="input-mac" value="9C:00:D3:EC:AA:01">
+              <input type="hidden" id="input-mac" value="">
             </div>
 
-            <!-- User ID Input -->
+            <!-- Folder Name -->
             <div class="flex flex-col gap-1.5">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-300">User ID (key_user_id)</label>
-                <button onclick="randomizeUserIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                  <i data-lucide="shuffle" class="w-3 h-3"></i> Sortear ID
-                </button>
-              </div>
-              <input type="text" id="input-uid" value="545050564"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-white focus:border-brand-500 focus:outline-none"
+              <label class="text-xs font-semibold text-slate-300">Nome da Pasta de Destino</label>
+              <input type="text" id="input-folder" value="CONFIG_1"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-mono focus:border-brand-500 focus:outline-none"
                 oninput="updateSinglePreview()">
             </div>
 
-            <!-- Device ID Input -->
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-300">Device ID Base64 (Único)</label>
-                <button onclick="randomizeDeviceIdOnly()" class="text-[11px] text-brand-400 hover:underline flex items-center gap-1">
-                  <i data-lucide="shuffle" class="w-3 h-3"></i> Novo Device ID
-                </button>
-              </div>
-              <input type="text" id="input-devid" value="0YXNlTTBFS0G22pTPQrY5w=="
-                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs font-mono text-slate-300 focus:border-brand-500 focus:outline-none"
-                oninput="updateSinglePreview()">
-            </div>
-
-            <!-- Folder Name & Model -->
-            <div class="grid grid-cols-2 gap-3">
-              <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-semibold text-slate-300">Nome da Pasta</label>
-                <input type="text" id="input-folder" value="CONFIG_1"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
-                  oninput="updateSinglePreview()">
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-semibold text-slate-300">Modelo Aparelho</label>
-                <input type="text" id="input-model" value="SBTHD"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white focus:border-brand-500 focus:outline-none"
-                  oninput="updateSinglePreview()">
-              </div>
-            </div>
-
-            <!-- Randomize All & Quick Actions -->
-            <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
-              <button onclick="randomizeAll()" class="w-full py-2.5 px-4 rounded-xl bg-dark-hover hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition border border-dark-border flex items-center justify-center gap-2">
-                <i data-lucide="dices" class="w-4 h-4 text-purple-400"></i> Sortear Todos os Campos
+            <!-- Ações Principais: Injetar no ADB (Azul) & Exportar ZIP (Verde) -->
+            <div class="flex flex-col gap-2.5 pt-3 border-t border-dark-border">
+              <button onclick="injectDirectAdb()" id="btn-single-inject" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+                <i data-lucide="smartphone" class="w-4 h-4 text-cyan-200"></i> Injetar no ADB
               </button>
-              
-              <div class="grid grid-cols-2 gap-2">
-                <button onclick="downloadSingleZip()" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-brand-500/20 flex items-center justify-center gap-1.5 text-center">
-                  <i data-lucide="archive" class="w-3.5 h-3.5"></i> Baixar ZIP
-                </button>
-                <button onclick="saveSingleToDisk()" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 text-center">
-                  <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Salvar no Disco
-                </button>
-              </div>
+              <button onclick="downloadSingleZip()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Exportar Configurações (.ZIP)
+              </button>
             </div>
 
           </div>
         </div>
 
-        <!-- Preview do Código & Injeção ADB Individual -->
+        <!-- Preview do Código Individual (Exclusivamente cache.config.xml) -->
         <div class="lg:col-span-8 flex flex-col gap-4">
           <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1">
             
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-border">
-              <!-- Tabs do Visualizador -->
-              <div class="flex items-center gap-1.5 p-1 bg-dark-input rounded-xl border border-dark-border">
-                <button onclick="switchPreviewFile('.config')" id="preview-tab-config" class="preview-tab active px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 flex items-center gap-1.5">
-                  <i data-lucide="file-code" class="w-3.5 h-3.5"></i> .config
-                </button>
-                <button onclick="switchPreviewFile('.properties')" id="preview-tab-properties" class="preview-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover flex items-center gap-1.5">
-                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i> .properties
-                </button>
-                <button onclick="switchPreviewFile('cache.config.xml')" id="preview-tab-xml" class="preview-tab px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-dark-hover flex items-center gap-1.5">
-                  <i data-lucide="code" class="w-3.5 h-3.5"></i> cache.config.xml
-                </button>
+              <!-- Visualizador Header -->
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-500/10 border border-brand-500/30 text-brand-300 text-xs font-mono font-semibold">
+                <i data-lucide="code" class="w-3.5 h-3.5 text-brand-400"></i> cache.config.xml (Template Estrito)
               </div>
 
-              <!-- Copy, Download & Injetar -->
+              <!-- Botão Copiar -->
               <div class="flex items-center gap-2">
-                <button onclick="copyCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                  <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
-                </button>
-                <button onclick="downloadCurrentFile()" class="px-2.5 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1">
-                  <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Baixar
-                </button>
-                <button onclick="injectDirectAdb()" id="btn-single-inject" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs transition shadow-md flex items-center gap-1.5">
-                  <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Injetar no ADB
+                <button onclick="copyCurrentFile()" class="px-3 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition flex items-center gap-1.5 border border-dark-border">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar XML
                 </button>
               </div>
             </div>
 
             <!-- Code View Area -->
             <div class="mt-4 flex-1 relative min-h-[360px]">
-              <pre class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-slate-200 overflow-auto leading-relaxed max-h-[460px]" id="code-viewer"></pre>
+              <pre class="w-full h-full p-4 rounded-xl bg-dark-input border border-dark-border font-mono text-xs text-emerald-300 overflow-auto leading-relaxed max-h-[460px]" id="code-viewer"></pre>
             </div>
           </div>
         </div>
@@ -324,12 +270,12 @@
                   <i data-lucide="lock" class="w-3 h-3 text-indigo-400"></i>
                   9C:00:D3:
                 </span>
-                <input type="text" id="bulk-gen-mac-suffix" value="EC:AA:01" maxlength="8"
+                <input type="text" id="bulk-gen-mac-suffix" value="" maxlength="8"
                   class="w-full px-3.5 py-2.5 bg-transparent text-xs font-mono text-white focus:outline-none uppercase placeholder:text-slate-600"
-                  placeholder="EC:AA:01 ou vazio"
+                  placeholder="XX:YY:00 (ou vazio para aleatório)"
                   oninput="onBulkMacSuffixInput(this)">
               </div>
-              <input type="hidden" id="bulk-gen-mac" value="9C:00:D3:EC:AA:01">
+              <input type="hidden" id="bulk-gen-mac" value="">
               <div class="flex items-center justify-between gap-2 mt-0.5">
                 <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none">
                   <input type="checkbox" id="bulk-mac-sequential" checked class="w-3.5 h-3.5 rounded bg-dark-input border-dark-border text-brand-500 focus:ring-0">
@@ -338,17 +284,24 @@
               </div>
             </div>
 
-            <!-- Quantidade de Configs -->
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-semibold text-slate-300">Quantidade para Gerar</label>
-              <select id="bulk-gen-count" class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-xs text-white font-medium focus:border-brand-500 focus:outline-none cursor-pointer">
-                <option value="10">10 configurações</option>
-                <option value="20">20 configurações</option>
-                <option value="50">50 configurações</option>
-                <option value="100" selected>100 configurações</option>
-                <option value="250">250 configurações</option>
-                <option value="500">500 configurações</option>
-              </select>
+            <!-- Quantidade de Configs (Slider 1 a 256) -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300">Quantidade para Gerar</label>
+                <span class="text-xs font-mono font-bold text-brand-400 px-2.5 py-0.5 rounded-lg bg-brand-500/10 border border-brand-500/20">
+                  <span id="bulk-gen-count-val">100</span> configs
+                </span>
+              </div>
+              <input type="range" id="bulk-gen-count" min="1" max="256" value="100" 
+                class="w-full h-2 bg-dark-input rounded-lg appearance-none cursor-pointer accent-brand-500"
+                oninput="document.getElementById('bulk-gen-count-val').innerText = this.value">
+              <div class="flex justify-between text-[10px] font-mono text-slate-500 px-0.5">
+                <span>1</span>
+                <span>64</span>
+                <span>128</span>
+                <span>192</span>
+                <span>256</span>
+              </div>
             </div>
 
             <!-- Prefixo & Índice Inicial -->
@@ -368,20 +321,14 @@
               <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Gerar Lote de Configurações
             </button>
 
-            <!-- Ações de Exportação em Massa -->
+            <!-- Ações de Exportação em Massa: Enviar Scanner & Exportar ZIP -->
             <div class="flex flex-col gap-2 pt-2 border-t border-dark-border">
-              <button type="button" onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2">
-                <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Baixar Lote Completo (.ZIP)
+              <button type="button" onclick="sendBulkToScanner()" id="btn-send-bulk-scanner" disabled class="w-full py-2.5 px-3 rounded-xl bg-purple-950/50 hover:bg-purple-900 border border-purple-500/40 disabled:opacity-40 disabled:cursor-not-allowed text-purple-200 font-semibold text-xs transition flex items-center justify-center gap-2" title="Enviar essas configs para a fila do Scanner ADB">
+                <i data-lucide="shield-check" class="w-4 h-4 text-purple-300"></i> Enviar para Scanner ADB
               </button>
-
-              <div class="grid grid-cols-2 gap-2">
-                <button type="button" onclick="saveBulkToDisk()" id="btn-save-bulk-disk" disabled class="py-2.5 px-3 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-semibold text-[11px] transition flex items-center justify-center gap-1.5">
-                  <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-slate-400"></i> Salvar no Disco
-                </button>
-                <button type="button" onclick="sendBulkToScanner()" id="btn-send-bulk-scanner" disabled class="py-2.5 px-3 rounded-xl bg-purple-950/50 hover:bg-purple-900 border border-purple-500/40 disabled:opacity-40 disabled:cursor-not-allowed text-purple-200 font-semibold text-[11px] transition flex items-center justify-center gap-1.5" title="Enviar essas configs para a fila do Scanner ADB">
-                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-purple-300"></i> Ir para Scanner
-                </button>
-              </div>
+              <button type="button" onclick="downloadBulkZip()" id="btn-download-bulk-zip" disabled class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                <i data-lucide="archive" class="w-4 h-4 text-emerald-200"></i> Exportar Configurações (.ZIP)
+              </button>
             </div>
 
           </div>
@@ -414,10 +361,10 @@
                   <tr>
                     <th class="px-3 py-2.5 w-12">#</th>
                     <th class="px-3 py-2.5">Pasta</th>
-                    <th class="px-3 py-2.5">Endereço MAC</th>
-                    <th class="px-3 py-2.5">User ID (Provisório)</th>
-                    <th class="px-3 py-2.5">Device ID</th>
-                    <th class="px-3 py-2.5 text-right w-20">Baixar</th>
+                    <th class="px-3 py-2.5">Endereço MAC (17 Chars)</th>
+                    <th class="px-3 py-2.5">Arquivo Único</th>
+                    <th class="px-3 py-2.5">Tag SP_SN_BACKUP Gerada</th>
+                    <th class="px-3 py-2.5 text-right w-24">Baixar XML</th>
                   </tr>
                 </thead>
                 <tbody id="bulk-table-body" class="divide-y divide-dark-border/40 text-slate-200">
@@ -637,18 +584,21 @@
               <table class="w-full text-left text-xs text-slate-300">
                 <thead class="bg-dark-input text-slate-400 uppercase font-semibold sticky top-0">
                   <tr>
-                    <th class="px-3 py-2.5">#</th>
-                    <th class="px-3 py-2.5">Origem / Arquivo</th>
-                    <th class="px-3 py-2.5">ID Conta</th>
-                    <th class="px-3 py-2.5">Ativada em</th>
-                    <th class="px-3 py-2.5">Dias Ativos</th>
-                    <th class="px-3 py-2.5">Resultado</th>
-                    <th class="px-3 py-2.5 text-right">Ação</th>
+                    <th class="px-2.5 py-2.5 w-10">#</th>
+                    <th class="px-2.5 py-2.5">Origem / Arquivo</th>
+                    <th class="px-2.5 py-2.5 text-cyan-300">Endereço MAC</th>
+                    <th class="px-2.5 py-2.5">ID Conta</th>
+                    <th class="px-2.5 py-2.5">Ativada em</th>
+                    <th class="px-2.5 py-2.5">Dias Ativos</th>
+                    <th class="px-2.5 py-2.5 text-indigo-300">Expira em</th>
+                    <th class="px-2.5 py-2.5 text-amber-300">Tempo (s)</th>
+                    <th class="px-2.5 py-2.5">Resultado</th>
+                    <th class="px-2.5 py-2.5 text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
                   <tr>
-                    <td colspan="7" class="px-4 py-12 text-center text-slate-500 font-sans">
+                    <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-sans">
                       Selecione a <strong>Origem</strong> (Nuvem, PC ou Lote Local), defina sua <strong>Meta</strong> e clique em <strong>"Iniciar Scanner"</strong>.
                     </td>
                   </tr>
@@ -1002,146 +952,46 @@
       return `#${day} ${mon} ${d} ${time} GMT+08:00 ${year}`;
     }
 
-    function buildSingleConfig(mac, folderName, userId, channelCode, devIdObj) {
-      mac = mac.trim().toUpperCase();
-      folderName = folderName || "CONFIG_NOVA_0_DIAS";
-      userId = userId || generateRandomUserId();
-      channelCode = channelCode || "SBTHD";
-      devIdObj = devIdObj || generateFreshDeviceId();
-
-      const token = generateSnToken(mac);
-      const dateHeader = getJavaDateHeader();
-      const uuidStr = generateRandomUUID();
-      const nowMs = Date.now();
-      const timeCol0 = nowMs - 200000000;
-      const timeRec = nowMs - 25000000;
-
-      const configText = `#personal info\n# MAC: ${mac}\nKEY_SP_SN=${mac}\n${dateHeader}\nkey_n_bt=${DEFAULT_N_BT}\nkey_device_id_unitvfree=${devIdObj.hex}\nkey_sn_token_unitvfree=${token.hex}\n`;
-      const propText = configText;
-
-      const xmlText = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+    function generateXmlTemplate(mac) {
+      const cleanMac = (mac || generateSmartRandomMAC()).trim().toUpperCase();
+      return `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <map>
-    <string name="live_last_channel_code">SKY Sport F1</string>
-    <int name="recommends_cache_time" value="96" />
-    <int name="all_Column_key" value="68143" />
-    <int name="live_last_column_id" value="68143" />
-    <string name="key_user_id">${userId}</string>
-    <string name="KEY_SP_SN">${mac}</string>
+    <string name="KEY_SP_SN"></string>
     <string name="_free"></string>
     <string name="_special"></string>
     <string name="Special_root"></string>
-    <string name="SP_SN_BACKUP">${mac},1</string>
-    <int name="column_cache_time" value="65" />
+    <long name="dcs_realtime" value="5432344" />
     <string name="_live"></string>
-    <string name="key_user_identity">4</string>
-    <int name="live_last_tab" value="3" />
-    <string name="_search"></string>
-    <long name="service_time_column_new_10002" value="${nowMs}" />
-    <long name="service_time_column_new_10001" value="${nowMs}" />
-    <int name="heartbeat_cache_time" value="120" />
-    <long name="dcs_realtime" value="3414756" />
-    <long name="service_time_column_new_10006" value="${nowMs}" />
-    <string name="key_n_bt"></string>
-    <string name="key_device_id_unitvfree">${userId}</string>
     <string name="cache_key_recommend"></string>
-    <string name="68143">0773ab1250befd3bd99098a956d866b8;1788375945</string>
-    <string name="key_renew_flag">0</string>
-</map>
-`;
+    <string name="_search"></string>
+    <string name="SP_SN_BACKUP">${cleanMac},1</string>
+</map>`;
+    }
+
+    function buildSingleConfig(mac, folderName) {
+      mac = (mac || generateSmartRandomMAC()).trim().toUpperCase();
+      folderName = folderName || "CONFIG_1";
+      const xmlText = generateXmlTemplate(mac);
 
       return {
         folder_name: folderName,
         mac: mac,
-        user_id: userId,
-        token_b64: token.b64,
-        dev_id_b64: devIdObj.b64,
-        dev_id_hex: devIdObj.hex,
         files: {
-          '.config': configText,
-          '.properties': propText,
           'cache.config.xml': xmlText
         }
       };
     }
 
-    function generateRandomToken(numBytes) {
-      let arr = new Uint8Array(numBytes);
-      window.crypto.getRandomValues(arr);
-      let b64 = bytesToBase64(arr);
-      let hexOutput = "";
-      for (let i = 0; i < b64.length; i++) {
-        hexOutput += b64.charCodeAt(i).toString(16);
-      }
-      return { hex: hexOutput, b64: b64 };
-    }
-
-    function buildFullyRandomConfig(mac, folderName, userId, channelCode) {
-      mac = mac.trim().toUpperCase();
-      folderName = folderName || "CONFIG_RANDOM";
-      userId = userId || generateRandomUserId();
-      channelCode = channelCode || "SBTHD";
-
-      const devIdObj = generateRandomToken(16);
-      const token = generateRandomToken(24);
-      const nBt = generateRandomToken(44);
-      const dateHeader = getJavaDateHeader();
-      const uuidStr = generateRandomUUID();
-      const nowMs = Date.now();
-      const timeCol0 = nowMs - 200000000;
-      const timeRec = nowMs - 25000000;
-
-      const configText = `#personal info\n# MAC: ${mac}\nKEY_SP_SN=${mac}\n${dateHeader}\nkey_n_bt=${nBt.hex}\nkey_device_id_unitvfree=${devIdObj.hex}\nkey_sn_token_unitvfree=${token.hex}\n`;
-      const propText = configText;
-
-      const xmlText = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <string name="live_last_channel_code">SKY Sport F1</string>
-    <int name="recommends_cache_time" value="96" />
-    <int name="all_Column_key" value="68143" />
-    <int name="live_last_column_id" value="68143" />
-    <string name="key_user_id">${userId}</string>
-    <string name="KEY_SP_SN">${mac}</string>
-    <string name="_free"></string>
-    <string name="_special"></string>
-    <string name="Special_root"></string>
-    <string name="SP_SN_BACKUP">${mac},1</string>
-    <int name="column_cache_time" value="65" />
-    <string name="_live"></string>
-    <string name="key_user_identity">4</string>
-    <int name="live_last_tab" value="3" />
-    <string name="_search"></string>
-    <long name="service_time_column_new_10002" value="${nowMs}" />
-    <long name="service_time_column_new_10001" value="${nowMs}" />
-    <int name="heartbeat_cache_time" value="120" />
-    <long name="dcs_realtime" value="3414756" />
-    <long name="service_time_column_new_10006" value="${nowMs}" />
-    <string name="key_n_bt"></string>
-    <string name="key_device_id_unitvfree">${userId}</string>
-    <string name="cache_key_recommend"></string>
-    <string name="68143">0773ab1250befd3bd99098a956d866b8;1788375945</string>
-    <string name="key_renew_flag">0</string>
-</map>
-`;
-
-      return {
-        folder_name: folderName,
-        mac: mac,
-        user_id: userId,
-        token_b64: token.b64,
-        dev_id_b64: devIdObj.b64,
-        dev_id_hex: devIdObj.hex,
-        files: {
-          '.config': configText,
-          '.properties': propText,
-          'cache.config.xml': xmlText
-        }
-      };
+    function buildFullyRandomConfig(mac, folderName) {
+      return buildSingleConfig(mac, folderName);
     }
 
     function generateRandomMAC() {
       const hexDigits = "0123456789ABCDEF";
-      let byte = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
-      return `9C:00:D3:EC:AA:${byte}`;
+      const b1 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+      const b2 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+      const b3 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+      return `9C:00:D3:${b1}:${b2}:${b3}`;
     }
 
     function generateSingleConfigUI() {
@@ -1176,7 +1026,7 @@
     function onSingleMacSuffixInput(el) {
       const formatted = formatMacSuffix(el.value);
       el.value = formatted;
-      const fullMac = formatted ? `9C:00:D3:${formatted}` : "9C:00:D3:EC:AA:01";
+      const fullMac = formatted ? `9C:00:D3:${formatted}` : generateSmartRandomMAC();
       const hiddenMac = document.getElementById('input-mac');
       if (hiddenMac) hiddenMac.value = fullMac;
       updateSinglePreview();
@@ -1244,7 +1094,7 @@
       const modelEl = document.getElementById('input-model');
       const devEl = document.getElementById('input-devid');
 
-      const mac = macEl ? macEl.value.trim() : "9C:00:D3:EC:AA:01";
+      const mac = (macEl && macEl.value.trim()) ? macEl.value.trim() : generateSmartRandomMAC();
       const folder = folderEl ? folderEl.value.trim() : "CONFIG_1";
       const uid = uidEl ? uidEl.value.trim() : "545050564";
       const model = modelEl ? modelEl.value.trim() : "SBTHD";
@@ -1265,37 +1115,28 @@
         }
       }
 
-      const data = buildSingleConfig(mac, folder, uid, model, { hex: currentDeviceIdHex, b64: currentDeviceIdB64 });
+      const data = buildSingleConfig(mac, folder);
       currentSingleFiles = data.files;
+      currentActivePreview = 'cache.config.xml';
 
       const viewer = document.getElementById('code-viewer');
       if (viewer) {
-        viewer.innerText = currentSingleFiles[currentActivePreview] || currentSingleFiles['.config'] || "";
+        viewer.innerText = currentSingleFiles['cache.config.xml'] || "";
       }
     }
 
     function switchPreviewFile(fname) {
-      currentActivePreview = fname;
-      document.querySelectorAll('.preview-tab').forEach(b => {
-        b.classList.remove('active', 'bg-brand-500/20', 'text-brand-300', 'border', 'border-brand-500/30');
-        b.classList.add('text-slate-400');
-      });
-      const activeBtn = fname === '.config' ? 'preview-tab-config' : (fname === '.properties' ? 'preview-tab-properties' : 'preview-tab-xml');
-      const btn = document.getElementById(activeBtn);
-      if (btn) {
-        btn.classList.add('active', 'bg-brand-500/20', 'text-brand-300', 'border', 'border-brand-500/30');
-        btn.classList.remove('text-slate-400');
-      }
+      currentActivePreview = 'cache.config.xml';
       const viewer = document.getElementById('code-viewer');
       if (viewer) {
-        viewer.innerText = currentSingleFiles[fname] || "";
+        viewer.innerText = currentSingleFiles['cache.config.xml'] || "";
       }
     }
 
     function copyCurrentFile() {
-      const text = currentSingleFiles[currentActivePreview] || "";
+      const text = currentSingleFiles['cache.config.xml'] || "";
       navigator.clipboard.writeText(text).then(() => {
-        showToast(`Conteúdo de ${currentActivePreview} copiado!`);
+        showToast("XML copiado para a área de transferência!");
       });
     }
 
@@ -1315,34 +1156,23 @@
     }
 
     function downloadCurrentFile() {
-      const text = currentSingleFiles[currentActivePreview] || "";
+      const text = currentSingleFiles['cache.config.xml'] || "";
       if (!text) return;
-      downloadRawFile(text, currentActivePreview);
-      showToast(`Arquivo ${currentActivePreview} baixado!`);
-    }
-
-    function downloadSingleConfigFile() {
-      const text = currentSingleFiles['.config'] || "";
-      if (!text) {
-        showToast("Gere uma configuração primeiro!", true);
-        return;
-      }
-      downloadRawFile(text, ".config");
-      showToast("Arquivo .config baixado com sucesso!");
+      downloadRawFile(text, 'cache.config.xml');
+      showToast("Arquivo cache.config.xml baixado!");
     }
 
     async function downloadSingleZip() {
-      const folder = (document.getElementById('input-folder') ? document.getElementById('input-folder').value : "") || "CONFIG_NOVA";
+      const folder = (document.getElementById('input-folder') ? document.getElementById('input-folder').value : "") || "CONFIG_1";
       const zip = new JSZip();
       const folderZip = zip.folder(folder);
       
-      for (const [fname, content] of Object.entries(currentSingleFiles)) {
-        folderZip.file(fname, content);
-      }
+      const xmlContent = currentSingleFiles['cache.config.xml'] || generateXmlTemplate(document.getElementById('input-mac') ? document.getElementById('input-mac').value : "");
+      folderZip.file('cache.config.xml', xmlContent);
       
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `${folder}.zip`);
-      showToast(`Pacote ${folder}.zip baixado com sucesso!`);
+      showToast(`Pacote ${folder}.zip (cache.config.xml) baixado com sucesso!`);
     }
 
     async function saveSingleToDisk() {
@@ -1436,25 +1266,37 @@
       showToast("Campo MAC limpo. O gerador sorteará automaticamente.");
     }
 
-    function getSequentialMAC(baseMac, offset) {
-      let clean = (baseMac || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+    function getSequentialMAC(baseInput, offset, defaultOctets) {
+      let clean = (baseInput || "").replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
       if (clean.startsWith("9C00D3")) {
         clean = clean.slice(6);
       }
-      if (clean.length < 6) {
-        clean = clean.padEnd(6, '0');
-      } else if (clean.length > 6) {
-        clean = clean.slice(0, 6);
+      let b1 = "00", b2 = "00", startB3 = 0;
+      if (clean.length >= 6) {
+        b1 = clean.slice(0, 2);
+        b2 = clean.slice(2, 4);
+        startB3 = parseInt(clean.slice(4, 6), 16) || 0;
+      } else if (clean.length >= 4) {
+        b1 = clean.slice(0, 2);
+        b2 = clean.slice(2, 4);
+        startB3 = 0;
+      } else if (clean.length >= 2) {
+        b1 = clean.slice(0, 2);
+        b2 = defaultOctets ? defaultOctets[1] : "00";
+        startB3 = 0;
+      } else {
+        if (defaultOctets) {
+          b1 = defaultOctets[0];
+          b2 = defaultOctets[1];
+        } else {
+          b1 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+          b2 = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+        }
+        startB3 = 0;
       }
-      try {
-        let suffixNum = parseInt(clean, 16);
-        let nextSuffix = (suffixNum + offset) & 0xFFFFFF;
-        let suffixHex = nextSuffix.toString(16).padStart(6, '0').toUpperCase();
-        let p = suffixHex.match(/.{1,2}/g);
-        return `9C:00:D3:${p.join(':')}`;
-      } catch (e) {
-        return generateSmartRandomMAC();
-      }
+      let b3 = (startB3 + offset) % 256;
+      let b3Hex = b3.toString(16).padStart(2, '0').toUpperCase();
+      return `9C:00:D3:${b1}:${b2}:${b3Hex}`;
     }
 
     function setBulkGenSource(src) {
@@ -1491,12 +1333,6 @@
       const startIndex = parseInt(document.getElementById('bulk-gen-start').value) || 1;
       
       const suffixInput = (document.getElementById('bulk-gen-mac-suffix') ? document.getElementById('bulk-gen-mac-suffix').value.trim() : "");
-      let manualMacInput = "";
-      if (suffixInput && currentBulkGenSource === 'random') {
-        let cleanSuffix = formatMacSuffix(suffixInput);
-        manualMacInput = `9C:00:D3:${cleanSuffix}`;
-      }
-      
       const isSequential = document.getElementById('bulk-mac-sequential') ? document.getElementById('bulk-mac-sequential').checked : true;
       const btn = document.getElementById('btn-run-bulk');
       const origHtml = btn ? btn.innerHTML : "";
@@ -1511,62 +1347,26 @@
       if (tbody) tbody.innerHTML = "";
 
       try {
-        if (currentBulkGenSource === 'cloud') {
-          showToast(`Buscando ${count} configurações originais da nuvem...`);
-          const res = await fetch(`/api/cloud/batch?count=${count}`);
-          const data = await res.json();
-          if (data && data.items && data.items.length > 0) {
-            data.items.forEach((cItem, i) => {
-              const idx = startIndex + i;
-              const folderName = `${prefix}${idx}`;
-              const text = cItem.config;
-              
-              const macMatch = text.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) || 
-                               text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
-              const mac = macMatch ? macMatch[1].toUpperCase() : (cItem.mac || "NUVEM");
+        const hexDigits = "0123456789ABCDEF";
+        const randB1 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+        const randB2 = hexDigits[Math.floor(Math.random() * 16)] + hexDigits[Math.floor(Math.random() * 16)];
+        const defaultOctets = [randB1, randB2];
 
-              const devMatch = text.match(/key_device_id_unitvfree=([a-fA-F0-9]+)/);
-              let devIdB64 = "-";
-              if (devMatch && devMatch[1]) {
-                try {
-                  let raw = "";
-                  for (let k = 0; k < devMatch[1].length; k += 2) {
-                    raw += String.fromCharCode(parseInt(devMatch[1].substr(k, 2), 16));
-                  }
-                  devIdB64 = raw || devMatch[1];
-                } catch (e) {
-                  devIdB64 = devMatch[1];
-                }
-              }
-
-              const uidMatch = text.match(/key_user_id=([0-9]+)/) || text.match(/user_id=([0-9]+)/);
-              const userId = uidMatch ? uidMatch[1] : "Nuvem (Original)";
-
-              const itemObj = {
-                folder_name: folderName,
-                mac: mac,
-                user_id: userId,
-                dev_id_b64: devIdB64,
-                files: {
-                  ".config": text,
-                  ".properties": text,
-                  "cache.config.xml": ""
-                }
-              };
-              currentBulkList.push(itemObj);
-            });
+        for (let i = 0; i < count; i++) {
+          const idx = startIndex + i;
+          const folderName = `${prefix}${idx}`;
+          let mac;
+          if (isSequential) {
+            mac = getSequentialMAC(suffixInput, i, defaultOctets);
+          } else {
+            if (suffixInput) {
+              mac = getSequentialMAC(suffixInput, Math.floor(Math.random() * 256), defaultOctets);
+            } else {
+              mac = generateSmartRandomMAC();
+            }
           }
-        } else {
-          // Gerador Aleatório (9C:00:D3:...)
-          for (let i = 0; i < count; i++) {
-            const idx = startIndex + i;
-            const folderName = `${prefix}${idx}`;
-            const mac = manualMacInput ? (isSequential ? getSequentialMAC(manualMacInput, i) : manualMacInput) : generateSmartRandomMAC();
-            const freshUid = generateRandomUserId();
-            const freshDev = generateFreshDeviceId();
-            const item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
-            currentBulkList.push(item);
-          }
+          const item = buildSingleConfig(mac, folderName);
+          currentBulkList.push(item);
         }
 
         renderBulkTable(currentBulkList);
@@ -1607,11 +1407,24 @@
         tr.innerHTML = `
           <td class="px-3 py-2 text-slate-400 font-sans text-xs">${idx + 1}</td>
           <td class="px-3 py-2 font-medium text-white">${item.folder_name}</td>
-          <td class="px-3 py-2 text-cyan-300 font-semibold">${item.mac}</td>
-          <td class="px-3 py-2 text-amber-300">${item.user_id}</td>
-          <td class="px-3 py-2 text-indigo-300 truncate max-w-[150px]">${item.dev_id_b64 || '-'}</td>
+          <td class="px-3 py-2 text-cyan-300 font-semibold font-mono">
+            <div class="flex items-center gap-1.5">
+              <span>${item.mac}</span>
+              <button onclick="copyToClipboard('${item.mac}')" class="text-slate-500 hover:text-cyan-300 transition" title="Copiar MAC">
+                <i data-lucide="copy" class="w-3 h-3"></i>
+              </button>
+            </div>
+          </td>
+          <td class="px-3 py-2">
+            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px] font-mono">
+              cache.config.xml
+            </span>
+          </td>
+          <td class="px-3 py-2 text-slate-300 font-mono text-[11px] truncate max-w-[240px]" title="&lt;string name=&quot;SP_SN_BACKUP&quot;&gt;${item.mac},1&lt;/string&gt;">
+            &lt;string name="SP_SN_BACKUP"&gt;${item.mac},1&lt;/string&gt;
+          </td>
           <td class="px-3 py-2 text-right">
-            <button onclick="downloadSingleItemFromBulk(${idx})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar .config individual">
+            <button onclick="downloadSingleItemFromBulk(${idx})" class="p-1.5 rounded-lg bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-emerald-300 transition" title="Baixar cache.config.xml individual">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
             </button>
           </td>
@@ -1636,9 +1449,9 @@
 
     function downloadSingleItemFromBulk(idx) {
       const item = currentBulkList[idx];
-      if (!item || !item.files || !item.files['.config']) return;
-      downloadRawFile(item.files['.config'], `${item.folder_name}.config`);
-      showToast(`Arquivo ${item.folder_name}.config baixado!`);
+      if (!item || !item.files || !item.files['cache.config.xml']) return;
+      downloadRawFile(item.files['cache.config.xml'], `cache.config.xml`);
+      showToast(`Arquivo cache.config.xml de ${item.folder_name} baixado!`);
     }
 
     async function downloadBulkZip() {
@@ -1653,7 +1466,6 @@
         for (const [fname, content] of Object.entries(item.files)) {
           folder.file(fname, content);
         }
-        folder.file(`Android/.config`, item.files['.config']);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -1663,7 +1475,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`📦 Pacote ZIP com todas as ${currentBulkList.length} configs baixado com sucesso!`);
+      showToast(`📦 Pacote ZIP com todas as ${currentBulkList.length} configs (apenas cache.config.xml) baixado com sucesso!`);
     }
 
     async function saveBulkToDisk() {
@@ -1692,8 +1504,10 @@
 
       currentBulkList.forEach((item) => {
         batchQueue.push({
-          name: `${item.folder_name}.config`,
-          content: item.files['.config']
+          name: `${item.folder_name}_cache.config.xml`,
+          mac: item.mac,
+          xml_content: item.files['cache.config.xml'],
+          content: item.files['cache.config.xml']
         });
       });
 
@@ -1750,7 +1564,7 @@
 
     // --- SINGLE CONFIG DIRECT INJECT ---
     async function injectDirectAdb() {
-      const configText = currentSingleFiles['.config'] || "";
+      const configText = currentSingleFiles['cache.config.xml'] || "";
       if (!configText) {
         showToast("Gere ou carregue uma configuração primeiro.", true);
         return;
@@ -1766,7 +1580,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            config_content: configText,
+            xml_content: configText,
             device_addr: getActiveAdbDevice(),
             clear_cache: true,
             launch_app: true
@@ -1977,13 +1791,13 @@
       for (let i = 0; i < qty; i++) {
         const mac = generateSmartRandomMAC();
         const folderName = `CONFIG_${i + 1}_${mac.replace(/:/g, '')}`;
-        const freshUid = generateRandomUserId();
-        const freshDev = generateFreshDeviceId();
-        const item = buildSingleConfig(mac, folderName, freshUid, "SBTHD", freshDev);
+        const item = buildSingleConfig(mac, folderName);
 
         batchQueue.push({
-          name: `${folderName}.config`,
-          content: item.files['.config']
+          name: `${folderName}_cache.config.xml`,
+          mac: mac,
+          xml_content: item.files['cache.config.xml'],
+          content: item.files['cache.config.xml']
         });
       }
 
@@ -2012,6 +1826,35 @@
         };
         reader.readAsText(file);
       });
+    }
+
+    function calculateExpirationDate(actDateStr, daysActive) {
+      if (!actDateStr || actDateStr === "-" || daysActive === null || daysActive === undefined) return "-";
+      try {
+        const parts = actDateStr.split('-');
+        if (parts.length === 3) {
+          const d = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          const y = parseInt(parts[2], 10);
+          const dt = new Date(y, m, d);
+          dt.setDate(dt.getDate() + parseInt(daysActive, 10));
+          const day = String(dt.getDate()).padStart(2, '0');
+          const month = String(dt.getMonth() + 1).padStart(2, '0');
+          const year = dt.getFullYear();
+          return `${day}-${month}-${year}`;
+        }
+      } catch (e) {
+        return "-";
+      }
+      return "-";
+    }
+
+    function extractMacFromText(text) {
+      if (!text) return "-";
+      const m = text.match(/(?:KEY_SP_SN|key_mac|mac)=([0-9a-fA-F:]{17})/i) ||
+                text.match(/SP_SN_BACKUP">([0-9a-fA-F:]{17})/i) ||
+                text.match(/([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/);
+      return m ? m[1].toUpperCase() : "-";
     }
 
     async function startBatchScanner() {
@@ -2044,25 +1887,39 @@
         document.getElementById('batch-progress-bar').style.width = `${percent}%`;
         document.getElementById('batch-progress-status').innerText = `Testando ${i + 1} de ${total}: ${item.name}...`;
 
+        const tStart = performance.now();
+
         try {
           const res = await fetch('/api/adb/inject', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              config_content: item.content,
+              xml_content: item.xml_content || item.content,
+              mac: item.mac,
               device_addr: getActiveAdbDevice(),
               clear_cache: true,
               launch_app: true
             })
           });
           const data = await res.json();
+          const durationSec = ((performance.now() - tStart) / 1000).toFixed(1);
           const info = data.account_info || {};
 
           let days = null;
           let isTarget = false;
           let statusText = "❌ Falha no Acesso";
 
-          if (info.days_active !== null && info.days_active !== undefined && info.is_valid !== false) {
+          const uidInt = info.user_id_int || (info.account_id && !isNaN(info.account_id) ? parseInt(info.account_id, 10) : 0);
+
+          if (uidInt >= 567000000) {
+            days = 0;
+            isTarget = true;
+            statusText = "✨ 0 DIAS (VIRGEM)";
+          } else if (uidInt > 0 && uidInt < 567000000) {
+            days = info.days_active;
+            isTarget = false;
+            statusText = "🗑️ Reciclada (< 567M)";
+          } else if (info.days_active !== null && info.days_active !== undefined && info.is_valid !== false) {
             days = info.days_active;
             if (days <= targetDays) {
               isTarget = true;
@@ -2071,19 +1928,25 @@
               statusText = `❌ ${days}d (> ${targetDays}d)`;
             }
           } else {
-            statusText = (info.status_message && info.status_message.includes("rejeitada")) ? "❌ Chute Rejeitado" : "❌ Falha no Acesso";
+            statusText = (info.status_message && info.status_message.includes("rejeitada")) ? "❌ Chute Rejeitado" : (info.status_message || "❌ Falha no Acesso");
           }
+
+          const macAddr = (info.mac && info.mac !== "-") ? info.mac : (item.mac || extractMacFromText(item.content) || "-");
+          const expiraDate = (info.expiration_date && info.expiration_date !== "-") ? info.expiration_date : calculateExpirationDate(info.activation_date, days);
 
           const resultItem = {
             index: i + 1,
             name: item.name,
+            mac: macAddr,
             content: item.content,
-            account_id: info.account_id || "-",
+            account_id: info.account_id || (uidInt > 0 ? String(uidInt) : "-"),
             activation_date: info.activation_date || "-",
             days_raw: days,
             days_active: (days !== null) ? `${days} dias` : "-",
+            expiration_date: expiraDate,
+            duration_sec: durationSec,
             is_target: isTarget,
-            is_valid: (info.is_valid !== false),
+            is_valid: (info.is_valid !== false && uidInt >= 567000000),
             status: statusText
           };
 
@@ -2091,8 +1954,8 @@
           appendBatchTableRow(resultItem);
           updateBatchCounters();
 
-          if (days === 0) {
-            showToast("✨ CONTA VIRGEM DE 0 DIAS ENCONTRADA! ID: " + (info.account_id || "-"));
+          if (uidInt >= 567000000 && isTarget) {
+            showToast("✨ CONTA VIRGEM DE 0 DIAS ENCONTRADA! ID: " + (info.account_id || uidInt));
             const stopOnVirgin = document.getElementById('batch-stop-on-virgin');
             if (stopOnVirgin && stopOnVirgin.checked) {
               isBatchRunning = false;
@@ -2102,14 +1965,18 @@
           }
         } catch (err) {
           console.error(err);
+          const durationSec = ((performance.now() - tStart) / 1000).toFixed(1);
           const errItem = {
             index: i + 1,
             name: item.name,
+            mac: extractMacFromText(item.content),
             content: item.content,
             account_id: "-",
             activation_date: "-",
             days_raw: null,
             days_active: "-",
+            expiration_date: "-",
+            duration_sec: durationSec,
             is_target: false,
             is_valid: false,
             status: "❌ Erro de Conexão"
@@ -2145,10 +2012,8 @@
       tr.setAttribute('data-target', item.is_target ? 'true' : 'false');
 
       let rowClass = "hover:bg-dark-hover/40 transition";
-      if (item.days_raw === 0) {
-        rowClass = "bg-amber-950/40 border border-amber-500/40 hover:bg-amber-950/60 animate-pulse";
-      } else if (item.is_target) {
-        rowClass = "bg-emerald-950/20 border border-emerald-500/20 hover:bg-emerald-950/30";
+      if (item.days_raw === 0 || item.is_target) {
+        rowClass = "bg-amber-950/40 border border-amber-500/40 hover:bg-amber-950/60";
       }
 
       if (currentTableFilter === 'approved' && !item.is_target) {
@@ -2157,21 +2022,34 @@
       tr.className = rowClass;
 
       let badgeClass = "px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 text-[10px]";
-      if (item.days_raw === 0) {
+      if (item.days_raw === 0 || item.is_target) {
         badgeClass = "px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px]";
-      } else if (item.is_target) {
-        badgeClass = "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]";
       }
 
+      const durNum = parseFloat(item.duration_sec) || 0;
+      const durBadge = durNum < 3.0 ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : (durNum < 6.0 ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' : 'bg-rose-500/10 text-rose-300 border border-rose-500/20');
+
       tr.innerHTML = `
-        <td class="px-3 py-2 text-slate-400">${item.index}</td>
-        <td class="px-3 py-2 text-white font-medium truncate max-w-[140px]">${item.name}</td>
-        <td class="px-3 py-2 text-amber-300 font-bold">${item.account_id}</td>
-        <td class="px-3 py-2 text-indigo-300">${item.activation_date}</td>
-        <td class="px-3 py-2 font-bold ${item.days_raw === 0 ? 'text-amber-300 font-extrabold text-xs' : (item.is_target ? 'text-emerald-400' : 'text-slate-300')}">${item.days_active}</td>
-        <td class="px-3 py-2"><span class="${badgeClass}">${item.status}</span></td>
-        <td class="px-3 py-2 text-right">
-          <button onclick="downloadSingleBatchConfig(${item.index - 1})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar esta config">
+        <td class="px-2.5 py-2 text-slate-400 font-sans text-xs">${item.index}</td>
+        <td class="px-2.5 py-2 text-white font-medium truncate max-w-[120px]" title="${item.name}">${item.name}</td>
+        <td class="px-2.5 py-2 text-cyan-300 font-semibold font-mono">
+          <div class="flex items-center gap-1">
+            <span>${item.mac}</span>
+            <button onclick="copyToClipboard('${item.mac}')" class="text-slate-500 hover:text-cyan-300 transition" title="Copiar MAC">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+            </button>
+          </div>
+        </td>
+        <td class="px-2.5 py-2 text-amber-300 font-bold font-mono">${item.account_id}</td>
+        <td class="px-2.5 py-2 text-slate-300 font-mono text-[10px]">${item.activation_date}</td>
+        <td class="px-2.5 py-2 font-bold ${item.days_raw === 0 ? 'text-amber-300 font-extrabold text-xs' : (item.is_target ? 'text-emerald-400' : 'text-slate-400')}">${item.days_active}</td>
+        <td class="px-2.5 py-2 text-indigo-300 font-mono text-[10px]">${item.expiration_date}</td>
+        <td class="px-2.5 py-2">
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-mono ${durBadge}">${item.duration_sec}s</span>
+        </td>
+        <td class="px-2.5 py-2"><span class="${badgeClass}">${item.status}</span></td>
+        <td class="px-2.5 py-2 text-right">
+          <button onclick="downloadSingleBatchConfig(${item.index - 1})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar cache.config.xml">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
           </button>
         </td>
@@ -2221,14 +2099,15 @@
     function downloadSingleBatchConfig(index) {
       const item = batchResults[index] || batchQueue[index];
       if (!item) return;
-      const blob = new Blob([item.content], { type: 'text/plain' });
+      const xmlContent = generateXmlTemplate(item.mac);
+      const blob = new Blob([xmlContent], { type: 'text/xml;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = item.name.endsWith('.config') ? item.name : `${item.name}.config`;
+      a.download = `cache.config.xml`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Download de ${item.name} iniciado!`);
+      showToast(`Download de cache.config.xml iniciado!`);
     }
 
     async function downloadApprovedBatchZip() {
@@ -2240,11 +2119,10 @@
 
       const zip = new JSZip();
       approved.forEach((item, idx) => {
-        const daysClean = String(item.days_active).replace(/[^0-9]/g, '') || "0";
+        const daysClean = String(item.days_raw !== null ? item.days_raw : (item.days_active || "0")).replace(/[^0-9]/g, '') || "0";
         const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS`;
-        zip.file(`${folderName}/.config`, item.content);
-        zip.file(`${folderName}/.properties`, item.content);
-        zip.file(`${folderName}/Android/.config`, item.content);
+        const xmlContent = generateXmlTemplate(item.mac);
+        zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -2254,7 +2132,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com ${approved.length} configs aprovadas baixado com sucesso!`);
+      showToast(`Pacote ZIP com ${approved.length} configs aprovadas (apenas cache.config.xml) baixado com sucesso!`);
     }
 
     async function downloadAllBatchZip() {
@@ -2265,12 +2143,10 @@
 
       const zip = new JSZip();
       batchResults.forEach((item, idx) => {
-        const daysClean = (item.days_raw !== null) ? `${item.days_raw}DIAS` : "INVALIDA";
-        const statusTag = item.is_target ? "APROVADA" : "REPROVADA";
-        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}_${statusTag}`;
-        zip.file(`${folderName}/.config`, item.content);
-        zip.file(`${folderName}/.properties`, item.content);
-        zip.file(`${folderName}/Android/.config`, item.content);
+        const daysClean = (item.days_raw !== null) ? `${item.days_raw}DIAS` : "0DIAS";
+        const folderName = (item.account_id && item.account_id !== "-") ? `CONFIG_${item.account_id}_${daysClean}` : `CONFIG_ERRO_EF9_${idx + 1}`;
+        const xmlContent = generateXmlTemplate(item.mac);
+        zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -2280,7 +2156,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com todas as ${batchResults.length} configs testadas baixado com sucesso!`);
+      showToast(`Pacote ZIP com todas as ${batchResults.length} configs testadas (apenas cache.config.xml) baixado com sucesso!`);
     }
 
     function getActiveAdbDevice() {

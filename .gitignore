@@ -10,6 +10,9 @@ ENV/
 
 # Temporary files & caches
 .temp/
+temp/
+configs/
+CONFIG_*/
 *.log
 scratch/
 pacote_*/
