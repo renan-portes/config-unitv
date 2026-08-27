@@ -504,13 +504,13 @@ def reconnect_adb(req: Optional[dict] = None):
         return {"success": False, "error": str(e)}
 
 
+UNITV_PACKAGES = ["com.integration.unitvsiptv", "com.unitv.freetv"]
+
+
 def grant_all_app_permissions(device: str):
     """Concede todas as permissões de armazenamento, áudio, mídia e sistema no Android 6 ao 15"""
     try:
         adb_bin = get_adb_cmd()
-        pkg = "com.integration.unitvsiptv"
-        
-        # 1. Permissões de Runtime (Android 6 a 15)
         perms = [
             "android.permission.READ_EXTERNAL_STORAGE",
             "android.permission.WRITE_EXTERNAL_STORAGE",
@@ -522,10 +522,6 @@ def grant_all_app_permissions(device: str):
             "android.permission.ACCESS_NETWORK_STATE",
             "android.permission.ACCESS_WIFI_STATE"
         ]
-        for p in perms:
-            subprocess.run([adb_bin, "-s", device, "shell", f"pm grant {pkg} {p}"], capture_output=True, timeout=2)
-            
-        # 2. AppOps para Android 11, 12, 13, 14, 15 (Scoped Storage e Gerenciamento de Arquivos)
         appops = [
             "MANAGE_EXTERNAL_STORAGE",
             "READ_EXTERNAL_STORAGE",
@@ -535,10 +531,43 @@ def grant_all_app_permissions(device: str):
             "READ_MEDIA_VIDEO",
             "SYSTEM_ALERT_WINDOW"
         ]
-        for op in appops:
-            subprocess.run([adb_bin, "-s", device, "shell", f"appops set {pkg} {op} allow"], capture_output=True, timeout=2)
+        for pkg in UNITV_PACKAGES:
+            for p in perms:
+                subprocess.run([adb_bin, "-s", device, "shell", f"pm grant {pkg} {p}"], capture_output=True, timeout=2)
+            for op in appops:
+                subprocess.run([adb_bin, "-s", device, "shell", f"appops set {pkg} {op} allow"], capture_output=True, timeout=2)
     except Exception:
         pass
+
+
+def deep_wipe_emulator(device: str):
+    """
+    Executa a limpeza profunda estrita do emulador na ordem obrigatória (CORREÇÃO 1):
+    1. adb shell am force-stop (força a parada).
+    2. adb shell pm clear (limpa os dados do app).
+    3. adb shell rm -rf /storage/emulated/0/Android/.config (deleta o backup oculto).
+    4. adb shell rm -rf /data/data/<pkg>/shared_prefs/* (garante que a pasta de injeção está vazia).
+    5. Concede permissões necessárias.
+    """
+    adb_bin = get_adb_cmd()
+    
+    # 1. Força a parada do aplicativo
+    for pkg in UNITV_PACKAGES:
+        subprocess.run([adb_bin, "-s", device, "shell", f"am force-stop {pkg}"], capture_output=True, timeout=5)
+        
+    # 2. Limpa todos os dados do app
+    for pkg in UNITV_PACKAGES:
+        subprocess.run([adb_bin, "-s", device, "shell", f"pm clear {pkg}"], capture_output=True, timeout=10)
+        
+    # 3. Deleta backups ocultos em storage e sdcard
+    subprocess.run([adb_bin, "-s", device, "shell", "rm -rf /storage/emulated/0/Android/.config /sdcard/Android/.config /storage/emulated/0/.config /sdcard/.config /sdcard/.properties /storage/emulated/0/.properties /sdcard/Alarms/system_uf /sdcard/cache.config.xml /storage/emulated/0/cache.config.xml /sdcard/window_dump.xml"], capture_output=True, timeout=10)
+    
+    # 4. Garante que shared_prefs está 100% vazia
+    for pkg in UNITV_PACKAGES:
+        subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'rm -rf /data/data/{pkg}/shared_prefs/*'"], capture_output=True, timeout=5)
+        
+    # 5. Reconcede permissões completas
+    grant_all_app_permissions(device)
 
 
 @app.post("/api/adb/clear-app")
@@ -547,11 +576,9 @@ def clear_app_data(req: Optional[dict] = None):
     global current_active_adb_device
     device = (req or {}).get("device_addr") or current_active_adb_device or "127.0.0.1:21503"
     try:
-        adb_bin = get_adb_cmd()
         ensure_adb_connected(device)
-        subprocess.run([adb_bin, "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config"], capture_output=True, text=True, timeout=10)
-        grant_all_app_permissions(device)
-        return {"success": True, "message": "Cache e dados limpos com sucesso no emulador!"}
+        deep_wipe_emulator(device)
+        return {"success": True, "message": "Deep Wipe realizado com sucesso no emulador!"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -565,19 +592,20 @@ def launch_app_data(req: Optional[dict] = None):
         adb_bin = get_adb_cmd()
         ensure_adb_connected(device)
         grant_all_app_permissions(device)
-        subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
+        for pkg in UNITV_PACKAGES:
+            subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
         return {"success": True, "message": "UniTV Free iniciado no emulador!"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
-def handle_app_lifecycle_and_guide(device: str, max_wait_sec: int = 8) -> bool:
+def handle_app_lifecycle_and_guide(device: str, max_wait_sec: int = 15) -> bool:
     """
-    Aguarda inteligentemente o ciclo de inicialização do app com detecção precoce de erro EF9:
-    - WelcomeActivity (tela de splash/carregamento) -> aguarda carregar com segurança.
-    - GuidePageActivity (tela de boas-vindas/tutorial) -> avança os 2 slides com DPAD_CENTER / ENTER.
-    - HomeActivity (tela principal) -> sincroniza com o servidor.
-    - EF9 / Falha de Login -> interrompe imediatamente em ~2-3s para economizar tempo.
+    Aguarda o ciclo de inicialização do app com detecção precoce de erro EF9:
+    - WelcomeActivity -> aguarda carregar com segurança.
+    - GuidePageActivity -> avança os slides com DPAD_CENTER / ENTER.
+    - HomeActivity -> sincroniza com o servidor.
+    - EF9 / Falha de Login -> interrompe precocemente.
     """
     adb_bin = get_adb_cmd()
     home_reached = False
@@ -587,13 +615,16 @@ def handle_app_lifecycle_and_guide(device: str, max_wait_sec: int = 8) -> bool:
         focus = res.stdout or ""
         
         # 1. Checa se o cache.config.xml já foi autenticado pelo servidor
-        r_xml = subprocess.run([adb_bin, "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=2)
-        xml_text = r_xml.stdout or ""
-        if 'name="key_user_id"' in xml_text and '<string name="key_user_id"></string>' not in xml_text:
-            m_uid = re.search(r'name="key_user_id"[^>]*>([0-9]+)<', xml_text)
-            if m_uid and m_uid.group(1).strip():
-                home_reached = True
-                break
+        for pkg in UNITV_PACKAGES:
+            r_xml = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=2)
+            xml_text = r_xml.stdout or ""
+            if 'name="key_user_id"' in xml_text and '<string name="key_user_id"></string>' not in xml_text:
+                m_uid = re.search(r'name="key_user_id"[^>]*>([0-9]+)<', xml_text)
+                if m_uid and m_uid.group(1).strip():
+                    home_reached = True
+                    break
+        if home_reached:
+            break
             
         # 2. Checa se deu erro EF9 / Falha de login
         if "EF9" in focus or "Dialog" in focus or "AlertDialog" in focus:
@@ -617,15 +648,15 @@ def handle_app_lifecycle_and_guide(device: str, max_wait_sec: int = 8) -> bool:
 
 
 def dismiss_guide_and_popups(device: str):
-    """Função de compatibilidade que aciona o manipulador inteligente de ciclo de vida"""
-    return handle_app_lifecycle_and_guide(device, max_wait_sec=6)
+    """Função de compatibilidade que aciona o manipulador de ciclo de vida"""
+    return handle_app_lifecycle_and_guide(device, max_wait_sec=8)
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
-    Lê as informações da conta (ID, data de ativação e dias ativos reais) diretamente da interface do app no emulador
-    e complementa com os dados do cache.config.xml do shared_prefs.
-    Salva a pasta de backup no formato exato: CONFIG_{user_id}_{days_active}DIAS
+    Lê as informações da conta diretamente da interface do app no emulador
+    com atraso/timeout extra de 5 a 8 segundos na tela de perfil para permitir a renderização completa dos dias ativos (CORREÇÃO 2).
+    Salva backup local contendo EXCLUSIVAMENTE o cache.config.xml (CORREÇÃO 3).
     """
     try:
         adb_bin = get_adb_cmd()
@@ -633,9 +664,11 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         
         # 1. Leitura direta do cache.config.xml no shared_prefs
         xml_stdout = ""
-        r_xml = subprocess.run([adb_bin, "-s", device, "shell", "su -c 'cat /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=3)
-        if r_xml.stdout and "<map>" in r_xml.stdout:
-            xml_stdout = r_xml.stdout
+        for pkg in UNITV_PACKAGES:
+            r_xml = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=3)
+            if r_xml.stdout and "<map>" in r_xml.stdout:
+                xml_stdout = r_xml.stdout
+                break
                 
         account_id = None
         app_mac = None
@@ -653,7 +686,6 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
 
         # Se não há key_user_id no XML, a conta foi rejeitada (EF9 / Falha no Login)
         if not account_id:
-            # Fecha eventual pop-up EF9 com Back
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=2)
             return {
                 "found": False,
@@ -669,36 +701,46 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_INVALIDA_REPROVADA"
             }
 
-        # 2. Inspeciona a tela de perfil para capturar os dias ativos reais
+        # 2. Inspeciona a tela de perfil com atraso extra de 5 a 8 segundos para carregar os dias ativos reais (CORREÇÃO 2)
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
-            # Coordenadas do ícone de perfil no canto superior direito do HomeActivity (ex: 1262, 60)
+            # Clica no ícone de perfil no canto superior direito do HomeActivity (1262, 60)
             tap_x, tap_y = 1262, 60
             subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=2)
-            time.sleep(1.2)
             
-            dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
-            texts = re.findall(r'text="([^"]+)"', dump_res.stdout) if dump_res.stdout else []
-            
-            for t in texts:
-                t_clean = t.strip()
-                if "Falha no acesso" in t_clean or "tente novamente" in t_clean or "rejeitada" in t_clean or "EF9" in t_clean:
-                    has_access_error = True
-                    status_msg = t_clean
-                    
-                m_date = re.search(r'ativada em\s*([0-9]{2}-[0-9]{2}-[0-9]{4})', t_clean, re.IGNORECASE)
-                m_days = re.search(r'([0-9]+)\s*dias', t_clean, re.IGNORECASE)
-                if m_date and m_days:
-                    activation_date = m_date.group(1)
-                    days_active = int(m_days.group(1))
-                    status_msg = t_clean
-                    
-                if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
-                    account_id = t_clean
+            # Aguarda de 5 a 8 segundos inspecionando a janela para garantir que a tag de dias renderizou
+            for attempt in range(8):
+                time.sleep(1.0)
+                dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
+                texts = re.findall(r'text="([^"]+)"', dump_res.stdout) if dump_res.stdout else []
+                
+                for t in texts:
+                    t_clean = t.strip()
+                    if "Falha no acesso" in t_clean or "tente novamente" in t_clean or "rejeitada" in t_clean or "EF9" in t_clean:
+                        has_access_error = True
+                        status_msg = t_clean
+                        
+                    m_date = re.search(r'ativada em\s*([0-9]{2}-[0-9]{2}-[0-9]{4})', t_clean, re.IGNORECASE)
+                    m_days = re.search(r'([0-9]+)\s*dias', t_clean, re.IGNORECASE)
+                    if m_date and m_days:
+                        activation_date = m_date.group(1)
+                        days_active = int(m_days.group(1))
+                        status_msg = t_clean
+                    elif m_days and days_active is None:
+                        days_active = int(m_days.group(1))
+                        status_msg = t_clean
+                    elif m_date and not activation_date:
+                        activation_date = m_date.group(1)
+                        
+                    if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
+                        account_id = t_clean
+                        
+                if (days_active is not None and activation_date) or has_access_error:
+                    break
                     
             # Fecha o diálogo de perfil após ler
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent KEYCODE_BACK"], timeout=2)
@@ -709,7 +751,6 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
         
         if not account_id or user_id_int == 0 or has_access_error:
-            # Conta inválida ou não gerada
             is_valid = False
             status_msg = status_msg or "❌ Falha no Acesso / Inválida"
             folder_name = f"CONFIG_{account_id or 'INVALIDA'}_REPROVADA"
@@ -727,7 +768,6 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": folder_name
             }
 
-        # Regra de Validação key_user_id >= 567000000
         if user_id_int >= 567000000:
             is_valid = True
             if days_active is None:
@@ -737,18 +777,15 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             else:
                 status_msg = f"⭐ {days_active} DIAS"
         else:
-            # Conta com ID menor que 567.000.000 é reciclada/antiga
             is_valid = False
             if days_active is not None:
                 status_msg = f"❌ {days_active}d (< 567M Reciclada)"
             else:
                 status_msg = f"❌ Reciclada (ID: {user_id_int} < 567M)"
 
-        # Data de ativação padrão
         if not activation_date:
             activation_date = datetime.now().strftime("%d-%m-%Y")
 
-        # Cálculo da Data de Expiração
         expiration_date = "-"
         if activation_date and days_active is not None:
             try:
@@ -760,22 +797,33 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             except Exception:
                 pass
 
-        # Formatação do Nome da Pasta: CONFIG_{user_id}_{days_active}DIAS
         if days_active is not None:
             folder_name = f"CONFIG_{user_id_int}_{days_active}DIAS"
         else:
             folder_name = f"CONFIG_{user_id_int}_0DIAS"
             
-        if not is_valid and "REPROVADA" not in folder_name:
+        if is_valid:
+            folder_name += "_APROVADA"
+        elif "REPROVADA" not in folder_name:
             folder_name += "_REPROVADA"
 
-        # 4. Salva backup na pasta configs/CONFIG_{ID}_{XXX}DIAS/ (Apenas cache.config.xml)
+        # 4. Salva backup na pasta configs/CONFIG_XX_APROVADA/ contendo EXCLUSIVAMENTE o cache.config.xml (CORREÇÃO 3)
         save_dir = os.path.join(BASE_DIR, "configs", folder_name)
         os.makedirs(save_dir, exist_ok=True)
         
-        xml_content_to_save = xml_stdout or engine.generate_xml_content(mac=app_mac)
-        with open(os.path.join(save_dir, "cache.config.xml"), "w", encoding="utf-8") as f:
-            f.write(xml_content_to_save)
+        dest_xml_file = os.path.join(save_dir, "cache.config.xml")
+        
+        # Puxa o cache.config.xml diretamente do emulador via adb pull / cat
+        pulled_content = ""
+        for pkg in UNITV_PACKAGES:
+            r_pull = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=3)
+            if r_pull.stdout and "<map>" in r_pull.stdout:
+                pulled_content = r_pull.stdout
+                break
+                
+        final_xml_content = pulled_content or xml_stdout or engine.generate_xml_content(mac=app_mac)
+        with open(dest_xml_file, "w", encoding="utf-8") as f:
+            f.write(final_xml_content)
 
         return {
             "found": True,
@@ -798,10 +846,9 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
 def inject_adb(req: ADBInjectRequest):
     """
     Injeta arquivos de configuração no emulador Android via ADB:
-    1. Gera/Atualiza .config, .properties e cache.config.xml com MAC aleatório 9C:00:D3:XX:YY:ZZ
-    2. Conecta ao emulador e concede permissões
-    3. Copia para storage e shared_prefs
-    4. Abre o app, aguarda inteligentemente o Welcome/Guide e lê as credenciais geradas
+    1. Executa Limpeza Profunda (Deep Wipe) estrita do emulador
+    2. Envia exclusivamente o novo cache.config.xml
+    3. Abre o app, aguarda o ciclo de vida e lê status / dias reais
     """
     device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
     adb_bin = get_adb_cmd()
@@ -828,39 +875,29 @@ def inject_adb(req: ADBInjectRequest):
         ensure_adb_connected(device)
         logs.append(f"Conectando ao dispositivo ADB: {device}")
         
-        if req.clear_cache:
-            subprocess.run([adb_bin, "-s", device, "shell", "pm clear com.integration.unitvsiptv; rm -rf /sdcard/Alarms/system_uf /sdcard/.config /sdcard/.properties /storage/emulated/0/Android/.config /storage/emulated/0/.config /sdcard/Android/.config /sdcard/cache.config.xml /storage/emulated/0/cache.config.xml /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml"], capture_output=True, text=True, timeout=10)
-            logs.append("Limpeza profunda de cache e storage anterior realizada com sucesso")
-            grant_all_app_permissions(device)
+        # Executa Limpeza Profunda Obrigatória (CORREÇÃO 1)
+        deep_wipe_emulator(device)
+        logs.append("Limpeza profunda (am force-stop, pm clear, rm backups, rm shared_prefs) realizada com sucesso")
             
         # Cria diretórios de destino se não existirem
-        subprocess.run([adb_bin, "-s", device, "shell", "mkdir -p /sdcard /data/data/com.integration.unitvsiptv/shared_prefs"], capture_output=True, text=True, timeout=10)
+        subprocess.run([adb_bin, "-s", device, "shell", "mkdir -p /sdcard"], capture_output=True, text=True, timeout=10)
 
         # Injeta exclusivamente o cache.config.xml com a tag SP_SN_BACKUP
         subprocess.run([adb_bin, "-s", device, "push", temp_xml, "/sdcard/cache.config.xml"], capture_output=True, text=True, timeout=10)
         
-        # Injeta diretamente em shared_prefs com permissão 666 para o app ler
-        subprocess.run([adb_bin, "-s", device, "shell", "su -c 'mkdir -p /data/data/com.integration.unitvsiptv/shared_prefs && cp /sdcard/cache.config.xml /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml && chmod 666 /data/data/com.integration.unitvsiptv/shared_prefs/cache.config.xml'"], capture_output=True, text=True, timeout=5)
+        # Injeta diretamente em shared_prefs com permissão 666 para cada pacote UniTV
+        for pkg in UNITV_PACKAGES:
+            subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'mkdir -p /data/data/{pkg}/shared_prefs && cp /sdcard/cache.config.xml /data/data/{pkg}/shared_prefs/cache.config.xml && chmod 666 /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, timeout=5)
         
         logs.append(f"cache.config.xml atualizado com MAC {mac}")
         
         account_info = None
         if req.launch_app:
-            if req.clear_cache:
-                # Primeiro lançamento após limpeza completa
-                grant_all_app_permissions(device)
-                subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=10)
-                logs.append("UniTV Free iniciado no emulador (Modo Inicial)...")
-                handle_app_lifecycle_and_guide(device, max_wait_sec=15)
-                time.sleep(2.0)
-            else:
-                # Modo Rápido: Reinício expresso sem resetar dados/guia
-                subprocess.run([adb_bin, "-s", device, "shell", "am force-stop com.integration.unitvsiptv"], capture_output=True, timeout=5)
-                time.sleep(0.3)
-                subprocess.run([adb_bin, "-s", device, "shell", "monkey -p com.integration.unitvsiptv -c android.intent.category.LAUNCHER 1"], capture_output=True, timeout=5)
-                logs.append("UniTV Free reiniciado expressamente (Modo Rápido)...")
-                handle_app_lifecycle_and_guide(device, max_wait_sec=12)
-                time.sleep(1.2)
+            grant_all_app_permissions(device)
+            for pkg in UNITV_PACKAGES:
+                subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
+            logs.append("UniTV Free iniciado no emulador...")
+            handle_app_lifecycle_and_guide(device, max_wait_sec=15)
             
             logs.append("Lendo status e credenciais diretamente do aplicativo...")
             account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)

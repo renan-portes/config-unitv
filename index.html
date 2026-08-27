@@ -1894,9 +1894,10 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              config_content: item.content,
+              xml_content: item.xml_content || item.content,
+              mac: item.mac,
               device_addr: getActiveAdbDevice(),
-              clear_cache: false,
+              clear_cache: true,
               launch_app: true
             })
           });
@@ -2048,7 +2049,7 @@
         </td>
         <td class="px-2.5 py-2"><span class="${badgeClass}">${item.status}</span></td>
         <td class="px-2.5 py-2 text-right">
-          <button onclick="downloadSingleBatchConfig(${item.index - 1})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar esta config">
+          <button onclick="downloadSingleBatchConfig(${item.index - 1})" class="p-1 rounded bg-dark-hover hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Baixar cache.config.xml">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
           </button>
         </td>
@@ -2098,14 +2099,15 @@
     function downloadSingleBatchConfig(index) {
       const item = batchResults[index] || batchQueue[index];
       if (!item) return;
-      const blob = new Blob([item.content], { type: 'text/plain' });
+      const xmlContent = generateXmlTemplate(item.mac);
+      const blob = new Blob([xmlContent], { type: 'text/xml;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = item.name.endsWith('.config') ? item.name : `${item.name}.config`;
+      a.download = `cache.config.xml`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Download de ${item.name} iniciado!`);
+      showToast(`Download de cache.config.xml iniciado!`);
     }
 
     async function downloadApprovedBatchZip() {
@@ -2117,11 +2119,10 @@
 
       const zip = new JSZip();
       approved.forEach((item, idx) => {
-        const daysClean = String(item.days_active).replace(/[^0-9]/g, '') || "0";
-        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS`;
-        zip.file(`${folderName}/.config`, item.content);
-        zip.file(`${folderName}/.properties`, item.content);
-        zip.file(`${folderName}/Android/.config`, item.content);
+        const daysClean = String(item.days_raw !== null ? item.days_raw : (item.days_active || "0")).replace(/[^0-9]/g, '') || "0";
+        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS_APROVADA`;
+        const xmlContent = generateXmlTemplate(item.mac);
+        zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -2131,7 +2132,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com ${approved.length} configs aprovadas baixado com sucesso!`);
+      showToast(`Pacote ZIP com ${approved.length} configs aprovadas (apenas cache.config.xml) baixado com sucesso!`);
     }
 
     async function downloadAllBatchZip() {
@@ -2145,9 +2146,8 @@
         const daysClean = (item.days_raw !== null) ? `${item.days_raw}DIAS` : "INVALIDA";
         const statusTag = item.is_target ? "APROVADA" : "REPROVADA";
         const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}_${statusTag}`;
-        zip.file(`${folderName}/.config`, item.content);
-        zip.file(`${folderName}/.properties`, item.content);
-        zip.file(`${folderName}/Android/.config`, item.content);
+        const xmlContent = generateXmlTemplate(item.mac);
+        zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -2157,7 +2157,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com todas as ${batchResults.length} configs testadas baixado com sucesso!`);
+      showToast(`Pacote ZIP com todas as ${batchResults.length} configs testadas (apenas cache.config.xml) baixado com sucesso!`);
     }
 
     function getActiveAdbDevice() {
