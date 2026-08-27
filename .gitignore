@@ -17,6 +17,9 @@ CONFIG_*/
 scratch/
 pacote_*/
 *.zip
+*.db
+*.sqlite
+*.sqlite3
 
 # IDE
 .vscode/
