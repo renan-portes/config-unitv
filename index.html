@@ -1140,6 +1140,37 @@
       });
     }
 
+    function copyToClipboard(text) {
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("MAC " + text + " copiado!");
+        }).catch(err => {
+          console.error("Erro ao copiar para a área de transferência:", err);
+          fallbackCopyText(text);
+        });
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast("MAC " + text + " copiado!");
+      } catch (err) {
+        console.error("Erro ao copiar texto:", err);
+      }
+      document.body.removeChild(textArea);
+    }
+
     function downloadRawFile(content, filename) {
       const blob = new Blob([content], { type: "application/octet-stream" });
       const url = URL.createObjectURL(blob);
