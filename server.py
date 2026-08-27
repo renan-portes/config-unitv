@@ -703,10 +703,43 @@ def parse_profile_dump(dump_xml_str: str) -> tuple[Optional[str], Optional[int],
     return activation_date, days_active, status_msg, has_access_error
 
 
+def dismiss_tutorial_and_overlays(device: str):
+    """
+    Rotina de Bypass de Tutorial e Overlays (CORREÇÃO 1):
+    Envia sequência de keyevents com intervalo de 1s para dispensar telas de boas-vindas, tutoriais e pop-ups:
+    1. KEYCODE_BACK (4) - fecha pop-ups modais
+    2. KEYCODE_DPAD_CENTER (23) - confirma botões como 'Próximo' ou 'OK'
+    3. KEYCODE_BACK (4) - garantia extra
+    Também verifica se há botões com texto 'Próximo', 'OK', 'Entendi' ou 'Pular' via dump e clica.
+    """
+    adb_bin = get_adb_cmd()
+    
+    # 1. Sequência de keyevents com intervalo de 1 segundo
+    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
+    time.sleep(1.0)
+    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23"], timeout=2)
+    time.sleep(1.0)
+    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
+    time.sleep(1.0)
+    
+    # 2. Verificação rápida de botões de tutorial/guia na tela
+    try:
+        dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/guide_dump.xml && cat /sdcard/guide_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=4)
+        dump_text = dump_res.stdout or ""
+        if any(w in dump_text for w in ["Próximo", "Proximo", "OK", "Ok", "Entendi", "Pular", "Avançar", "Guide"]):
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23; input keyevent 66"], timeout=2)
+            time.sleep(0.8)
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
+            time.sleep(0.5)
+    except Exception:
+        pass
+
+
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com parsing robusto a quebras de linha e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
+    com Bypass de Tutorial/Overlays (CORREÇÃO 1), Garantia de Clique no Perfil (CORREÇÃO 2)
+    e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
         adb_bin = get_adb_cmd()
@@ -751,18 +784,27 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Inspeciona a tela de perfil com suporte a quebras de linha no OCR (POLIMENTO 1)
+        # 2. Bypass de Tutorial/Overlays e Garantia do Clique no Perfil (CORREÇÕES 1 & 2)
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
+            # CORREÇÃO 1: Executa a rotina de Bypass de Tutorial / Overlays
+            dismiss_tutorial_and_overlays(device)
+            
+            # CORREÇÃO 2: Aguarda mais 2 segundos para estabilização de spinners/carregamento
+            time.sleep(2.0)
+            
             # Clica no ícone de perfil no canto superior direito do HomeActivity (1262, 60)
             tap_x, tap_y = 1262, 60
             subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=2)
             
-            # Aguarda de 5 a 8 segundos inspecionando a janela
+            # Aguarda a tela de perfil carregar antes de iniciar o loop de OCR
+            time.sleep(1.5)
+            
+            # Loop inteligente de OCR (inspeciona por até 8 segundos adicionais)
             for attempt in range(8):
                 time.sleep(1.0)
                 dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
