@@ -543,12 +543,11 @@ def grant_all_app_permissions(device: str):
 
 def deep_wipe_emulator(device: str):
     """
-    Executa a limpeza profunda estrita do emulador na ordem obrigatória (CORREÇÃO 1):
-    1. adb shell am force-stop (força a parada).
-    2. adb shell pm clear (limpa os dados do app).
-    3. adb shell rm -rf /storage/emulated/0/Android/.config (deleta o backup oculto).
-    4. adb shell rm -rf /data/data/<pkg>/shared_prefs/* (garante que a pasta de injeção está vazia).
-    5. Concede permissões necessárias.
+    Executa o Smart Wipe (Limpeza Inteligente) sem 'pm clear' (OTIMIZAÇÃO 1):
+    1. adb shell am force-stop (força a parada obrigatória do app).
+    2. Deleta backups ocultos em storage e sdcard para evitar MACs fantasmas.
+    3. Preserva as flags de interface em shared_prefs (impedindo o reaparecimento de tutoriais).
+    4. Concede permissões necessárias.
     """
     adb_bin = get_adb_cmd()
     
@@ -556,19 +555,16 @@ def deep_wipe_emulator(device: str):
     for pkg in UNITV_PACKAGES:
         subprocess.run([adb_bin, "-s", device, "shell", f"am force-stop {pkg}"], capture_output=True, timeout=5)
         
-    # 2. Limpa todos os dados do app
-    for pkg in UNITV_PACKAGES:
-        subprocess.run([adb_bin, "-s", device, "shell", f"pm clear {pkg}"], capture_output=True, timeout=10)
-        
-    # 3. Deleta backups ocultos em storage e sdcard
-    subprocess.run([adb_bin, "-s", device, "shell", "rm -rf /storage/emulated/0/Android/.config /sdcard/Android/.config /storage/emulated/0/.config /sdcard/.config /sdcard/.properties /storage/emulated/0/.properties /sdcard/Alarms/system_uf /sdcard/cache.config.xml /storage/emulated/0/cache.config.xml /sdcard/window_dump.xml"], capture_output=True, timeout=10)
+    # 2. Deleta backups ocultos em storage e sdcard (evita MACs fantasmas)
+    subprocess.run([adb_bin, "-s", device, "shell", "rm -rf /storage/emulated/0/Android/.config /sdcard/Android/.config /storage/emulated/0/.config /sdcard/.config /sdcard/.properties /storage/emulated/0/.properties /sdcard/Alarms/system_uf /sdcard/cache.config.xml /storage/emulated/0/cache.config.xml /sdcard/window_dump.xml"], capture_output=True, timeout=5)
     
-    # 4. Garante que shared_prefs está 100% vazia
-    for pkg in UNITV_PACKAGES:
-        subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'rm -rf /data/data/{pkg}/shared_prefs/*'"], capture_output=True, timeout=5)
-        
-    # 5. Reconcede permissões completas
+    # 3. Reconcede permissões completas
     grant_all_app_permissions(device)
+
+
+def smart_wipe_emulator(device: str):
+    """Alias para Smart Wipe"""
+    return deep_wipe_emulator(device)
 
 
 @app.post("/api/adb/clear-app")
@@ -884,11 +880,10 @@ def dismiss_tutorial_and_overlays(device: str):
     return dismiss_tutorials_semantic(device)
 
 
-def click_profile_semantic(device: str, max_retries: int = 3) -> bool:
+def click_profile_semantic(device: str, max_retries: int = 2) -> bool:
     """
-    Localiza e clica no botão de perfil com mecanismo de repetição / Teimosia Automática (CORREÇÃO 2):
-    Tenta encontrar e clicar a cada 2 segundos por até max_retries tentativas.
-    Se na primeira tentativa o botão não for encontrado, reexecuta o bypass de tutorial.
+    Localiza e clica no botão de perfil de forma semântica e ágil:
+    Tenta encontrar e clicar com intervalos curtos (1.0s) sem atrasos desnecessários.
     """
     adb_bin = get_adb_cmd()
     ensure_unitv_foreground(device)
@@ -902,29 +897,28 @@ def click_profile_semantic(device: str, max_retries: int = 3) -> bool:
         if profile_match:
             (cx, cy), desc = profile_match
             subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
-            time.sleep(2.0)
+            time.sleep(1.0)
             
             # Verifica se o clique abriu a tela de perfil
             check_dump = get_emulator_ui_dump(device)
             if is_profile_screen_open(check_dump):
                 return True
         else:
-            # Se o botão de perfil não foi achado, executa o bypass de tutoriais novamente
-            dismiss_tutorials_semantic(device, max_attempts=3)
-            time.sleep(2.0)
+            # Fallback rápido caso esteja em foco
+            if is_unitv_in_foreground(device):
+                subprocess.run([adb_bin, "-s", device, "shell", "input tap 1262 60"], timeout=2)
+                time.sleep(1.0)
+                if is_profile_screen_open(get_emulator_ui_dump(device)):
+                    return True
+            time.sleep(0.5)
             
-    # Fallback apenas se o botão não foi achado no XML mas o app está em primeiro plano
-    if is_unitv_in_foreground(device):
-        subprocess.run([adb_bin, "-s", device, "shell", "input tap 1262 60"], timeout=2)
-        time.sleep(2.0)
-        
     return is_profile_screen_open(get_emulator_ui_dump(device))
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com Teimosia Automática (Retry Loop e Cliques de Backup), Atrasos Generosos
+    com Smart Wipe (OTIMIZAÇÃO 1), Corte Extremo de Delays (OTIMIZAÇÃO 2)
     e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
@@ -970,34 +964,29 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Bypass Semântico de Tutorial e Loop de Tentativas no Clique (CORREÇÕES 1 & 2)
+        # 2. Clique Semântico Imediato no Perfil (OTIMIZAÇÃO 2)
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
-            # Fast-Bypass (Ação Imediata por Hardware): Limpa a tela instantaneamente antes do parsing
-            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4; sleep 0.5; input keyevent 23; sleep 0.5; input keyevent 4"], timeout=4)
+            # Envia KEYCODE_BACK rápido caso haja algum popup residual
+            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
+            time.sleep(0.5)
             
-            # Executa a rotina complementar de Bypass Semântico de Tutoriais/Overlays
-            dismiss_tutorials_semantic(device, max_attempts=4)
+            # Clica no ícone de perfil diretamente
+            click_profile_semantic(device, max_retries=2)
             
-            # Aguarda 2 segundos para a interface principal "respirar"
-            time.sleep(2.0)
-            
-            # Loop de tentativas no clique de perfil (Retry Mechanism)
-            click_profile_semantic(device, max_retries=3)
-            
-            # 3. Loop Inteligente de OCR com Tolerância Ampliada (Até 20 tentativas / ~30 segundos)
-            for attempt in range(20):
-                time.sleep(1.5)
+            # 3. Loop Inteligente de OCR Rápido
+            for attempt in range(15):
+                time.sleep(0.8)
                 dump_str = get_emulator_ui_dump(device)
                 
-                # Se a tela de perfil ainda não estiver aberta após 4-5 segundos, dispara clique de backup
+                # Se a tela de perfil ainda não abriu após 2-3 segundos, dispara clique de backup
                 if not is_profile_screen_open(dump_str):
-                    if attempt in (3, 6, 10):  # ~4.5s, ~9s e ~15s
-                        click_profile_semantic(device, max_retries=2)
+                    if attempt in (2, 5):  # ~1.6s e ~4.0s
+                        click_profile_semantic(device, max_retries=1)
                     continue
                     
                 parsed_date, parsed_days, parsed_status, parsed_access_error = parse_profile_dump(dump_str)
@@ -1138,9 +1127,9 @@ def inject_adb(req: ADBInjectRequest):
         ensure_adb_connected(device)
         logs.append(f"Conectando ao dispositivo ADB: {device}")
         
-        # Executa Limpeza Profunda Obrigatória
+        # Executa Smart Wipe (Limpeza Inteligente)
         deep_wipe_emulator(device)
-        logs.append("Limpeza profunda (am force-stop, pm clear, rm backups, rm shared_prefs) realizada com sucesso")
+        logs.append("Smart Wipe (am force-stop + remoção de backups ocultos) realizado com sucesso")
             
         # Cria diretórios de destino se não existirem
         subprocess.run([adb_bin, "-s", device, "shell", "mkdir -p /sdcard"], capture_output=True, text=True, timeout=10)
@@ -1161,11 +1150,11 @@ def inject_adb(req: ADBInjectRequest):
                 subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
             logs.append("UniTV Free iniciado no emulador...")
             
-            # CORREÇÃO 1: Atraso generoso inicial (11 segundos) para renderização completa
-            time.sleep(11.0)
-            handle_app_lifecycle_and_guide(device, max_wait_sec=10)
+            # OTIMIZAÇÃO 2: Atraso reduzido para 4.5 segundos (Home direta sem tutoriais)
+            time.sleep(4.5)
+            handle_app_lifecycle_and_guide(device, max_wait_sec=4)
             
-            logs.append("Executando rotina semântica de bypass e lendo credenciais...")
+            logs.append("Executando leitura semântica ultra-rápida...")
             account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)
             
             if account_info and account_info.get("found"):
