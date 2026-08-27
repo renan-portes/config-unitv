@@ -17,21 +17,24 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Response, Request
+from fastapi import FastAPI, HTTPException, Response, Request, Depends, status
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import uvicorn
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker
+import jwt
+import bcrypt
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 import generator_engine as engine
 
 app = FastAPI(
     title="Gerador de .config IPTV (Local, Nuvem & ADB)",
     description="API e Painel Web para geração de .config, .properties e cache.config.xml com suporte a injeção ADB no emulador e pool da nuvem",
-    version="1.4.0"
+    version="1.5.0"
 )
 
 app.add_middleware(
@@ -67,19 +70,43 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
 Base = declarative_base()
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(String(20), default="user", nullable=False) # 'user' ou 'admin'
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    history = relationship("AccountHistory", back_populates="user", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "role": self.role,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+
 class AccountHistory(Base):
     __tablename__ = "account_history"
 
     mac = Column(String(50), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     account_id = Column(String(50), nullable=True)
     days_active = Column(Integer, nullable=True)
     status_message = Column(String(255), nullable=True)
     is_valid = Column(Boolean, default=False, nullable=False)
     tested_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+    user = relationship("User", back_populates="history")
+
     def to_dict(self):
         return {
             "mac": self.mac,
+            "user_id": self.user_id,
             "account_id": self.account_id,
             "days_active": self.days_active,
             "status_message": self.status_message,
@@ -88,12 +115,155 @@ class AccountHistory(Base):
         }
 
 
-# Inicializa as tabelas no banco de dados
+# Inicializa as tabelas no banco de dados e garante migrações de schema
 Base.metadata.create_all(bind=db_engine)
+
+
+def ensure_schema_migrations():
+    """Garante que colunas novas como user_id existam em bancos de dados já existentes"""
+    try:
+        with db_engine.connect() as conn:
+            if DATABASE_URL.startswith("sqlite"):
+                cursor = conn.exec_driver_sql("PRAGMA table_info(account_history)")
+                columns = [row[1] for row in cursor.fetchall()]
+                if columns and "user_id" not in columns:
+                    conn.exec_driver_sql("ALTER TABLE account_history ADD COLUMN user_id INTEGER REFERENCES users(id)")
+                    conn.commit()
+    except Exception as e:
+        print(f"[DB Migration Note] {e}")
+
+
+ensure_schema_migrations()
+
+
+# --- CONFIGURAÇÃO DE SEGURANÇA E JWT ---
+JWT_SECRET = os.environ.get("JWT_SECRET", "super-secret-mining-key-saas-unitv-2026-auth-token-key-32b")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = int(os.environ.get("JWT_EXPIRATION_HOURS", "24"))
+
+security_bearer = HTTPBearer(auto_error=False)
+
+
+def hash_password(password: str) -> str:
+    """Gera hash seguro bcrypt da senha"""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verifica se a senha em texto puro corresponde ao hash bcrypt"""
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+    except Exception:
+        return False
+
+
+def create_access_token(user: User, expires_delta: Optional[timedelta] = None) -> str:
+    """Gera um token JWT assinado com dados do usuário e data de expiração"""
+    expire = datetime.utcnow() + (expires_delta or timedelta(hours=JWT_EXPIRATION_HOURS))
+    payload = {
+        "sub": user.username,
+        "user_id": user.id,
+        "role": user.role,
+        "exp": expire
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def decode_access_token(token: str) -> dict:
+    """Decodifica e valida o token JWT"""
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado. Por favor, faça login novamente.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de autenticação inválido.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)) -> User:
+    """
+    Dependência FastAPI para validar o token JWT e retornar o usuário autenticado.
+    Suporta header Authorization: Bearer <token>.
+    """
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de autenticação não fornecido.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    payload = decode_access_token(credentials.credentials)
+    user_id = payload.get("user_id")
+    username = payload.get("sub")
+
+    if not user_id and not username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciais do token inválidas.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    session = SessionLocal()
+    try:
+        user = None
+        if user_id:
+            user = session.query(User).filter(User.id == user_id).first()
+        elif username:
+            user = session.query(User).filter(User.username == username).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuário não encontrado.",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        return user
+    finally:
+        session.close()
+
+
+def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)) -> Optional[User]:
+    """Dependência opcional para rotas que podem ser anônimas ou autenticadas"""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+        user_id = payload.get("user_id")
+        username = payload.get("sub")
+        if not user_id and not username:
+            return None
+        session = SessionLocal()
+        try:
+            if user_id:
+                return session.query(User).filter(User.id == user_id).first()
+            return session.query(User).filter(User.username == username).first()
+        finally:
+            session.close()
+    except Exception:
+        return None
+
+
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Dependência para proteção de rotas exclusivas para administradores"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito para administradores."
+        )
+    return current_user
 
 
 def save_account_history(
     mac: str,
+    user_id: Optional[int] = None,
     account_id: Optional[str] = None,
     days_active: Optional[int] = None,
     status_message: Optional[str] = None,
@@ -101,6 +271,7 @@ def save_account_history(
 ) -> Optional[AccountHistory]:
     """
     Persiste ou atualiza atomicamente o histórico de teste de um MAC usando session.merge().
+    Relaciona o registro ao user_id do cliente autenticado (Multi-tenant).
     MACs rejeitados (EF9, Falha no acesso, Bloqueio, etc.) são gravados com is_valid=False.
     """
     if not mac or mac == "-" or not isinstance(mac, str):
@@ -112,8 +283,12 @@ def save_account_history(
 
     session = SessionLocal()
     try:
+        existing = session.query(AccountHistory).filter(AccountHistory.mac == mac_clean).first()
+        final_user_id = user_id if user_id is not None else (existing.user_id if existing else None)
+
         record = AccountHistory(
             mac=mac_clean,
+            user_id=final_user_id,
             account_id=str(account_id) if (account_id and str(account_id) != "-") else None,
             days_active=days_active if isinstance(days_active, int) else None,
             status_message=status_message or "Desconhecido",
@@ -172,22 +347,82 @@ class ADBInjectRequest(BaseModel):
     launch_app: bool = True
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+# --- ROTAS DE AUTENTICAÇÃO (SaaS / JWT) ---
+
+@app.post("/api/auth/login")
+def login(req: LoginRequest):
+    """
+    Valida as credenciais do usuário e retorna o token de acesso JWT.
+    """
+    if not req.username or not req.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuário e senha são obrigatórios."
+        )
+
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.username == req.username.strip()).first()
+        if not user or not verify_password(req.password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuário ou senha incorretos.",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        token = create_access_token(user)
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": user.to_dict()
+        }
+    finally:
+        session.close()
+
+
+@app.get("/api/auth/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    """Retorna os dados do usuário autenticado atual"""
+    return {
+        "user": current_user.to_dict()
+    }
+
+
 # --- ROTAS DA API ---
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "config-generator", "version": "1.5.0", "mode": "local-adb"}
+    return {"status": "ok", "service": "config-generator", "version": "1.5.0", "mode": "saas-multi-tenant"}
 
 
 @app.get("/api/history")
-def get_mining_history(limit: int = 1000):
-    """Retorna o histórico de MACs testados ordenados por tested_at decrescente (padrão: últimos 1000)"""
+def get_mining_history(
+    limit: int = 1000,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retorna o histórico de MACs testados ordenados por tested_at decrescente (padrão: últimos 1000).
+    Multi-tenant: Usuários comuns visualizam apenas seus próprios registros.
+    Administradores (role='admin') visualizam todo o histórico do sistema.
+    """
     session = SessionLocal()
     try:
         limit_val = min(max(1, limit), 5000)
-        records = session.query(AccountHistory).order_by(AccountHistory.tested_at.desc()).limit(limit_val).all()
+        query = session.query(AccountHistory)
+
+        # Isolamento Multi-tenant
+        if current_user.role != "admin":
+            query = query.filter(AccountHistory.user_id == current_user.id)
+
+        records = query.order_by(AccountHistory.tested_at.desc()).limit(limit_val).all()
         return {
             "total": len(records),
+            "user_role": current_user.role,
             "history": [r.to_dict() for r in records]
         }
     except Exception as e:
@@ -1017,12 +1252,17 @@ def click_profile_semantic(device: str, max_retries: int = 4) -> bool:
     return is_profile_screen_open(get_emulator_ui_dump(device))
 
 
-def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None, target_mac: Optional[str] = None) -> dict:
+def inspect_emulator_account_info(
+    device: str = "127.0.0.1:21503",
+    expected_config_content: str = None,
+    target_mac: Optional[str] = None,
+    user_id: Optional[int] = None
+) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
     com Smart Wait orientado a eventos, Retry Loop no clique do perfil,
     detecção precoce de erros, salvamento no padrão CONFIG_{IDCONTA}_{DIAS}DIAS
-    e gravação automática no banco de dados ORM (AccountHistory).
+    e gravação automática no banco de dados ORM (AccountHistory) vinculando ao user_id.
     """
     try:
         if not target_mac and expected_config_content:
@@ -1066,6 +1306,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
             save_account_history(
                 mac=final_mac,
+                user_id=user_id,
                 account_id=str(user_id_int) if user_id_int > 0 else None,
                 days_active=None,
                 status_message=early_error,
@@ -1091,6 +1332,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             err_msg = "❌ EF9: Falha ao fazer login"
             save_account_history(
                 mac=final_mac,
+                user_id=user_id,
                 account_id=None,
                 days_active=None,
                 status_message=err_msg,
@@ -1167,6 +1409,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             folder_name = f"CONFIG_{user_id_int}_{days_active or 0}DIAS" if user_id_int > 0 else "CONFIG_ERRO_EF9"
             save_account_history(
                 mac=final_mac,
+                user_id=user_id,
                 account_id=str(user_id_int) if user_id_int > 0 else None,
                 days_active=days_active,
                 status_message=status_msg,
@@ -1238,6 +1481,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
 
         save_account_history(
             mac=final_mac,
+            user_id=user_id,
             account_id=str(user_id_int),
             days_active=days_active,
             status_message=status_msg,
@@ -1262,6 +1506,7 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         if target_mac and target_mac != "-":
             save_account_history(
                 mac=target_mac,
+                user_id=user_id,
                 account_id=None,
                 days_active=None,
                 status_message=err_msg,
@@ -1271,12 +1516,16 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
 
 
 @app.post("/api/adb/inject")
-def inject_adb(req: ADBInjectRequest):
+def inject_adb(
+    req: ADBInjectRequest,
+    current_user: User = Depends(get_current_user)
+):
     """
     Injeta arquivos de configuração no emulador Android via ADB:
     1. Executa Limpeza Profunda (Deep Wipe) estrita do emulador
     2. Envia exclusivamente o novo cache.config.xml
     3. Abre o app e aciona Smart Wait orientado a eventos
+    4. Relaciona a conta testada ao usuário autenticado (Multi-tenant)
     """
     device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
     adb_bin = get_adb_cmd()
@@ -1327,7 +1576,12 @@ def inject_adb(req: ADBInjectRequest):
             logs.append("UniTV Free iniciado no emulador...")
             
             logs.append("Aguardando carregamento da interface (Smart Wait)...")
-            account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content, target_mac=mac)
+            account_info = inspect_emulator_account_info(
+                device,
+                expected_config_content=req.config_content,
+                target_mac=mac,
+                user_id=current_user.id
+            )
             
             if account_info and account_info.get("found"):
                 if account_info.get("account_id"):
@@ -1345,15 +1599,22 @@ def inject_adb(req: ADBInjectRequest):
             "logs": logs,
             "account_info": account_info
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/adb/account-info")
 @app.post("/api/adb/account-info")
-def get_account_info_endpoint(device_addr: Optional[str] = "127.0.0.1:21503", mac: Optional[str] = None):
+def get_account_info_endpoint(
+    device_addr: Optional[str] = "127.0.0.1:21503",
+    mac: Optional[str] = None,
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """Endpoint para ler sob demanda os dados e dias ativos da conta no emulador"""
-    return inspect_emulator_account_info(device_addr or "127.0.0.1:21503", target_mac=mac)
+    uid = current_user.id if current_user else None
+    return inspect_emulator_account_info(device_addr or "127.0.0.1:21503", target_mac=mac, user_id=uid)
 
 # --- SERVIR INTERFACE HTML & ASSETS ---
 
