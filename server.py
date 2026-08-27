@@ -49,8 +49,7 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-CLOUD_IDS_URL = "https://raw.githubusercontent.com/iurysouza041095-bit/sorteio/main/ids.json"
-cached_cloud_ids = []
+POOL_NUVEM_DIR = os.path.join(BASE_DIR, "pool_nuvem")
 
 apps_dir = os.path.join(BASE_DIR, "apps")
 if os.path.exists(apps_dir):
@@ -289,158 +288,155 @@ def save_to_disk(req: SaveDiskRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# --- POOL DA NUVEM (10.231 CONFIGS) ---
+# --- POOL LOCAL DA NUVEM (pool_nuvem/) ---
 
-def load_cloud_ids() -> list:
-    """Carrega a lista de IDs localmente de ids.json ou faz fallback para URL remota (com cache em RAM)"""
-    global cached_cloud_ids
-    if cached_cloud_ids:
-        return cached_cloud_ids
-
-    local_file = os.path.join(BASE_DIR, "ids.json")
-    if os.path.exists(local_file):
-        try:
-            with open(local_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                ids = data.get("arquivos", [])
-                if ids:
-                    cached_cloud_ids = ids
-                    return ids
-        except Exception as e:
-            print(f"Aviso ao ler ids.json local: {e}")
-            
-    try:
-        r = requests.get(CLOUD_IDS_URL, timeout=10)
-        ids = r.json().get("arquivos", [])
-        if ids:
-            cached_cloud_ids = ids
-            return ids
-    except Exception as e:
-        print(f"Aviso ao buscar ids remotos: {e}")
-        return []
-    return []
+def get_pool_nuvem_files() -> list:
+    """Lista todos os arquivos de configuração presentes no diretório local pool_nuvem/"""
+    if not os.path.exists(POOL_NUVEM_DIR):
+        os.makedirs(POOL_NUVEM_DIR, exist_ok=True)
+        
+    valid_files = []
+    for root, _, filenames in os.walk(POOL_NUVEM_DIR):
+        for fn in filenames:
+            if fn.endswith(('.xml', '.config', '.txt', '.properties')) or fn == 'cache.config.xml':
+                valid_files.append(os.path.join(root, fn))
+                
+    return valid_files
 
 
 @app.get("/api/cloud/random")
 def get_random_cloud_config():
-    """Puxa uma configuração fresca aleatória do pool da nuvem (10.231 disponíveis)"""
-    global cached_cloud_ids
+    """Puxa uma configuração fresca aleatória do pool local (pool_nuvem/)"""
     try:
-        if not cached_cloud_ids:
-            cached_cloud_ids = load_cloud_ids()
+        files = get_pool_nuvem_files()
+        if not files:
+            raise HTTPException(status_code=503, detail="Nenhum arquivo encontrado em pool_nuvem/")
             
-        if not cached_cloud_ids:
-            raise HTTPException(status_code=503, detail="Não foi possível obter a lista da nuvem")
-            
-        chosen_id = random.choice(cached_cloud_ids)
-        dl_url = f"https://drive.google.com/uc?export=download&id={chosen_id}"
-        res = requests.get(dl_url, timeout=10)
-        content = res.text
-        
-        # Build structure compatible with generator
-        folder_name = f"CONFIG_CLOUD_{chosen_id[:6]}"
-        files = {
-            ".config": content,
-            ".properties": content,
-            "cache.config.xml": ""
-        }
-        
-        return {
-            "source": "cloud",
-            "file_id": chosen_id,
-            "total_available": len(cached_cloud_ids),
-            "folder_name": folder_name,
-            "files": files
-        }
+        shuffled = list(files)
+        random.shuffle(shuffled)
+        for filepath in shuffled:
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                
+                mac_m = (re.search(r'name=["\']KEY_SP_SN["\'][^>]*>([^<]+)<', content) or
+                         re.search(r'name=["\']SP_SN_BACKUP["\'][^>]*>([^<]+)<', content) or
+                         re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n<"]+)', content) or
+                         re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', content))
+                
+                uid_m = (re.search(r'name=["\']key_user_id["\'][^>]*>([0-9]+)<', content) or
+                         re.search(r'key_user_id[=:]\s*([0-9]+)', content) or
+                         re.search(r'user_id[=:]\s*([0-9]+)', content))
+                         
+                if mac_m and uid_m and mac_m.group(1).strip() and mac_m.group(1).strip() != "-":
+                    mac = mac_m.group(1).strip().upper()
+                    uid = uid_m.group(1).strip()
+                    file_id = os.path.splitext(os.path.basename(filepath))[0]
+                    folder_name = f"CONFIG_LOCAL_{uid}"
+                    return {
+                        "source": "cloud_local",
+                        "file_id": file_id,
+                        "mac": mac,
+                        "user_id": uid,
+                        "total_available": len(files),
+                        "folder_name": folder_name,
+                        "files": {
+                            "cache.config.xml": content
+                        }
+                    }
+            except Exception:
+                continue
+                
+        raise HTTPException(status_code=503, detail="Nenhuma configuração válida encontrada em pool_nuvem/")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar na nuvem: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar do pool local: {str(e)}")
 
 
 @app.get("/api/cloud/batch")
 def get_batch_cloud_configs(count: int = 100):
     """
-    Ticket #4: Download paralelo de configurações do Google Drive e parsing 100% em memória RAM.
-    Utiliza ThreadPoolExecutor com 15 a 20 workers para velocidade máxima e aplica o Filtro de Ouro:
-      - int(user_id) >= 567000000 -> is_target=True (✨ Virgem / 0 Dias)
-      - int(user_id) < 567000000  -> is_target=False (🗑️ Reciclada)
+    Ticket #6: Leitura ultra-rápida do pool local pool_nuvem/.
+    Fim do Filtro de Ouro: Todas as contas íntegras são classificadas como is_target=True com status '⭐ Conta Pronta'.
+    Garante integridade descartando arquivos sem MAC ou user_id para não enviar MAC nulo (-) ao frontend.
     """
     t_start = time.time()
     try:
-        ids = load_cloud_ids()
-        if not ids:
-            raise HTTPException(status_code=503, detail="Pool de IDs da nuvem vazio ou indisponível")
+        files = get_pool_nuvem_files()
+        if not files:
+            raise HTTPException(status_code=503, detail="Diretório pool_nuvem/ vazio ou inexistente")
             
-        actual_count = max(1, min(count, len(ids)))
-        chosen_ids = random.sample(ids, actual_count)
+        shuffled_files = list(files)
+        random.shuffle(shuffled_files)
         
-        def fetch_one(id_str):
+        valid_results = []
+        for filepath in shuffled_files:
             try:
-                t_req = time.time()
-                url = f"https://drive.google.com/uc?export=download&id={id_str}"
-                r = requests.get(url, timeout=8)
-                req_time = round(time.time() - t_req, 2)
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                    text = f.read()
+                    
+                if not text:
+                    continue
+                    
+                # Regex para extração de MAC
+                mac_m = (re.search(r'name=["\']KEY_SP_SN["\'][^>]*>([^<]+)<', text) or
+                         re.search(r'name=["\']SP_SN_BACKUP["\'][^>]*>([^<]+)<', text) or
+                         re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n<"]+)', text) or
+                         re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text))
                 
-                if r.ok and r.text:
-                    text = r.text
+                # Regex para extração de key_user_id
+                uid_m = (re.search(r'name=["\']key_user_id["\'][^>]*>([0-9]+)<', text) or
+                         re.search(r'key_user_id[=:]\s*([0-9]+)', text) or
+                         re.search(r'user_id[=:]\s*([0-9]+)', text))
+                
+                # Filtro de Integridade: Se não achar MAC ou user_id válidos, descarta e sorteia outro
+                if not mac_m or not uid_m:
+                    continue
                     
-                    # Regex para extração de MAC (KEY_SP_SN / SP_SN_BACKUP / key_mac / padrão MAC)
-                    mac_m = (re.search(r'name=["\']KEY_SP_SN["\'][^>]*>([^<]+)<', text) or
-                             re.search(r'name=["\']SP_SN_BACKUP["\'][^>]*>([^<]+)<', text) or
-                             re.search(r'(?:KEY_SP_SN|key_mac|mac)=([^\s\r\n<"]+)', text) or
-                             re.search(r'([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})', text))
-                    mac = mac_m.group(1).upper() if mac_m else "-"
+                mac_val = mac_m.group(1).strip().upper()
+                if not mac_val or mac_val == "-":
+                    continue
                     
-                    # Regex para extração de key_user_id
-                    uid_m = (re.search(r'name=["\']key_user_id["\'][^>]*>([0-9]+)<', text) or
-                             re.search(r'key_user_id[=:]\s*([0-9]+)', text) or
-                             re.search(r'user_id[=:]\s*([0-9]+)', text))
+                user_id_str = uid_m.group(1).strip()
+                try:
+                    user_id_int = int(user_id_str)
+                except (ValueError, TypeError):
+                    continue
                     
-                    user_id_int = 0
-                    if uid_m:
-                        try:
-                            user_id_int = int(uid_m.group(1))
-                        except (ValueError, TypeError):
-                            user_id_int = 0
-                    
-                    # Regra de Negócio: O Filtro de Ouro
-                    if user_id_int >= 567000000:
-                        is_target = True
-                        status = "✨ 0 DIAS (VIRGEM)"
-                    else:
-                        is_target = False
-                        status = "🗑️ Reciclada"
-                        
-                    return {
-                        "id": id_str,
-                        "mac": mac,
-                        "user_id_int": user_id_int,
-                        "status": status,
-                        "is_target": is_target,
-                        "duration_sec": req_time,
-                        "config": text
-                    }
+                if user_id_int <= 0:
+                    continue
+
+                file_id = os.path.splitext(os.path.basename(filepath))[0]
+                if file_id == 'cache.config':
+                    file_id = os.path.basename(os.path.dirname(filepath))
+
+                valid_results.append({
+                    "id": file_id,
+                    "mac": mac_val,
+                    "user_id_int": user_id_int,
+                    "status": "⭐ Conta Pronta",
+                    "is_target": True,
+                    "duration_sec": 0.01,
+                    "config": text
+                })
+                
+                if len(valid_results) >= count:
+                    break
             except Exception:
-                pass
-            return None
+                continue
 
-        # Utiliza entre 15 e 20 workers para concorrência ideal
-        workers = min(max(15, min(actual_count, 20)), 20)
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            results = list(executor.map(fetch_one, chosen_ids))
-
-        valid_results = [res for res in results if res is not None]
-        total_duration = round(time.time() - t_start, 2)
-        
+        total_duration = round(time.time() - t_start, 3)
         return {
             "count": len(valid_results),
-            "total_available": len(ids),
+            "total_available": len(files),
             "duration_total_sec": total_duration,
             "items": valid_results
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar lote na nuvem: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar lote do pool local: {str(e)}")
 
 
 # --- ENDPOINTS ADB (EMULADOR) ---

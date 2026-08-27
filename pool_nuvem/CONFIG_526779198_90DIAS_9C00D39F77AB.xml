@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="live_last_channel_code">SKY Sport F1</string>
+    <string name="unitvsiptv_free"></string>
+    <string name="unitvsiptv_live"></string>
+    <int name="recommends_cache_time" value="96" />
+    <int name="all_Column_key" value="68143" />
+    <int name="live_last_column_id" value="68143" />
+    <string name="key_user_id">526779198</string>
+    <string name="KEY_SP_SN">9C:00:D3:9F:77:AB</string>
+    <string name="_free"></string>
+    <string name="_special"></string>
+    <string name="Special_root"></string>
+    <string name="SP_SN_BACKUP">9C:00:D3:9F:77:AB,1</string>
+    <int name="column_cache_time" value="65" />
+    <string name="_live"></string>
+    <string name="key_user_identity">4</string>
+    <int name="live_last_tab" value="3" />
+    <string name="_search"></string>
+    <long name="service_time_column_new_10002" value="1787815607" />
+</map>

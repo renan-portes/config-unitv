@@ -581,9 +581,11 @@
               </span>
               <span id="stat-batch-approved" class="text-emerald-400 font-bold text-lg mt-0.5">0</span>
             </div>
-            <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
-              <span class="text-[10px] text-slate-400 uppercase font-semibold">Recicladas</span>
-              <span id="stat-batch-rejected" class="text-slate-400 font-bold text-lg mt-0.5">0</span>
+            <div class="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between">
+              <span class="text-[10px] text-emerald-400 uppercase font-bold flex items-center gap-1">
+                <i data-lucide="check-circle" class="w-3 h-3"></i> Prontas
+              </span>
+              <span id="stat-batch-rejected" class="text-emerald-400 font-bold text-lg mt-0.5">0</span>
             </div>
           </div>
 
@@ -1897,16 +1899,16 @@
       const cloudQty = parseInt(document.getElementById('batch-cloud-qty') ? document.getElementById('batch-cloud-qty').value : "100", 10) || 100;
       const total = (currentBatchSource === 'cloud' && batchResults.length === 0) ? cloudQty : (batchResults.length || batchQueue.length);
       const tested = batchResults.length;
-      const virgins = batchResults.filter(r => r.is_target || r.days_raw === 0).length;
+      const virgins = batchResults.filter(r => r.days_raw === 0).length;
       const approved = batchResults.filter(r => r.is_target).length;
-      const rejected = batchResults.filter(r => !r.is_target).length;
+      const ready = (currentBatchSource === 'cloud') ? batchResults.length : batchResults.filter(r => r.is_target).length;
 
       document.getElementById('batch-queue-count').innerText = (currentBatchSource === 'cloud' && batchResults.length === 0) ? cloudQty : (batchQueue.length || tested);
       document.getElementById('stat-batch-total').innerText = total;
       document.getElementById('stat-batch-tested').innerText = tested;
       document.getElementById('stat-batch-virgins').innerText = virgins;
       document.getElementById('stat-batch-approved').innerText = approved;
-      document.getElementById('stat-batch-rejected').innerText = rejected;
+      document.getElementById('stat-batch-rejected').innerText = ready;
 
       document.getElementById('filter-all-count').innerText = tested;
       document.getElementById('filter-app-count').innerText = approved;
@@ -2122,10 +2124,9 @@
             
             if (pBar) pBar.style.width = "100%";
             if (pPercent) pPercent.innerText = "100%";
-            if (pStatus) pStatus.innerText = `⚡ Varredura em lote da nuvem concluída (${data.items.length} contas em ${data.duration_total_sec || '0.5'}s)!`;
+            if (pStatus) pStatus.innerText = `⚡ Varredura em lote concluída (${data.items.length} contas prontas em ${data.duration_total_sec || '0.01'}s)!`;
 
-            const virginsCount = batchResults.filter(r => r.is_target).length;
-            showToast(`⚡ ${data.items.length} contas da nuvem processadas em ${data.duration_total_sec}s! (${virginsCount} Virgens 0 Dias)`);
+            showToast(`⚡ ${data.items.length} contas do pool processadas em ${data.duration_total_sec}s! (Todas Prontas para Uso)`);
           } else {
             if (pStatus) pStatus.innerText = "Nenhuma configuração retornada pela nuvem.";
             showToast("Falha ao carregar lote da nuvem.", true);
