@@ -8,6 +8,7 @@ import io
 import re
 import time
 import json
+import html
 import base64
 import random
 import subprocess
@@ -652,11 +653,60 @@ def dismiss_guide_and_popups(device: str):
     return handle_app_lifecycle_and_guide(device, max_wait_sec=8)
 
 
+def parse_profile_dump(dump_xml_str: str) -> tuple[Optional[str], Optional[int], Optional[str], bool]:
+    """
+    Analisa o dump XML do uiautomator com suporte a quebras de linha (\\n, &#10;),
+    espaços múltiplos e nós separados.
+    Retorna: (activation_date, days_active, status_msg, has_access_error)
+    """
+    if not dump_xml_str:
+        return None, None, None, False
+        
+    decoded_xml = html.unescape(dump_xml_str)
+    raw_texts = re.findall(r'(?:text|content-desc)="([^"]*)"', decoded_xml)
+    
+    activation_date = None
+    days_active = None
+    status_msg = None
+    has_access_error = False
+    
+    normalized_texts = []
+    for t in raw_texts:
+        norm = " ".join(t.replace("\r", " ").replace("\n", " ").split()).strip()
+        if norm:
+            normalized_texts.append(norm)
+            
+    all_text_combined = " ".join(normalized_texts)
+    
+    if any(k in all_text_combined for k in ["Falha no acesso", "tente novamente", "rejeitada", "EF9"]):
+        has_access_error = True
+        status_msg = "❌ Falha no Acesso / Chute Rejeitado"
+        
+    # 1. Busca data de ativação (logo após 'ativada em')
+    m_date = re.search(r'ativada\s+em\s*[:\s]*([0-9]{2}[\-\/][0-9]{2}[\-\/][0-9]{4})', all_text_combined, re.IGNORECASE)
+    if m_date:
+        activation_date = m_date.group(1).replace('/', '-')
+    else:
+        m_date_any = re.search(r'([0-9]{2}[\-\/][0-9]{2}[\-\/][0-9]{4})', all_text_combined)
+        if m_date_any:
+            activation_date = m_date_any.group(1).replace('/', '-')
+            
+    # 2. Busca quantidade de dias ativos (logo após 'ativa por' ou antes de 'dias')
+    m_days_ativa_por = re.search(r'ativa\s+por\s*([0-9]+)', all_text_combined, re.IGNORECASE)
+    if m_days_ativa_por:
+        days_active = int(m_days_ativa_por.group(1))
+    else:
+        m_days_dias = re.search(r'([0-9]+)\s*dias', all_text_combined, re.IGNORECASE)
+        if m_days_dias:
+            days_active = int(m_days_dias.group(1))
+            
+    return activation_date, days_active, status_msg, has_access_error
+
+
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com atraso/timeout extra de 5 a 8 segundos na tela de perfil para permitir a renderização completa dos dias ativos (CORREÇÃO 2).
-    Salva backup local contendo EXCLUSIVAMENTE o cache.config.xml (CORREÇÃO 3).
+    com parsing robusto a quebras de linha e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
         adb_bin = get_adb_cmd()
@@ -698,10 +748,10 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "is_valid": False,
                 "mac": app_mac or "-",
                 "key_n_bt": key_n_bt,
-                "folder_name": "CONFIG_INVALIDA_REPROVADA"
+                "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Inspeciona a tela de perfil com atraso extra de 5 a 8 segundos para carregar os dias ativos reais (CORREÇÃO 2)
+        # 2. Inspeciona a tela de perfil com suporte a quebras de linha no OCR (POLIMENTO 1)
         activation_date = None
         days_active = None
         status_msg = None
@@ -712,33 +762,21 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             tap_x, tap_y = 1262, 60
             subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=2)
             
-            # Aguarda de 5 a 8 segundos inspecionando a janela para garantir que a tag de dias renderizou
+            # Aguarda de 5 a 8 segundos inspecionando a janela
             for attempt in range(8):
                 time.sleep(1.0)
                 dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
-                texts = re.findall(r'text="([^"]+)"', dump_res.stdout) if dump_res.stdout else []
+                dump_str = dump_res.stdout or ""
                 
-                for t in texts:
-                    t_clean = t.strip()
-                    if "Falha no acesso" in t_clean or "tente novamente" in t_clean or "rejeitada" in t_clean or "EF9" in t_clean:
-                        has_access_error = True
-                        status_msg = t_clean
-                        
-                    m_date = re.search(r'ativada em\s*([0-9]{2}-[0-9]{2}-[0-9]{4})', t_clean, re.IGNORECASE)
-                    m_days = re.search(r'([0-9]+)\s*dias', t_clean, re.IGNORECASE)
-                    if m_date and m_days:
-                        activation_date = m_date.group(1)
-                        days_active = int(m_days.group(1))
-                        status_msg = t_clean
-                    elif m_days and days_active is None:
-                        days_active = int(m_days.group(1))
-                        status_msg = t_clean
-                    elif m_date and not activation_date:
-                        activation_date = m_date.group(1)
-                        
-                    if re.match(r'^[0-9]{8,10}$', t_clean) and not account_id:
-                        account_id = t_clean
-                        
+                parsed_date, parsed_days, parsed_status, parsed_access_error = parse_profile_dump(dump_str)
+                if parsed_access_error:
+                    has_access_error = True
+                    status_msg = parsed_status
+                if parsed_date:
+                    activation_date = parsed_date
+                if parsed_days is not None:
+                    days_active = parsed_days
+                    
                 if (days_active is not None and activation_date) or has_access_error:
                     break
                     
@@ -753,13 +791,13 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
         if not account_id or user_id_int == 0 or has_access_error:
             is_valid = False
             status_msg = status_msg or "❌ Falha no Acesso / Inválida"
-            folder_name = f"CONFIG_{account_id or 'INVALIDA'}_REPROVADA"
+            folder_name = f"CONFIG_{user_id_int}_{days_active or 0}DIAS" if user_id_int > 0 else "CONFIG_ERRO_EF9"
             return {
                 "found": False,
-                "account_id": "-",
-                "user_id_int": 0,
-                "activation_date": "-",
-                "days_active": None,
+                "account_id": str(user_id_int) if user_id_int > 0 else "-",
+                "user_id_int": user_id_int,
+                "activation_date": activation_date or "-",
+                "days_active": days_active,
                 "expiration_date": "-",
                 "status_message": status_msg,
                 "is_valid": False,
@@ -797,23 +835,16 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
             except Exception:
                 pass
 
-        if days_active is not None:
-            folder_name = f"CONFIG_{user_id_int}_{days_active}DIAS"
-        else:
-            folder_name = f"CONFIG_{user_id_int}_0DIAS"
-            
-        if is_valid:
-            folder_name += "_APROVADA"
-        elif "REPROVADA" not in folder_name:
-            folder_name += "_REPROVADA"
+        # 4. Nomenclatura Dinâmica Estrita: CONFIG_{IDCONTA}_{DIAS}DIAS (POLIMENTO 2)
+        days_val = days_active if days_active is not None else 0
+        folder_name = f"CONFIG_{user_id_int}_{days_val}DIAS"
 
-        # 4. Salva backup na pasta configs/CONFIG_XX_APROVADA/ contendo EXCLUSIVAMENTE o cache.config.xml (CORREÇÃO 3)
+        # 5. Salva backup na pasta configs/CONFIG_{ID}_{DIAS}DIAS/ contendo EXCLUSIVAMENTE o cache.config.xml
         save_dir = os.path.join(BASE_DIR, "configs", folder_name)
         os.makedirs(save_dir, exist_ok=True)
         
         dest_xml_file = os.path.join(save_dir, "cache.config.xml")
         
-        # Puxa o cache.config.xml diretamente do emulador via adb pull / cat
         pulled_content = ""
         for pkg in UNITV_PACKAGES:
             r_pull = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors='ignore', timeout=3)

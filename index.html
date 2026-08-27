@@ -2120,7 +2120,7 @@
       const zip = new JSZip();
       approved.forEach((item, idx) => {
         const daysClean = String(item.days_raw !== null ? item.days_raw : (item.days_active || "0")).replace(/[^0-9]/g, '') || "0";
-        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS_APROVADA`;
+        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}DIAS`;
         const xmlContent = generateXmlTemplate(item.mac);
         zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
@@ -2143,9 +2143,8 @@
 
       const zip = new JSZip();
       batchResults.forEach((item, idx) => {
-        const daysClean = (item.days_raw !== null) ? `${item.days_raw}DIAS` : "INVALIDA";
-        const statusTag = item.is_target ? "APROVADA" : "REPROVADA";
-        const folderName = `CONFIG_${item.account_id || (idx + 1)}_${daysClean}_${statusTag}`;
+        const daysClean = (item.days_raw !== null) ? `${item.days_raw}DIAS` : "0DIAS";
+        const folderName = (item.account_id && item.account_id !== "-") ? `CONFIG_${item.account_id}_${daysClean}` : `CONFIG_ERRO_EF9_${idx + 1}`;
         const xmlContent = generateXmlTemplate(item.mac);
         zip.file(`${folderName}/cache.config.xml`, xmlContent);
       });
