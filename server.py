@@ -703,30 +703,33 @@ def parse_profile_dump(dump_xml_str: str) -> tuple[Optional[str], Optional[int],
     return activation_date, days_active, status_msg, has_access_error
 
 
-def dismiss_tutorial_and_overlays(device: str):
+def dismiss_tutorials(device: str):
     """
-    Rotina de Bypass de Tutorial e Overlays (CORREÇÃO 1):
-    Envia sequência de keyevents com intervalo de 1s para dispensar telas de boas-vindas, tutoriais e pop-ups:
-    1. KEYCODE_BACK (4) - fecha pop-ups modais
-    2. KEYCODE_DPAD_CENTER (23) - confirma botões como 'Próximo' ou 'OK'
-    3. KEYCODE_BACK (4) - garantia extra
-    Também verifica se há botões com texto 'Próximo', 'OK', 'Entendi' ou 'Pular' via dump e clica.
+    Rotina de Bypass de Tutorial e Overlays (Keyevents):
+    Envia sequência estrita de eventos de controle remoto via ADB com sleep de 1 segundo:
+    1. adb shell input keyevent 4 (KEYCODE_BACK - Para fechar pop-ups modais secundários)
+    2. adb shell input keyevent 23 (KEYCODE_DPAD_CENTER - Para confirmar botões como 'Próximo' ou 'OK' no centro)
+    3. adb shell input keyevent 4 (KEYCODE_BACK - Garantia extra para fechar a dica do MENU)
     """
     adb_bin = get_adb_cmd()
     
-    # 1. Sequência de keyevents com intervalo de 1 segundo
-    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
-    time.sleep(1.0)
-    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23"], timeout=2)
-    time.sleep(1.0)
+    # 1. KEYCODE_BACK (4) - fecha pop-ups modais secundários
     subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
     time.sleep(1.0)
     
-    # 2. Verificação rápida de botões de tutorial/guia na tela
+    # 2. KEYCODE_DPAD_CENTER (23) - confirma botões no centro ('Próximo' ou 'OK')
+    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23"], timeout=2)
+    time.sleep(1.0)
+    
+    # 3. KEYCODE_BACK (4) - garantia extra para fechar dica do MENU
+    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
+    time.sleep(1.0)
+    
+    # Verificação complementar de botões na tela se ainda persistirem
     try:
         dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/guide_dump.xml && cat /sdcard/guide_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=4)
         dump_text = dump_res.stdout or ""
-        if any(w in dump_text for w in ["Próximo", "Proximo", "OK", "Ok", "Entendi", "Pular", "Avançar", "Guide"]):
+        if any(w in dump_text for w in ["Próximo", "Proximo", "OK", "Ok", "Entendi", "Pular", "Avançar", "Guide", "MENU", "Menu"]):
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23; input keyevent 66"], timeout=2)
             time.sleep(0.8)
             subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
@@ -735,10 +738,15 @@ def dismiss_tutorial_and_overlays(device: str):
         pass
 
 
+def dismiss_tutorial_and_overlays(device: str):
+    """Alias de compatibilidade para dismiss_tutorials"""
+    return dismiss_tutorials(device)
+
+
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com Bypass de Tutorial/Overlays (CORREÇÃO 1), Garantia de Clique no Perfil (CORREÇÃO 2)
+    com Bypass de Tutorial/Overlays (dismiss_tutorials), Garantia de Clique no Perfil
     e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
@@ -784,20 +792,20 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Bypass de Tutorial/Overlays e Garantia do Clique no Perfil (CORREÇÕES 1 & 2)
+        # 2. Bypass de Tutorial/Overlays e Garantia do Clique no Perfil
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
-            # CORREÇÃO 1: Executa a rotina de Bypass de Tutorial / Overlays
-            dismiss_tutorial_and_overlays(device)
+            # CORREÇÃO: Executa a rotina dismiss_tutorials de Bypass de Tutorial / Overlays
+            dismiss_tutorials(device)
             
-            # CORREÇÃO 2: Aguarda mais 2 segundos para estabilização de spinners/carregamento
+            # Aguarda mais 2 segundos para a interface principal "respirar"
             time.sleep(2.0)
             
-            # Clica no ícone de perfil no canto superior direito do HomeActivity (1262, 60)
+            # SÓ ENTÃO envia o comando de clique no perfil (input tap 1262 60)
             tap_x, tap_y = 1262, 60
             subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=2)
             
@@ -921,7 +929,7 @@ def inject_adb(req: ADBInjectRequest):
     Injeta arquivos de configuração no emulador Android via ADB:
     1. Executa Limpeza Profunda (Deep Wipe) estrita do emulador
     2. Envia exclusivamente o novo cache.config.xml
-    3. Abre o app, aguarda o ciclo de vida e lê status / dias reais
+    3. Abre o app, aguarda o carregamento inicial (7-10s) e executa o bypass de tutoriais
     """
     device = req.device_addr or current_active_adb_device or "127.0.0.1:21503"
     adb_bin = get_adb_cmd()
@@ -970,9 +978,12 @@ def inject_adb(req: ADBInjectRequest):
             for pkg in UNITV_PACKAGES:
                 subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
             logs.append("UniTV Free iniciado no emulador...")
-            handle_app_lifecycle_and_guide(device, max_wait_sec=15)
             
-            logs.append("Lendo status e credenciais diretamente do aplicativo...")
+            # Aguarda o tempo de carregamento inicial (7 a 10 segundos) para o tutorial aparecer completamente
+            time.sleep(8.0)
+            handle_app_lifecycle_and_guide(device, max_wait_sec=8)
+            
+            logs.append("Executando rotina de bypass e lendo credenciais...")
             account_info = inspect_emulator_account_info(device, expected_config_content=req.config_content)
             
             if account_info and account_info.get("found"):
