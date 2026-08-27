@@ -703,50 +703,220 @@ def parse_profile_dump(dump_xml_str: str) -> tuple[Optional[str], Optional[int],
     return activation_date, days_active, status_msg, has_access_error
 
 
-def dismiss_tutorials(device: str):
-    """
-    Rotina de Bypass de Tutorial e Overlays (Keyevents):
-    Envia sequência estrita de eventos de controle remoto via ADB com sleep de 1 segundo:
-    1. adb shell input keyevent 4 (KEYCODE_BACK - Para fechar pop-ups modais secundários)
-    2. adb shell input keyevent 23 (KEYCODE_DPAD_CENTER - Para confirmar botões como 'Próximo' ou 'OK' no centro)
-    3. adb shell input keyevent 4 (KEYCODE_BACK - Garantia extra para fechar a dica do MENU)
-    """
+def clean_xml_output(raw_output: str) -> str:
+    """Remove cabeçalhos de console antes da tag raiz do XML do uiautomator dump"""
+    if not raw_output:
+        return ""
+    if "<?xml" in raw_output:
+        return raw_output[raw_output.find("<?xml"):]
+    elif "<hierarchy" in raw_output:
+        return raw_output[raw_output.find("<hierarchy"):]
+    return raw_output
+
+
+def parse_bounds(bounds_str: str) -> Optional[tuple[int, int]]:
+    """Calcula o ponto central (x, y) a partir de bounds='[x1,y1][x2,y2]'"""
+    if not bounds_str:
+        return None
+    m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds_str)
+    if m:
+        x1, y1, x2, y2 = map(int, m.groups())
+        return ((x1 + x2) // 2, (y1 + y2) // 2)
+    return None
+
+
+def is_unitv_in_foreground(device: str) -> bool:
+    """Verifica se uma janela do UniTV está em primeiro plano"""
     adb_bin = get_adb_cmd()
-    
-    # 1. KEYCODE_BACK (4) - fecha pop-ups modais secundários
-    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
-    time.sleep(1.0)
-    
-    # 2. KEYCODE_DPAD_CENTER (23) - confirma botões no centro ('Próximo' ou 'OK')
-    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23"], timeout=2)
-    time.sleep(1.0)
-    
-    # 3. KEYCODE_BACK (4) - garantia extra para fechar dica do MENU
-    subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
-    time.sleep(1.0)
-    
-    # Verificação complementar de botões na tela se ainda persistirem
+    r = subprocess.run([adb_bin, "-s", device, "shell", "dumpsys window | grep -E mCurrentFocus"], capture_output=True, text=True, errors='ignore', timeout=3)
+    focus = r.stdout or ""
+    return any(pkg in focus for pkg in UNITV_PACKAGES)
+
+
+def ensure_unitv_foreground(device: str):
+    """Garante que o aplicativo UniTV está em primeiro plano"""
+    adb_bin = get_adb_cmd()
+    if not is_unitv_in_foreground(device):
+        for pkg in UNITV_PACKAGES:
+            subprocess.run([adb_bin, "-s", device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, text=True, timeout=5)
+        time.sleep(2.0)
+
+
+def get_emulator_ui_dump(device: str) -> str:
+    """Captura e limpa o dump XML do uiautomator no emulador"""
+    adb_bin = get_adb_cmd()
+    r = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
+    return clean_xml_output(r.stdout or "")
+
+
+def is_profile_screen_open(xml_text: str) -> bool:
+    """Verifica se o fragmento/diálogo de perfil já está carregado e visível na tela"""
+    if not xml_text:
+        return False
+    return any(k in xml_text for k in ["personalFragment", "tvUserName", "tvExpiredTime", "Sua conta foi ativada em", "Meus Favoritos", "Minha Lista"])
+
+
+def find_guide_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int], str]]:
+    """
+    Localiza semanticamente o botão 'Próximo', 'OK' ou overlays de tutorial no dump XML (CORREÇÃO 1).
+    Retorna: ((center_x, center_y), descricao)
+    """
+    if not xml_text:
+        return None
     try:
-        dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/guide_dump.xml && cat /sdcard/guide_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=4)
-        dump_text = dump_res.stdout or ""
-        if any(w in dump_text for w in ["Próximo", "Proximo", "OK", "Ok", "Entendi", "Pular", "Avançar", "Guide", "MENU", "Menu"]):
-            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 23; input keyevent 66"], timeout=2)
-            time.sleep(0.8)
-            subprocess.run([adb_bin, "-s", device, "shell", "input keyevent 4"], timeout=2)
-            time.sleep(0.5)
+        root = ET.fromstring(xml_text)
+        # 1. Procura por textos de botões de avanço e dispensação
+        target_texts = ["próximo", "proximo", "ok", "entendi", "pular", "avançar", "começar", "continuar", "next"]
+        for elem in root.iter('node'):
+            t = (elem.get('text') or '').strip().lower()
+            d = (elem.get('content-desc') or '').strip().lower()
+            if any(t == target or target in t for target in target_texts) or any(d == target or target in d for target in target_texts):
+                b = elem.get('bounds')
+                pt = parse_bounds(b)
+                if pt:
+                    return pt, f"text='{elem.get('text') or elem.get('content-desc')}'"
+                    
+        # 2. Procura por resource-id de tutorial / viewpager de guia
+        for elem in root.iter('node'):
+            r_id = (elem.get('resource-id') or '').lower()
+            if any(k in r_id for k in ['mivguide', 'mguideviewpager', 'guide', 'tutorial', 'btn_next', 'btn_ok']):
+                b = elem.get('bounds')
+                pt = parse_bounds(b)
+                if pt:
+                    return pt, f"res_id='{elem.get('resource-id')}'"
     except Exception:
         pass
+    return None
+
+
+def find_profile_button_in_xml(xml_text: str) -> Optional[tuple[tuple[int, int], str]]:
+    """
+    Localiza semanticamente o botão de perfil no dump XML (CORREÇÃO 2).
+    Retorna: ((center_x, center_y), descricao)
+    """
+    if not xml_text:
+        return None
+    try:
+        root = ET.fromstring(xml_text)
+        
+        # 1. Procura por resource-id de perfil
+        for elem in root.iter('node'):
+            r_id = (elem.get('resource-id') or '')
+            r_id_l = r_id.lower()
+            if any(k in r_id_l for k in ['mivpersonal', 'mlayoutpersonal', 'profile', 'personal', 'account', 'user_icon', 'avatar']):
+                b = elem.get('bounds')
+                pt = parse_bounds(b)
+                if pt:
+                    return pt, f"res_id='{r_id}'"
+                    
+        # 2. Procura por content-desc de perfil
+        for elem in root.iter('node'):
+            d = (elem.get('content-desc') or '').strip().lower()
+            if any(k in d for k in ['profile', 'perfil', 'minha conta', 'meu perfil']):
+                b = elem.get('bounds')
+                pt = parse_bounds(b)
+                if pt:
+                    return pt, f"content-desc='{elem.get('content-desc')}'"
+                    
+        # 3. Posição relativa: elemento clicável no header da barra superior direita
+        candidates = []
+        for elem in root.iter('node'):
+            clickable = elem.get('clickable') == 'true'
+            bounds = elem.get('bounds')
+            if bounds:
+                m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', bounds)
+                if m:
+                    x1, y1, x2, y2 = map(int, m.groups())
+                    if clickable and y1 < 120 and y2 <= 120 and x1 >= 1100 and x2 <= 1400:
+                        cx = (x1 + x2) // 2
+                        cy = (y1 + y2) // 2
+                        candidates.append(((cx, cy), f"header bounds='{bounds}'"))
+        if candidates:
+            return candidates[-1][0], candidates[-1][1]
+    except Exception:
+        pass
+    return None
+
+
+def dismiss_tutorials_semantic(device: str, max_attempts: int = 5) -> bool:
+    """
+    Bypass semântico de tutoriais e overlays via UiAutomator (CORREÇÃO 1):
+    Analisa a árvore XML, localiza botões como 'Próximo', 'OK' ou viewpagers de guia
+    e clica no ponto central exato dos bounds.
+    """
+    adb_bin = get_adb_cmd()
+    ensure_unitv_foreground(device)
+    
+    for attempt in range(max_attempts):
+        xml_dump = get_emulator_ui_dump(device)
+        if not xml_dump:
+            time.sleep(1.0)
+            continue
+            
+        if is_profile_screen_open(xml_dump):
+            return True
+            
+        # Se a Home principal está livre de guias e os botões da barra estão visíveis
+        if "mLayoutPersonal" in xml_dump or ("mTextAppName" in xml_dump and "mIvGuide" not in xml_dump and "mGuideViewPager" not in xml_dump):
+            return True
+            
+        guide_match = find_guide_button_in_xml(xml_dump)
+        if guide_match:
+            (cx, cy), desc = guide_match
+            subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
+            time.sleep(1.2)
+            continue
+            
+        # Envia toque neutro no centro da tela para fechar pop-ups com dismiss-on-touch-outside
+        subprocess.run([adb_bin, "-s", device, "shell", "input tap 800 450"], timeout=2)
+        time.sleep(1.0)
+        
+    return True
+
+
+def dismiss_tutorials(device: str):
+    """Função wrapper de bypass"""
+    return dismiss_tutorials_semantic(device)
 
 
 def dismiss_tutorial_and_overlays(device: str):
-    """Alias de compatibilidade para dismiss_tutorials"""
-    return dismiss_tutorials(device)
+    """Alias de compatibilidade"""
+    return dismiss_tutorials_semantic(device)
+
+
+def click_profile_semantic(device: str) -> bool:
+    """
+    Localiza e clica no botão de perfil de forma semântica (CORREÇÃO 2):
+    Extrai as coordenadas centrais (bounds) de mIvPersonal / mLayoutPersonal / content-desc='Profile'
+    garantindo que o clique ocorra estritamente dentro da aplicação UniTV.
+    """
+    adb_bin = get_adb_cmd()
+    ensure_unitv_foreground(device)
+    
+    xml_dump = get_emulator_ui_dump(device)
+    if is_profile_screen_open(xml_dump):
+        return True
+        
+    profile_match = find_profile_button_in_xml(xml_dump)
+    if profile_match:
+        (cx, cy), desc = profile_match
+        subprocess.run([adb_bin, "-s", device, "shell", f"input tap {cx} {cy}"], timeout=2)
+        time.sleep(1.5)
+        return True
+        
+    # Fallback apenas se o botão não foi achado no XML mas o app está em primeiro plano
+    if is_unitv_in_foreground(device):
+        subprocess.run([adb_bin, "-s", device, "shell", "input tap 1262 60"], timeout=2)
+        time.sleep(1.5)
+        return True
+        
+    return False
 
 
 def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_config_content: str = None) -> dict:
     """
     Lê as informações da conta diretamente da interface do app no emulador
-    com Bypass de Tutorial/Overlays (dismiss_tutorials), Garantia de Clique no Perfil
+    com Bypass Semântico de Tutorial (CORREÇÃO 1), Clique Semântico no Perfil (CORREÇÃO 2)
     e salvamento no padrão exato CONFIG_{IDCONTA}_{DIAS}DIAS.
     """
     try:
@@ -792,32 +962,32 @@ def inspect_emulator_account_info(device: str = "127.0.0.1:21503", expected_conf
                 "folder_name": "CONFIG_ERRO_EF9"
             }
 
-        # 2. Bypass de Tutorial/Overlays e Garantia do Clique no Perfil
+        # 2. Bypass Semântico de Tutorial e Clique Semântico no Perfil (CORREÇÕES 1 & 2)
         activation_date = None
         days_active = None
         status_msg = None
         has_access_error = False
         
         try:
-            # CORREÇÃO: Executa a rotina dismiss_tutorials de Bypass de Tutorial / Overlays
-            dismiss_tutorials(device)
+            # CORREÇÃO 1: Executa a rotina de Bypass Semântico de Tutoriais/Overlays
+            dismiss_tutorials_semantic(device)
             
-            # Aguarda mais 2 segundos para a interface principal "respirar"
-            time.sleep(2.0)
-            
-            # SÓ ENTÃO envia o comando de clique no perfil (input tap 1262 60)
-            tap_x, tap_y = 1262, 60
-            subprocess.run([adb_bin, "-s", device, "shell", f"input tap {tap_x} {tap_y}"], timeout=2)
-            
-            # Aguarda a tela de perfil carregar antes de iniciar o loop de OCR
+            # Aguarda 1.5s para a interface principal estabilizar
             time.sleep(1.5)
             
-            # Loop inteligente de OCR (inspeciona por até 8 segundos adicionais)
+            # CORREÇÃO 2: Executa o clique semântico no ícone de perfil
+            click_profile_semantic(device)
+            
+            # 3. Loop Inteligente de OCR: Aguarda a tela de perfil carregar antes de ler
             for attempt in range(8):
                 time.sleep(1.0)
-                dump_res = subprocess.run([adb_bin, "-s", device, "shell", "uiautomator dump /sdcard/window_dump.xml && cat /sdcard/window_dump.xml"], capture_output=True, text=True, errors='ignore', timeout=6)
-                dump_str = dump_res.stdout or ""
+                dump_str = get_emulator_ui_dump(device)
                 
+                # Se a tela de perfil ainda não estiver aberta, tenta clicar novamente
+                if not is_profile_screen_open(dump_str) and attempt == 2:
+                    click_profile_semantic(device)
+                    continue
+                    
                 parsed_date, parsed_days, parsed_status, parsed_access_error = parse_profile_dump(dump_str)
                 if parsed_access_error:
                     has_access_error = True
