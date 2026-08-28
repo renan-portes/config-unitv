@@ -329,6 +329,7 @@ def run_scanner_worker(
     base_mac: Optional[str],
     start_index: int,
     cycles: int,
+    is_sequential: bool,
     stop_on_virgin: bool,
     master_url: Optional[str],
     token: Optional[str],
@@ -347,7 +348,8 @@ def run_scanner_worker(
     agent.stats = {"tested": 0, "approved": 0, "rejected": 0, "skipped": 0}
     agent.recent_results.clear()
 
-    agent.log(f"🚀 Iniciando Scanner Headless ADB ({cycles} ciclos) em {agent.active_device}")
+    mode_str = "Sequencial (+1)" if is_sequential else "Aleatório"
+    agent.log(f"🚀 Iniciando Scanner Headless ADB ({cycles} ciclos, Modo: {mode_str}) em {agent.active_device}")
     adb_bin = get_adb_cmd()
 
     # Prepara base MAC
@@ -357,6 +359,8 @@ def run_scanner_worker(
         if clean_base.startswith("9C00D3"):
             clean_base = clean_base[6:]
 
+    seq_seed = random.randint(0, 0xFFFFFF)
+
     for i in range(cycles):
         if agent.stop_requested:
             agent.log("⏹️ Scanner interrompido pelo usuário.")
@@ -365,18 +369,34 @@ def run_scanner_worker(
         agent.current_cycle = i + 1
         curr_idx = start_index + i
 
-        # Geração do MAC
-        if clean_base and len(clean_base) >= 2:
-            b1 = int(clean_base[0:2], 16) if len(clean_base) >= 2 else 0
-            b2 = int(clean_base[2:4], 16) if len(clean_base) >= 4 else 0
-            b3 = int(clean_base[4:6], 16) if len(clean_base) >= 6 else 0
-            total_offset = (b1 << 16) + (b2 << 8) + b3 + i
-            nb1 = (total_offset >> 16) & 0xFF
-            nb2 = (total_offset >> 8) & 0xFF
-            nb3 = total_offset & 0xFF
-            target_mac = f"9C:00:D3:{nb1:02X}:{nb2:02X}:{nb3:02X}"
+        # Geração do MAC conforme flag is_sequential
+        if is_sequential:
+            if clean_base and len(clean_base) >= 2:
+                b1 = int(clean_base[0:2], 16) if len(clean_base) >= 2 else 0
+                b2 = int(clean_base[2:4], 16) if len(clean_base) >= 4 else 0
+                b3 = int(clean_base[4:6], 16) if len(clean_base) >= 6 else 0
+                total_offset = (b1 << 16) + (b2 << 8) + b3 + i
+                nb1 = (total_offset >> 16) & 0xFF
+                nb2 = (total_offset >> 8) & 0xFF
+                nb3 = total_offset & 0xFF
+                target_mac = f"9C:00:D3:{nb1:02X}:{nb2:02X}:{nb3:02X}"
+            else:
+                total_offset = (seq_seed + i) & 0xFFFFFF
+                nb1 = (total_offset >> 16) & 0xFF
+                nb2 = (total_offset >> 8) & 0xFF
+                nb3 = total_offset & 0xFF
+                target_mac = f"9C:00:D3:{nb1:02X}:{nb2:02X}:{nb3:02X}"
         else:
-            target_mac = engine.generate_random_mac()
+            if clean_base:
+                if len(clean_base) >= 6 and cycles > 1 and i > 0:
+                    b1 = clean_base[0:2]
+                    b2 = clean_base[2:4]
+                    b3 = f"{random.randint(0, 255):02X}"
+                    target_mac = f"9C:00:D3:{b1}:{b2}:{b3}"
+                else:
+                    target_mac = engine.normalize_or_generate_mac(clean_base)
+            else:
+                target_mac = engine.generate_random_mac()
 
         agent.current_mac = target_mac
         agent.log(f"🔍 [{agent.current_cycle}/{agent.total_cycles}] Avaliando MAC: {target_mac}")
@@ -529,7 +549,8 @@ class ScanStartRequest(BaseModel):
     base_mac: Optional[str] = None
     start_index: Optional[int] = 1
     cycles: Optional[int] = 10
-    stop_on_virgin: Optional[bool] = True
+    is_sequential: Optional[bool] = False
+    stop_on_virgin: Optional[bool] = False
     master_url: Optional[str] = None
     token: Optional[str] = None
     device_addr: Optional[str] = "127.0.0.1:21503"
@@ -554,7 +575,8 @@ def start_scan_endpoint(req: ScanStartRequest):
             "base_mac": req.base_mac,
             "start_index": req.start_index or 1,
             "cycles": req.cycles or 10,
-            "stop_on_virgin": req.stop_on_virgin if req.stop_on_virgin is not None else True,
+            "is_sequential": bool(req.is_sequential),
+            "stop_on_virgin": bool(req.stop_on_virgin),
             "master_url": req.master_url,
             "token": req.token,
             "device_addr": req.device_addr or "127.0.0.1:21503"
