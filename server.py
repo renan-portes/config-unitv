@@ -401,6 +401,11 @@ class UpdateUserRequest(BaseModel):
     set_lifetime: Optional[bool] = False
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 # --- ROTAS DE AUTENTICAÇÃO & ADMINISTRAÇÃO (SaaS / JWT) ---
 
 @app.post("/api/auth/login")
@@ -442,10 +447,55 @@ def login(req: LoginRequest):
 
 @app.get("/api/auth/me")
 def get_me(current_user: User = Depends(get_current_user)):
-    """Retorna os dados do usuário autenticado atual"""
+    """Retorna os dados do usuário autenticado atual incluindo expiração"""
     return {
         "user": current_user.to_dict()
     }
+
+
+@app.put("/api/auth/me/password")
+def change_my_password(
+    req: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Permite ao usuário autenticado alterar sua própria senha mediante validação da senha atual.
+    """
+    current_pass = req.current_password.strip() if req.current_password else ""
+    new_pass = req.new_password.strip() if req.new_password else ""
+
+    if not current_pass or not new_pass:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A senha atual e a nova senha são obrigatórias."
+        )
+
+    if len(new_pass) < 4:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve possuir pelo menos 4 caracteres."
+        )
+
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+        if not verify_password(current_pass, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Senha atual incorreta."
+            )
+
+        user.password_hash = hash_password(new_pass)
+        session.commit()
+        return {
+            "success": True,
+            "message": "Senha alterada com sucesso!"
+        }
+    finally:
+        session.close()
 
 
 @app.get("/api/admin/users")

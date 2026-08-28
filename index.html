@@ -156,11 +156,17 @@
 
         <!-- Header User & Quick Server Status Badge -->
         <div class="flex items-center gap-3 text-xs">
-          <div id="user-badge" class="px-3 py-1.5 rounded-lg bg-dark-card border border-dark-border flex items-center gap-2 text-slate-200">
-            <i data-lucide="user" class="w-3.5 h-3.5 text-brand-400"></i>
-            <span id="header-username" class="font-medium">Carregando...</span>
+          <button
+            onclick="openUserProfileModal()"
+            id="user-badge"
+            title="Clique para ver Meu Perfil e Gerenciar Senha"
+            class="px-3 py-1.5 rounded-lg bg-dark-card hover:bg-dark-hover border border-dark-border hover:border-brand-500/50 flex items-center gap-2 text-slate-200 transition cursor-pointer active:scale-95 group"
+          >
+            <i data-lucide="user" class="w-3.5 h-3.5 text-brand-400 group-hover:text-brand-300"></i>
+            <span id="header-username" class="font-medium group-hover:text-white">Carregando...</span>
             <span id="header-user-role" class="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">User</span>
-          </div>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:text-slate-200"></i>
+          </button>
 
           <div id="connection-status" class="px-3 py-1.5 rounded-lg bg-dark-card border border-dark-border flex items-center gap-2 text-slate-300">
             <span class="w-2 h-2 rounded-full bg-amber-400" id="status-dot"></span>
@@ -660,23 +666,42 @@
             </button>
 
             <button
+              onclick="downloadSelectedVaultZip()"
+              id="btn-export-selected"
+              title="Baixar apenas as contas selecionadas com checkbox em arquivo .ZIP"
+              class="px-3.5 py-2 rounded-xl bg-dark-card hover:bg-slate-700 border border-brand-500/40 text-brand-300 hover:text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5 active:scale-[0.98]"
+            >
+              <i data-lucide="check-square" class="w-3.5 h-3.5 text-brand-400"></i>
+              <span id="btn-export-selected-label">Baixar Selecionadas (.ZIP)</span>
+            </button>
+
+            <button
               onclick="downloadVirginVaultZip()"
               id="btn-export-virgins"
-              title="Baixar todas as contas 0 Dias (Virgens) em arquivo .ZIP"
+              title="Exportar todas as contas 0 Dias (Virgens) em arquivo .ZIP"
               class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5 active:scale-[0.98]"
             >
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span>Baixar Virgens (.ZIP)</span>
+              <span>Exportar 0 Dias (.ZIP)</span>
             </button>
           </div>
         </div>
 
-        <!-- Tabela Responsiva do Cofre com Ordenação Clicável -->
+        <!-- Tabela Responsiva do Cofre com Seleção e Ordenação Clicável -->
         <div class="overflow-x-auto rounded-xl border border-dark-border">
           <table class="w-full text-left text-xs">
             <thead class="bg-dark-card/90 text-slate-400 border-b border-dark-border font-sans select-none">
               <tr>
-                <th class="py-3 px-4 font-semibold w-12 text-center">#</th>
+                <th class="py-3 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    id="vault-select-all"
+                    onchange="toggleSelectAllVault(this.checked)"
+                    title="Selecionar / Desmarcar todas as visíveis"
+                    class="rounded bg-dark-input border-dark-border text-brand-500 focus:ring-brand-500 w-4 h-4 cursor-pointer align-middle"
+                  >
+                </th>
+                <th class="py-3 px-3 font-semibold w-10 text-center">#</th>
                 
                 <th onclick="toggleVaultSort('mac')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por MAC">
                   <div class="flex items-center gap-1.5">
@@ -723,7 +748,7 @@
             </thead>
             <tbody id="vault-table-body" class="divide-y divide-dark-border font-mono">
               <tr>
-                <td colspan="7" class="py-8 text-center text-slate-500 font-sans">
+                <td colspan="8" class="py-8 text-center text-slate-500 font-sans">
                   <div class="flex flex-col items-center gap-2">
                     <i data-lucide="inbox" class="w-6 h-6 text-slate-500"></i>
                     <span>Nenhum registro carregado ainda. Clique em Atualizar.</span>
@@ -977,6 +1002,106 @@
               class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-lg shadow-brand-600/25 transition flex items-center gap-1.5 active:scale-[0.99]"
             >
               <i data-lucide="save" class="w-3.5 h-3.5"></i> Salvar Alterações
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- MODAL MEU PERFIL (SaaS User Profile) -->
+    <div id="user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="glass-panel p-6 rounded-2xl border border-dark-border w-full max-w-md flex flex-col gap-4 shadow-2xl animate-in fade-in zoom-in duration-200">
+        
+        <div class="flex items-center justify-between border-b border-dark-border pb-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="user-check" class="w-5 h-5 text-brand-400"></i>
+            <span>Meu Perfil &amp; Segurança</span>
+          </h3>
+          <button onclick="closeUserProfileModal()" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-dark-hover transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Informações do Usuário (Não Editáveis) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-dark-card/60 border border-dark-border/80">
+          <div class="flex flex-col gap-1">
+            <span class="text-[11px] text-slate-400">Nome de Usuário</span>
+            <span id="profile-modal-username" class="text-xs font-bold text-white font-mono">-</span>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="text-[11px] text-slate-400">Nível / Permissão</span>
+            <div id="profile-modal-role" class="text-xs font-semibold">-</div>
+          </div>
+
+          <div class="sm:col-span-2 flex flex-col gap-1 pt-2 border-t border-dark-border/60">
+            <span class="text-[11px] text-slate-400">Vencimento da Assinatura</span>
+            <div id="profile-modal-expiry" class="text-xs font-semibold">-</div>
+          </div>
+        </div>
+
+        <!-- Feedback de Alerta Modal Perfil -->
+        <div id="profile-alert" class="hidden p-3 rounded-xl text-xs flex items-center gap-2">
+          <i id="profile-alert-icon" data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="profile-alert-msg">Mensagem</span>
+        </div>
+
+        <!-- Formulário Alterar Senha -->
+        <form id="profile-change-password-form" onsubmit="event.preventDefault(); handleChangeMyPassword();" class="flex flex-col gap-3 pt-1">
+          <div class="border-b border-dark-border/60 pb-1.5">
+            <h4 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+              <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i> Alterar Minha Senha
+            </h4>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="profile-current-password" class="text-xs font-semibold text-slate-300">Senha Atual</label>
+            <input
+              type="password"
+              id="profile-current-password"
+              placeholder="Digite sua senha atual"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="profile-new-password" class="text-xs font-semibold text-slate-300">Nova Senha</label>
+            <input
+              type="password"
+              id="profile-new-password"
+              placeholder="Mínimo de 4 caracteres"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="profile-confirm-password" class="text-xs font-semibold text-slate-300">Confirmar Nova Senha</label>
+            <input
+              type="password"
+              id="profile-confirm-password"
+              placeholder="Repita a nova senha"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+          </div>
+
+          <div class="flex items-center justify-end gap-2 mt-2 pt-3 border-t border-dark-border">
+            <button
+              type="button"
+              onclick="closeUserProfileModal()"
+              class="px-4 py-2 rounded-xl bg-dark-card hover:bg-slate-700 border border-dark-border text-slate-300 font-semibold text-xs transition"
+            >
+              Fechar
+            </button>
+            <button
+              type="submit"
+              id="btn-profile-save-password"
+              class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-lg shadow-brand-600/25 transition flex items-center gap-1.5 active:scale-[0.99]"
+            >
+              <i data-lucide="check" class="w-3.5 h-3.5"></i> Salvar Nova Senha
             </button>
           </div>
         </form>
@@ -2115,6 +2240,7 @@
     let vaultRecords = [];
     let vaultSortColumn = 'tested_at';
     let vaultSortDirection = 'desc';
+    let selectedVaultMacs = new Set();
 
     function toggleVaultSort(col) {
       if (vaultSortColumn === col) {
@@ -2167,6 +2293,51 @@
         select.value = currentVal;
       } else {
         select.value = 'all';
+      }
+    }
+
+    function handleVaultRowCheckboxChange() {
+      const checkboxes = document.querySelectorAll('.vault-row-checkbox');
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedVaultMacs.add(cb.value);
+        } else {
+          selectedVaultMacs.delete(cb.value);
+        }
+      });
+      updateSelectedCountUI();
+    }
+
+    function toggleSelectAllVault(isChecked) {
+      const checkboxes = document.querySelectorAll('.vault-row-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        if (isChecked) {
+          selectedVaultMacs.add(cb.value);
+        } else {
+          selectedVaultMacs.delete(cb.value);
+        }
+      });
+      updateSelectedCountUI();
+    }
+
+    function updateSelectedCountUI() {
+      const count = selectedVaultMacs.size;
+      const label = document.getElementById('btn-export-selected-label');
+      if (label) {
+        label.innerText = count > 0 ? `Baixar Selecionadas (${count})` : 'Baixar Selecionadas (.ZIP)';
+      }
+
+      const selectAll = document.getElementById('vault-select-all');
+      const visibleCheckboxes = document.querySelectorAll('.vault-row-checkbox');
+      if (selectAll && visibleCheckboxes.length > 0) {
+        const allChecked = Array.from(visibleCheckboxes).every(cb => cb.checked);
+        const someChecked = Array.from(visibleCheckboxes).some(cb => cb.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked && !allChecked;
+      } else if (selectAll) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
       }
     }
 
@@ -2305,7 +2476,7 @@
       if (!records || records.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" class="py-8 text-center text-slate-500 font-sans">
+            <td colspan="8" class="py-8 text-center text-slate-500 font-sans">
               <div class="flex flex-col items-center gap-2">
                 <i data-lucide="inbox" class="w-6 h-6 text-slate-500"></i>
                 <span>Nenhum registro encontrado para os filtros selecionados.</span>
@@ -2314,6 +2485,7 @@
           </tr>
         `;
         if (countEl) countEl.innerText = 'Mostrando 0 registros';
+        updateSelectedCountUI();
         lucide.createIcons();
         return;
       }
@@ -2322,6 +2494,7 @@
       records.forEach((r, idx) => {
         const isVirgin = r.is_valid && (r.days_active === 0 || (r.status_message && r.status_message.includes('VIRGEM')));
         const isRecycled = r.is_valid && r.days_active > 0;
+        const isChecked = selectedVaultMacs.has(r.mac);
         
         let daysBadge = `<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">-</span>`;
         if (isVirgin) {
@@ -2350,8 +2523,17 @@
         const usernameText = r.username || (r.user_id ? `User #${r.user_id}` : 'Admin / Sistema');
 
         html += `
-          <tr class="hover:bg-dark-hover transition">
-            <td class="py-2.5 px-4 text-center text-slate-500 font-sans">${idx + 1}</td>
+          <tr class="hover:bg-dark-hover transition ${isChecked ? 'bg-brand-500/10' : ''}">
+            <td class="py-2.5 px-3 text-center">
+              <input
+                type="checkbox"
+                class="vault-row-checkbox rounded bg-dark-input border-dark-border text-brand-500 focus:ring-brand-500 w-4 h-4 cursor-pointer align-middle"
+                value="${r.mac}"
+                onchange="handleVaultRowCheckboxChange()"
+                ${isChecked ? 'checked' : ''}
+              >
+            </td>
+            <td class="py-2.5 px-3 text-center text-slate-500 font-sans">${idx + 1}</td>
             <td class="py-2.5 px-4 font-bold text-white">
               <div class="flex items-center gap-2">
                 <span>${r.mac}</span>
@@ -2375,7 +2557,61 @@
 
       tbody.innerHTML = html;
       if (countEl) countEl.innerText = `Mostrando ${records.length} de ${vaultRecords.length} registros`;
+      updateSelectedCountUI();
       lucide.createIcons();
+    }
+
+    async function downloadSelectedVaultZip() {
+      if (selectedVaultMacs.size === 0) {
+        showToast('Nenhuma conta selecionada. Marque as caixas de seleção na tabela para exportar.', true);
+        return;
+      }
+
+      const selectedRecords = vaultRecords.filter(r => selectedVaultMacs.has(r.mac));
+      if (selectedRecords.length === 0) {
+        showToast('Nenhum registro encontrado para as contas selecionadas.', true);
+        return;
+      }
+
+      const btn = document.getElementById('btn-export-selected');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-brand-400 border-t-transparent rounded-full mr-1"></div> Exportando...`;
+        btn.disabled = true;
+      }
+
+      try {
+        const zip = new JSZip();
+        selectedRecords.forEach((item, idx) => {
+          const idVal = (item.account_id && item.account_id !== "-" && item.account_id !== "0") 
+            ? item.account_id 
+            : (item.user_id_int || (item.mac ? item.mac.replace(/:/g, '') : `SELECIONADA_${idx + 1}`));
+          const daysSuffix = (item.days_active !== null && item.days_active !== undefined) ? `${item.days_active}DIAS` : 'CHECK';
+          const folderName = `CONFIG_${idVal}_${daysSuffix}`;
+          const xmlContent = generateXmlTemplate(item.mac);
+          zip.file(`${folderName}/cache.config.xml`, xmlContent);
+        });
+
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        a.download = `COFRE_SELECIONADAS_${selectedRecords.length}_CONFIGS_${dateStr}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showToast(`✔ Pacote ZIP com ${selectedRecords.length} contas selecionadas (.zip) exportado com sucesso!`);
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao gerar pacote ZIP selecionado: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
     }
 
     async function downloadVirginVaultZip() {
@@ -2428,6 +2664,162 @@
       } finally {
         if (btn) {
           btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    // --- MEU PERFIL DO USUÁRIO & SEGURANÇA ---
+    function openUserProfileModal() {
+      const user = getCachedUser();
+      const modal = document.getElementById('user-profile-modal');
+      const nameEl = document.getElementById('profile-modal-username');
+      const roleEl = document.getElementById('profile-modal-role');
+      const expiryEl = document.getElementById('profile-modal-expiry');
+      const alertBox = document.getElementById('profile-alert');
+      const currentPass = document.getElementById('profile-current-password');
+      const newPass = document.getElementById('profile-new-password');
+      const confirmPass = document.getElementById('profile-confirm-password');
+
+      if (alertBox) alertBox.classList.add('hidden');
+      if (currentPass) currentPass.value = '';
+      if (newPass) newPass.value = '';
+      if (confirmPass) confirmPass.value = '';
+
+      if (user) {
+        if (nameEl) nameEl.innerText = user.username || '-';
+        if (roleEl) {
+          const isAdmin = user.role === 'admin';
+          roleEl.innerHTML = isAdmin
+            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Administrador</span>`
+            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">👤 Cliente Padrão</span>`;
+        }
+        if (expiryEl) {
+          if (user.is_expired) {
+            let dateStr = user.expires_at ? new Date(user.expires_at).toLocaleString('pt-BR') : '';
+            expiryEl.innerHTML = `<span class="text-rose-400 font-semibold flex items-center gap-1"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Expirada em: ${dateStr}</span>`;
+          } else if (user.expires_at) {
+            let dateStr = new Date(user.expires_at).toLocaleString('pt-BR');
+            expiryEl.innerHTML = `<span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Válido até: ${dateStr}</span>`;
+          } else {
+            expiryEl.innerHTML = `<span class="text-cyan-400 font-semibold flex items-center gap-1"><i data-lucide="infinity" class="w-3.5 h-3.5"></i> Acesso Vitalício (Sem Expiração)</span>`;
+          }
+        }
+      }
+
+      // Buscar dados atualizados do /api/auth/me em background
+      authFetch('/api/auth/me')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.user) {
+            setAuthSession(getAuthToken(), data.user);
+            const u = data.user;
+            if (nameEl) nameEl.innerText = u.username || '-';
+            if (roleEl) {
+              const isAdmin = u.role === 'admin';
+              roleEl.innerHTML = isAdmin
+                ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Administrador</span>`
+                : `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">👤 Cliente Padrão</span>`;
+            }
+            if (expiryEl) {
+              if (u.is_expired) {
+                let dateStr = u.expires_at ? new Date(u.expires_at).toLocaleString('pt-BR') : '';
+                expiryEl.innerHTML = `<span class="text-rose-400 font-semibold flex items-center gap-1"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Expirada em: ${dateStr}</span>`;
+              } else if (u.expires_at) {
+                let dateStr = new Date(u.expires_at).toLocaleString('pt-BR');
+                expiryEl.innerHTML = `<span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Válido até: ${dateStr}</span>`;
+              } else {
+                expiryEl.innerHTML = `<span class="text-cyan-400 font-semibold flex items-center gap-1"><i data-lucide="infinity" class="w-3.5 h-3.5"></i> Acesso Vitalício (Sem Expiração)</span>`;
+              }
+              lucide.createIcons();
+            }
+          }
+        })
+        .catch(() => {});
+
+      if (modal) modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeUserProfileModal() {
+      const modal = document.getElementById('user-profile-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function handleChangeMyPassword() {
+      const currentPassEl = document.getElementById('profile-current-password');
+      const newPassEl = document.getElementById('profile-new-password');
+      const confirmPassEl = document.getElementById('profile-confirm-password');
+      const alertBox = document.getElementById('profile-alert');
+      const alertMsg = document.getElementById('profile-alert-msg');
+      const btn = document.getElementById('btn-profile-save-password');
+
+      const current_password = currentPassEl ? currentPassEl.value : '';
+      const new_password = newPassEl ? newPassEl.value : '';
+      const confirm_password = confirmPassEl ? confirmPassEl.value : '';
+
+      if (!current_password || !new_password) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'Preencha a senha atual e a nova senha.';
+          alertBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (new_password.length < 4) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'A nova senha deve possuir pelo menos 4 caracteres.';
+          alertBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (new_password !== confirm_password) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'A confirmação não coincide com a nova senha.';
+          alertBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const origBtn = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Alterando...`;
+        btn.disabled = true;
+      }
+      if (alertBox) alertBox.classList.add('hidden');
+
+      try {
+        const res = await authFetch('/api/auth/me/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_password, new_password })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('✔ Senha alterada com sucesso!');
+          closeUserProfileModal();
+        } else {
+          if (alertBox) {
+            alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+            alertMsg.innerText = data.detail || 'Falha ao alterar senha.';
+            alertBox.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'Erro ao comunicar com o servidor: ' + err.message;
+          alertBox.classList.remove('hidden');
+        }
+      } finally {
+        if (btn) {
+          btn.innerHTML = origBtn;
           btn.disabled = false;
         }
         lucide.createIcons();
