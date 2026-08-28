@@ -185,6 +185,9 @@
       <button onclick="switchTab('vault')" id="tab-btn-vault" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Cofre &amp; Histórico
       </button>
+      <button onclick="switchTab('admin-users')" id="tab-btn-admin-users" class="tab-btn hidden px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
+        <i data-lucide="users" class="w-4 h-4 text-amber-400"></i> Gestão de Clientes
+      </button>
       <button onclick="switchTab('apps')" id="tab-btn-apps" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="smartphone" class="w-4 h-4 text-cyan-400"></i> Conexão ADB &amp; Aplicativos
       </button>
@@ -628,6 +631,16 @@
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-brand-400"></i>
               <span>Atualizar</span>
             </button>
+
+            <button
+              onclick="downloadVirginVaultZip()"
+              id="btn-export-virgins"
+              title="Baixar todas as contas 0 Dias (Virgens) em arquivo .ZIP"
+              class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5 active:scale-[0.98]"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Baixar Virgens (.ZIP)</span>
+            </button>
           </div>
         </div>
 
@@ -664,6 +677,136 @@
           <span class="text-[11px] text-slate-500 flex items-center gap-1">
             <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Smart Skip ativo: MACs banidos são ignorados automaticamente
           </span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 4: GESTÃO DE CLIENTES & ADMINISTRAÇÃO (SaaS Admin) -->
+    <div id="tab-admin-users" class="tab-content hidden flex-col gap-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Formulário de Criação de Usuário (4 Colunas) -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
+            
+            <div class="border-b border-dark-border pb-3">
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-5 h-5 text-amber-400"></i> Adicionar Novo Cliente
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Cadastre novos usuários com acesso ao SaaS</p>
+            </div>
+
+            <!-- Feedback de Alerta -->
+            <div id="admin-user-alert" class="hidden p-3 rounded-xl text-xs flex items-center gap-2">
+              <i id="admin-user-alert-icon" data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+              <span id="admin-user-alert-msg">Mensagem</span>
+            </div>
+
+            <form id="admin-create-user-form" onsubmit="event.preventDefault(); handleCreateAdminUser();" class="flex flex-col gap-3.5">
+              <div class="flex flex-col gap-1.5">
+                <label for="admin-new-username" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                  <i data-lucide="user" class="w-3.5 h-3.5 text-brand-400"></i> Nome de Usuário
+                </label>
+                <input
+                  type="text"
+                  id="admin-new-username"
+                  placeholder="ex: cliente_vip"
+                  required
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                >
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label for="admin-new-password" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                  <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i> Senha de Acesso
+                </label>
+                <input
+                  type="password"
+                  id="admin-new-password"
+                  placeholder="Senha do novo cliente"
+                  required
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                >
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label for="admin-new-role" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                  <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i> Papel / Permissão
+                </label>
+                <select
+                  id="admin-new-role"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                >
+                  <option value="user">Cliente Padrão (User)</option>
+                  <option value="admin">Administrador Total (Admin)</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                id="btn-admin-submit-user"
+                class="w-full mt-2 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-lg shadow-brand-600/25 transition flex items-center justify-center gap-2 active:scale-[0.99]"
+              >
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Criar Usuário
+              </button>
+            </form>
+
+          </div>
+        </div>
+
+        <!-- Tabela de Usuários Cadastrados (8 Colunas) -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+          <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
+            
+            <div class="flex items-center justify-between border-b border-dark-border pb-3">
+              <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="users" class="w-5 h-5 text-amber-400"></i> Usuários do Sistema
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Todos os operadores e clientes registrados na plataforma</p>
+              </div>
+
+              <button
+                onclick="loadAdminUsers()"
+                id="btn-refresh-admin-users"
+                class="px-3 py-1.5 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 text-xs font-semibold transition flex items-center gap-1.5"
+              >
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-amber-400"></i> Atualizar
+              </button>
+            </div>
+
+            <!-- Tabela de Usuários -->
+            <div class="overflow-x-auto rounded-xl border border-dark-border">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-dark-card/90 text-slate-400 border-b border-dark-border font-sans">
+                  <tr>
+                    <th class="py-3 px-4 font-semibold w-12 text-center">ID</th>
+                    <th class="py-3 px-4 font-semibold">Nome de Usuário</th>
+                    <th class="py-3 px-4 font-semibold">Papel / Nível</th>
+                    <th class="py-3 px-4 font-semibold">Criado em</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body" class="divide-y divide-dark-border font-mono">
+                  <tr>
+                    <td colspan="4" class="py-8 text-center text-slate-500 font-sans">
+                      Carregando usuários...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <span id="admin-users-count">Total: 0 usuários</span>
+              <span class="text-[11px] text-slate-500 flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Acesso Restrito a Administradores
+              </span>
+            </div>
+
+          </div>
         </div>
 
       </div>
@@ -764,6 +907,8 @@
       if (loginContainer) loginContainer.classList.add('hidden');
       if (appWrapper) appWrapper.classList.remove('hidden');
 
+      const adminTabBtn = document.getElementById('tab-btn-admin-users');
+
       if (user) {
         const nameEl = document.getElementById('header-username');
         const roleEl = document.getElementById('header-user-role');
@@ -774,6 +919,14 @@
             roleEl.className = "px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30";
           } else {
             roleEl.className = "px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30";
+          }
+        }
+
+        if (adminTabBtn) {
+          if (user.role === 'admin') {
+            adminTabBtn.classList.remove('hidden');
+          } else {
+            adminTabBtn.classList.add('hidden');
           }
         }
       }
@@ -1730,8 +1883,14 @@
     }
 
     function switchTab(tabName) {
+      const cached = getCachedUser();
+      if (tabName === 'admin-users' && (!cached || cached.role !== 'admin')) {
+        showToast('Acesso negado: apenas Administradores podem acessar esta aba.', true);
+        tabName = 'scanner';
+      }
+
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active', 'text-purple-400', 'text-brand-400', 'text-cyan-400', 'text-emerald-400', 'bg-brand-500/10', 'bg-purple-500/10', 'bg-cyan-500/10', 'bg-emerald-500/10', 'border', 'border-brand-500/30', 'border-purple-500/30', 'border-cyan-500/30', 'border-emerald-500/30');
+        btn.classList.remove('active', 'text-purple-400', 'text-brand-400', 'text-cyan-400', 'text-emerald-400', 'text-amber-400', 'bg-brand-500/10', 'bg-purple-500/10', 'bg-cyan-500/10', 'bg-emerald-500/10', 'bg-amber-500/10', 'border', 'border-brand-500/30', 'border-purple-500/30', 'border-cyan-500/30', 'border-emerald-500/30', 'border-amber-500/30');
         btn.classList.add('text-slate-400');
       });
       document.querySelectorAll('.tab-content').forEach(c => {
@@ -1745,6 +1904,8 @@
           activeBtn.classList.add('active', 'text-purple-400', 'bg-purple-500/10', 'border', 'border-purple-500/30');
         } else if (tabName === 'vault') {
           activeBtn.classList.add('active', 'text-emerald-400', 'bg-emerald-500/10', 'border', 'border-emerald-500/30');
+        } else if (tabName === 'admin-users') {
+          activeBtn.classList.add('active', 'text-amber-400', 'bg-amber-500/10', 'border', 'border-amber-500/30');
         } else {
           activeBtn.classList.add('active', 'text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/30');
         }
@@ -1763,6 +1924,8 @@
 
       if (tabName === 'vault') {
         loadVaultHistory();
+      } else if (tabName === 'admin-users') {
+        loadAdminUsers();
       }
 
       lucide.createIcons();
@@ -1921,6 +2084,216 @@
       tbody.innerHTML = html;
       if (countEl) countEl.innerText = `Mostrando ${records.length} de ${vaultRecords.length} registros`;
       lucide.createIcons();
+    }
+
+    async function downloadVirginVaultZip() {
+      const btn = document.getElementById('btn-export-virgins');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Exportando...`;
+        btn.disabled = true;
+      }
+
+      try {
+        const res = await authFetch('/api/vault/export-virgins');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          showToast('Falha ao exportar contas: ' + (errData.detail || res.statusText), true);
+          return;
+        }
+
+        const data = await res.json();
+        const virgins = data.virgins || [];
+
+        if (virgins.length === 0) {
+          showToast('Nenhuma conta virgem (0 Dias) encontrada no cofre para exportar.', true);
+          return;
+        }
+
+        const zip = new JSZip();
+        virgins.forEach((item, idx) => {
+          const idVal = (item.account_id && item.account_id !== "-" && item.account_id !== "0") 
+            ? item.account_id 
+            : (item.user_id_int || (item.mac ? item.mac.replace(/:/g, '') : `VIRGEM_${idx + 1}`));
+          const folderName = `CONFIG_${idVal}_0DIAS`;
+          const xmlContent = generateXmlTemplate(item.mac);
+          zip.file(`${folderName}/cache.config.xml`, xmlContent);
+        });
+
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        a.download = `COFRE_VIRGENS_${virgins.length}_CONFIGS_${dateStr}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showToast(`✔ Pacote ZIP com ${virgins.length} contas virgens (.zip) exportado com sucesso!`);
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao gerar pacote ZIP de contas virgens: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    // --- GESTÃO DE USUÁRIOS & ADMINISTRAÇÃO ---
+    let adminUsersList = [];
+
+    async function loadAdminUsers() {
+      const btn = document.getElementById('btn-refresh-admin-users');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full mr-1"></div>`;
+        btn.disabled = true;
+      }
+
+      try {
+        const res = await authFetch('/api/admin/users');
+        if (!res.ok) {
+          showToast('Falha ao carregar lista de usuários (Acesso restrito a Administradores).', true);
+          return;
+        }
+        const data = await res.json();
+        adminUsersList = data.users || [];
+        renderAdminUsersTable(adminUsersList);
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar usuários: ' + err.message, true);
+      } finally {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    function renderAdminUsersTable(users) {
+      const tbody = document.getElementById('admin-users-table-body');
+      const countEl = document.getElementById('admin-users-count');
+      if (!tbody) return;
+
+      if (!users || users.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-slate-500 font-sans">
+              Nenhum usuário cadastrado no sistema.
+            </td>
+          </tr>
+        `;
+        if (countEl) countEl.innerText = 'Total: 0 usuários';
+        return;
+      }
+
+      let html = '';
+      users.forEach(u => {
+        const isAdmin = u.role === 'admin';
+        const roleBadge = isAdmin
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Admin</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">👤 Cliente</span>`;
+
+        let dateStr = '-';
+        if (u.created_at) {
+          try {
+            dateStr = new Date(u.created_at).toLocaleString('pt-BR');
+          } catch(e) {
+            dateStr = u.created_at.slice(0, 19).replace('T', ' ');
+          }
+        }
+
+        html += `
+          <tr class="hover:bg-dark-hover transition font-mono">
+            <td class="py-3 px-4 text-center text-slate-400 font-bold">${u.id}</td>
+            <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-dark-card border border-dark-border flex items-center justify-center text-xs">
+                ${u.username.slice(0, 1).toUpperCase()}
+              </span>
+              <span>${u.username}</span>
+            </td>
+            <td class="py-3 px-4 font-sans">${roleBadge}</td>
+            <td class="py-3 px-4 text-slate-400 font-sans text-xs">${dateStr}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+      if (countEl) countEl.innerText = `Total: ${users.length} usuários cadastrados`;
+      lucide.createIcons();
+    }
+
+    async function handleCreateAdminUser() {
+      const userEl = document.getElementById('admin-new-username');
+      const passEl = document.getElementById('admin-new-password');
+      const roleEl = document.getElementById('admin-new-role');
+      const alertBox = document.getElementById('admin-user-alert');
+      const alertMsg = document.getElementById('admin-user-alert-msg');
+      const alertIcon = document.getElementById('admin-user-alert-icon');
+      const btn = document.getElementById('btn-admin-submit-user');
+
+      const username = userEl ? userEl.value.trim() : '';
+      const password = passEl ? passEl.value : '';
+      const role = roleEl ? roleEl.value : 'user';
+
+      if (!username || !password) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'Preencha o nome de usuário e a senha.';
+          alertBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const origBtn = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Criando...`;
+        btn.disabled = true;
+      }
+      if (alertBox) alertBox.classList.add('hidden');
+
+      try {
+        const res = await authFetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (alertBox) {
+            alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
+            alertMsg.innerText = data.message || `Usuário '${username}' criado com sucesso!`;
+            alertBox.classList.remove('hidden');
+          }
+          showToast(`✔ Usuário '${username}' criado com sucesso!`);
+          if (userEl) userEl.value = '';
+          if (passEl) passEl.value = '';
+          loadAdminUsers();
+        } else {
+          if (alertBox) {
+            alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+            alertMsg.innerText = data.detail || 'Falha ao criar usuário.';
+            alertBox.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'Erro ao comunicar com o servidor: ' + err.message;
+          alertBox.classList.remove('hidden');
+        }
+      } finally {
+        if (btn) {
+          btn.innerHTML = origBtn;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
     }
 
     function showToast(msg, isError = false) {

@@ -6,6 +6,9 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Painel de Gestão Admin (UI & API):** Nova aba 'Gestão de Clientes' exclusiva para administradores com listagem de clientes cadastrados e formulário rápido para criação de novos usuários/admins sem necessidade de acesso ao terminal CLI.
+- **Segurança e Proteção RBAC no Backend:** Endpoints `/api/admin/users` estritamente protegidos com `Depends(get_current_admin)`, rejeitando tentativas de acesso de usuários comuns com erro 403 Forbidden.
+- **Exportação Direta de Contas Virgens (.ZIP):** Botão 'Baixar Virgens (.ZIP)' no Cofre consumindo `/api/vault/export-virgins` e gerando pacotes compactados automáticos via JSZip com estruturas `CONFIG_{ID}_0DIAS` e `cache.config.xml`.
 - **Aba 'Cofre & Histórico' (UI):** Nova interface com métricas em tempo real (Total, Virgens, Recicladas, Banidas), busca textual rápida por MAC ou ID, filtros por status e cópia instantânea de MACs.
 - **Motor Smart Skip (Inteligência Coletiva):** Verificação prévia no banco de dados antes de acionar o ADB. Contas já conhecidas como banidas/inválidas (`is_valid = False`) são ignoradas imediatamente, reduzindo o tempo de teste de ~13s para menos de 10ms por conta e poupando o emulador.
 - **Enriquecimento Multi-tenant do Histórico:** Mapeamento `username` via `joinedload` em `AccountHistory.to_dict()` garantindo exibição clara do operador de cada teste.
