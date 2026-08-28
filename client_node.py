@@ -23,6 +23,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
+try:
+    import pytesseract
+    from PIL import Image
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+
 import generator_engine as engine
 
 # Diretório base
@@ -30,6 +37,19 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Pacotes do UniTV
 UNITV_PACKAGES = ["com.integration.unitvsiptv", "com.unitv.freetv"]
+
+# --- CONFIGURAÇÕES DE OCR / VISÃO COMPUTACIONAL ---
+# Coordenadas do ADB tap no botão Avatar/Perfil na tela inicial do UniTV
+# (eixo X, eixo Y) - para resolução padrão 1280x720 do emulador
+AVATAR_TAP_X = 60
+AVATAR_TAP_Y = 60
+
+# Região de crop na imagem capturada onde o número de dias aparece na tela de perfil
+# (left, upper, right, lower) - ajuste fino conforme layout do emulador
+DAYS_CROP_REGION = (350, 280, 900, 380)
+
+# Caminho local temporário para o screencap
+SCREEN_LOCAL_PATH = os.path.join(BASE_DIR, "temp_screen.png")
 
 # --- IDENTIFICAÇÃO DE HARDWARE (HWID) ---
 
@@ -200,9 +220,16 @@ def deep_wipe_emulator(device: str):
 def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None) -> Dict[str, Any]:
     """
     Inspeciona a conta carregada no emulador.
-    REGRA ABSOLUTA: Se qualquer ID numérico for lido, DEVE clicar no Avatar/Perfil
-    e aguardar a leitura de dias. A aprovação é baseada APENAS nos dias lidos —
-    nunca no valor do ID.
+
+    PIPELINE:
+    1. Lê o ID numérico via XML (cache.config.xml).
+    2. Se ID > 0 (qualquer valor, sem filtro de 567M):
+       a. ADB tap nas coordenadas do botão Avatar/Perfil.
+       b. Aguarda animação de transição de tela (2-3s).
+       c. Executa screencap ADB e puxa a imagem para o PC.
+       d. Carrega com PIL, faz crop na região DAYS_CROP_REGION.
+       e. Roda pytesseract para extrair o número de dias.
+    3. Aprovação baseada EXCLUSIVAMENTE nos dias lidos pelo OCR.
     """
     adb_bin = get_adb_cmd()
     account_id = None
@@ -212,10 +239,10 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
     final_mac = target_mac or "-"
 
     try:
-        # Aguarda inicialização (Smart Wait)
+        # ETAPA 1 — Aguarda inicialização do app (Smart Wait)
         time.sleep(3.0)
 
-        # Leitura do cache.config.xml em shared_prefs
+        # ETAPA 2 — Leitura do ID via XML (cache.config.xml)
         xml_stdout = ""
         for pkg in UNITV_PACKAGES:
             r_xml = subprocess.run(
@@ -237,39 +264,54 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
 
         user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
 
-        # NOVA REGRA ABSOLUTA: qualquer ID numérico válido aciona a leitura de dias no perfil.
-        # Não há filtragem por valor de ID.
+        # ETAPA 3 — Se qualquer ID numérico foi lido, aciona o pipeline de OCR
         if user_id_int > 0:
-            # Leitura de dias via dump de propriedades do SharedPrefs
-            days_read = None
-            for pkg in UNITV_PACKAGES:
-                r_prefs = subprocess.run(
-                    [adb_bin, "-s", device, "shell",
-                     f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"],
-                    capture_output=True, text=True, errors="ignore", timeout=3
-                )
-                if r_prefs.stdout:
-                    days_match = re.search(r'name="key_days_active"[^>]*>([0-9]+)<', r_prefs.stdout)
-                    if days_match:
-                        try:
-                            days_read = int(days_match.group(1))
-                        except Exception:
-                            pass
-                        break
-                    # Fallback: tenta campo alternativo de expiração em segundos
-                    exp_match = re.search(r'name="key_expire_time"[^>]*>([0-9]+)<', r_prefs.stdout)
-                    if exp_match:
-                        try:
-                            exp_epoch = int(exp_match.group(1))
-                            if exp_epoch > 1000000000:
-                                from datetime import timezone as _tz
-                                now_epoch = int(datetime.now(timezone.utc).timestamp())
-                                remaining_secs = exp_epoch - now_epoch
-                                days_read = max(0, remaining_secs // 86400)
-                        except Exception:
-                            pass
-                        break
 
+            # 3a. ADB Tap no botão Avatar/Perfil
+            subprocess.run(
+                [adb_bin, "-s", device, "shell", f"input tap {AVATAR_TAP_X} {AVATAR_TAP_Y}"],
+                capture_output=True, timeout=3
+            )
+
+            # 3b. Aguarda animação/carregamento da tela de perfil
+            time.sleep(2.5)
+
+            # 3c. Screencap e pull para o PC
+            screen_remote = "/sdcard/temp_screen.png"
+            subprocess.run(
+                [adb_bin, "-s", device, "shell", f"screencap -p {screen_remote}"],
+                capture_output=True, timeout=8
+            )
+            subprocess.run(
+                [adb_bin, "-s", device, "pull", screen_remote, SCREEN_LOCAL_PATH],
+                capture_output=True, timeout=8
+            )
+
+            # 3d. Carrega imagem, faz crop e roda OCR com pytesseract
+            days_read = None
+            ocr_raw = ""
+
+            if OCR_AVAILABLE and os.path.exists(SCREEN_LOCAL_PATH):
+                try:
+                    img = Image.open(SCREEN_LOCAL_PATH).convert("L")  # Grayscale melhora OCR
+                    cropped = img.crop(DAYS_CROP_REGION)
+
+                    # Config pytesseract: apenas dígitos e espaços (psm 7 = linha única)
+                    ocr_cfg = r"--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789 "
+                    ocr_raw = pytesseract.image_to_string(cropped, config=ocr_cfg).strip()
+
+                    # Extrai o primeiro número inteiro da string OCR
+                    digits_match = re.search(r"\d+", ocr_raw)
+                    if digits_match:
+                        days_read = int(digits_match.group(0))
+                except Exception as ocr_err:
+                    status_msg = f"⚠️ OCR Falhou: {ocr_err}"
+            elif not OCR_AVAILABLE:
+                status_msg = "⚠️ pytesseract/PIL não instalados — OCR indisponível"
+            else:
+                status_msg = "⚠️ Screencap não encontrado localmente"
+
+            # 3e. Decide aprovação com base nos dias lidos
             if days_read is not None:
                 days_active = days_read
                 is_valid = True
@@ -278,10 +320,11 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
                 else:
                     status_msg = f"✅ Conta Ativa ({days_active} dias)"
             else:
-                # ID lido mas não foi possível extrair dias — considera inválida por falta de dados
                 is_valid = False
                 days_active = None
-                status_msg = f"❌ ID {user_id_int} encontrado, mas dias não puderam ser lidos"
+                if not status_msg.startswith("⚠️"):
+                    status_msg = f"❌ ID {user_id_int} lido — OCR não extraiu dias da tela de perfil"
+
         else:
             is_valid = False
             days_active = None
