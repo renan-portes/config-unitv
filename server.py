@@ -26,8 +26,8 @@ from pydantic import BaseModel
 import uvicorn
 import jwt
 import bcrypt
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, ForeignKey, func
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship, joinedload
 
 import generator_engine as engine
 
@@ -104,9 +104,18 @@ class AccountHistory(Base):
     user = relationship("User", back_populates="history")
 
     def to_dict(self):
+        uname = None
+        if self.user:
+            uname = self.user.username
+        elif self.user_id is None:
+            uname = "Admin / Sistema"
+        else:
+            uname = f"User #{self.user_id}"
+
         return {
             "mac": self.mac,
             "user_id": self.user_id,
+            "username": uname,
             "account_id": self.account_id,
             "days_active": self.days_active,
             "status_message": self.status_message,
@@ -413,7 +422,7 @@ def get_mining_history(
     session = SessionLocal()
     try:
         limit_val = min(max(1, limit), 5000)
-        query = session.query(AccountHistory)
+        query = session.query(AccountHistory).options(joinedload(AccountHistory.user))
 
         # Isolamento Multi-tenant
         if current_user.role != "admin":
@@ -1536,12 +1545,51 @@ def inject_adb(
         
         mac = req.mac
         if not mac and req.xml_content:
-            m_match = re.search(r'SP_SN_BACKUP">([0-9A-Fa-f:]{17})', req.xml_content)
+            m_match = re.search(r'SP_SN_BACKUP">([0-9A-Fa-f:]{17})', req.xml_content) or re.search(r'KEY_SP_SN">([0-9A-Fa-f:]{17})', req.xml_content)
             if m_match:
                 mac = m_match.group(1)
         if not mac:
             mac = engine.generate_random_mac()
             
+        clean_mac = mac.strip().upper()
+
+        # --- SMART SKIP (INTELIGÊNCIA COLETIVA) ---
+        # Se o MAC já existir na tabela AccountHistory e for conhecido como inválido/bloqueado (is_valid = False),
+        # NÃO aciona o ADB nem abre o emulador. Retorna imediatamente a falha em cache.
+        session = SessionLocal()
+        try:
+            cached_account = session.query(AccountHistory).filter(
+                func.upper(AccountHistory.mac) == clean_mac
+            ).first()
+            if cached_account and cached_account.is_valid is False:
+                skip_reason = cached_account.status_message or "Falha / Banida"
+                status_msg = f"⚡ Smart Skip: Conta banida previamente ({skip_reason})"
+                return {
+                    "success": True,
+                    "device": device,
+                    "smart_skipped": True,
+                    "logs": [
+                        f"⚡ [Smart Skip Ativado] O MAC {clean_mac} já foi testado anteriormente e registrado como inválido/bloqueado ({skip_reason}).",
+                        "Emulador poupado com sucesso (Economia de tempo e zero re-teste de conta inútil)."
+                    ],
+                    "account_info": {
+                        "found": False,
+                        "account_id": cached_account.account_id or "-",
+                        "user_id_int": int(cached_account.account_id) if (cached_account.account_id and cached_account.account_id.isdigit()) else 0,
+                        "activation_date": "-",
+                        "days_active": cached_account.days_active,
+                        "expiration_date": "-",
+                        "status_message": status_msg,
+                        "is_valid": False,
+                        "mac": clean_mac,
+                        "key_n_bt": "",
+                        "folder_name": "CONFIG_ERRO_EF9",
+                        "smart_skipped": True
+                    }
+                }
+        finally:
+            session.close()
+
         xml_text = req.xml_content or engine.generate_xml_content(mac=mac)
         temp_xml = os.path.join(temp_dir, "cache.config.xml")
         
