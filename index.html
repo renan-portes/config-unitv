@@ -62,36 +62,120 @@
 </head>
 <body class="bg-dark-bg text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-  <!-- TOP NAVIGATION BAR -->
-  <header class="glass-panel sticky top-0 z-50 border-b border-dark-border px-4 lg:px-8 py-3.5">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <img src="/logo.png" alt="Logo" class="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/30 border border-brand-500/20" onerror="this.outerHTML='<div class=\'w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/30\'><i data-lucide=\'sparkles\' class=\'w-5 h-5 text-white\'></i></div>'">
+  <!-- TELA DE LOGIN (SaaS Multi-tenant) -->
+  <div id="login-container" class="min-h-screen flex items-center justify-center p-4 bg-dark-bg relative overflow-hidden">
+    <div class="glass-panel neon-glow max-w-md w-full p-8 rounded-3xl border border-dark-border shadow-2xl flex flex-col gap-6 relative z-10">
+      <!-- Orbs Decorativos de Fundo -->
+      <div class="absolute -top-20 -left-20 w-44 h-44 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 -right-20 w-44 h-44 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Cabeçalho do Login -->
+      <div class="flex flex-col items-center text-center gap-3">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 via-purple-600 to-emerald-400 p-0.5 shadow-xl shadow-brand-500/30">
+          <img src="/logo.png" alt="Logo" class="w-full h-full rounded-2xl object-cover bg-dark-bg" onerror="this.outerHTML='<div class=\'w-full h-full rounded-2xl bg-dark-card flex items-center justify-center\'><i data-lucide=\'lock\' class=\'w-8 h-8 text-brand-400\'></i></div>'">
+        </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-emerald-300">
-              Gerador de .config IPTV
-            </h1>
-            <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gerador Ativo
-            </span>
-          </div>
-          <p class="text-xs text-slate-400">Geração de Arquivos .config • Validador ADB &amp; Mineração Local</p>
+          <h2 class="text-xl font-bold text-white tracking-tight">Gerador de .config IPTV</h2>
+          <p class="text-xs text-slate-400 mt-1">Acesso exclusivo ao Painel de Mineração SaaS</p>
         </div>
       </div>
 
-      <!-- Quick Server Status Badge -->
-      <div class="flex items-center gap-3 text-xs">
-        <div id="connection-status" class="px-3 py-1.5 rounded-lg bg-dark-card border border-dark-border flex items-center gap-2 text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-amber-400" id="status-dot"></span>
-          <span id="status-text">Verificando Servidor...</span>
+      <!-- Alerta de Erro Visual -->
+      <div id="login-error-alert" class="hidden p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2.5">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-red-400"></i>
+        <span id="login-error-text">Usuário ou senha incorretos.</span>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form id="login-form" onsubmit="event.preventDefault(); handleLogin();" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label for="login-username" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-brand-400"></i> Nome de Usuário
+          </label>
+          <input
+            type="text"
+            id="login-username"
+            name="username"
+            placeholder="Digite seu usuário"
+            required
+            autocomplete="username"
+            class="w-full px-4 py-3 rounded-xl bg-dark-input border border-dark-border text-white text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
+          >
         </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="login-password" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i> Senha
+          </label>
+          <input
+            type="password"
+            id="login-password"
+            name="password"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+            class="w-full px-4 py-3 rounded-xl bg-dark-input border border-dark-border text-white text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
+          >
+        </div>
+
+        <button
+          type="submit"
+          id="btn-login-submit"
+          class="w-full mt-2 py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 active:scale-[0.99]"
+        >
+          <i data-lucide="log-in" class="w-4 h-4"></i> Entrar no Painel
+        </button>
+      </form>
+
+      <div class="text-center">
+        <p class="text-[11px] text-slate-500">Autenticação JWT Segura • Arquitetura Multi-tenant</p>
       </div>
     </div>
-  </header>
+  </div>
 
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 flex flex-col gap-6">
+  <!-- PAINEL PRINCIPAL DA APLICAÇÃO (Inicia Oculto até autenticar) -->
+  <div id="app-wrapper" class="hidden min-h-screen flex flex-col">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-dark-border px-4 lg:px-8 py-3.5">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" class="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/30 border border-brand-500/20" onerror="this.outerHTML='<div class=\'w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/30\'><i data-lucide=\'sparkles\' class=\'w-5 h-5 text-white\'></i></div>'">
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-emerald-300">
+                Gerador de .config IPTV
+              </h1>
+              <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gerador Ativo
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">Geração de Arquivos .config • Validador ADB &amp; Mineração Local</p>
+          </div>
+        </div>
+
+        <!-- Header User & Quick Server Status Badge -->
+        <div class="flex items-center gap-3 text-xs">
+          <div id="user-badge" class="px-3 py-1.5 rounded-lg bg-dark-card border border-dark-border flex items-center gap-2 text-slate-200">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-brand-400"></i>
+            <span id="header-username" class="font-medium">Carregando...</span>
+            <span id="header-user-role" class="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">User</span>
+          </div>
+
+          <div id="connection-status" class="px-3 py-1.5 rounded-lg bg-dark-card border border-dark-border flex items-center gap-2 text-slate-300">
+            <span class="w-2 h-2 rounded-full bg-amber-400" id="status-dot"></span>
+            <span id="status-text">Verificando Servidor...</span>
+          </div>
+
+          <button onclick="logout()" title="Encerrar Sessão" class="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition flex items-center gap-1.5 font-semibold">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 flex flex-col gap-6">
 
     <!-- NAV TABS -->
     <div class="flex items-center gap-2 border-b border-dark-border overflow-x-auto pb-2 scrollbar-none">
@@ -475,6 +559,7 @@
     </footer>
 
   </main>
+  </div> <!-- FIM DO #app-wrapper -->
 
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 border border-brand-500/50 shadow-2xl text-xs font-medium text-white">
@@ -484,6 +569,180 @@
 
   <!-- JAVASCRIPT CONTROLLER -->
   <script>
+    // --- AUTENTICAÇÃO JWT & MULTI-TENANT ---
+    const AUTH_TOKEN_KEY = 'unitv_auth_token';
+    const AUTH_USER_KEY = 'unitv_auth_user';
+
+    function getAuthToken() {
+      return localStorage.getItem(AUTH_TOKEN_KEY);
+    }
+
+    function setAuthSession(token, user) {
+      if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+      if (user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    }
+
+    function clearAuthSession() {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+    }
+
+    function getCachedUser() {
+      try {
+        const u = localStorage.getItem(AUTH_USER_KEY);
+        return u ? JSON.parse(u) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function authFetch(url, options = {}) {
+      const token = getAuthToken();
+      const headers = Object.assign({}, options.headers || {});
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const mergedOptions = Object.assign({}, options, { headers });
+      const response = await fetch(url, mergedOptions);
+
+      if (response.status === 401 && !url.includes('/api/auth/login')) {
+        console.warn('Sessão expirada ou não autorizada. Redirecionando para login...');
+        clearAuthSession();
+        showLoginScreen();
+      }
+
+      return response;
+    }
+
+    function showLoginScreen() {
+      const loginContainer = document.getElementById('login-container');
+      const appWrapper = document.getElementById('app-wrapper');
+      if (loginContainer) loginContainer.classList.remove('hidden');
+      if (appWrapper) appWrapper.classList.add('hidden');
+      lucide.createIcons();
+    }
+
+    function showAppScreen(user) {
+      const loginContainer = document.getElementById('login-container');
+      const appWrapper = document.getElementById('app-wrapper');
+      if (loginContainer) loginContainer.classList.add('hidden');
+      if (appWrapper) appWrapper.classList.remove('hidden');
+
+      if (user) {
+        const nameEl = document.getElementById('header-username');
+        const roleEl = document.getElementById('header-user-role');
+        if (nameEl) nameEl.innerText = user.username || 'Usuário';
+        if (roleEl) {
+          roleEl.innerText = (user.role || 'user').toUpperCase();
+          if (user.role === 'admin') {
+            roleEl.className = "px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30";
+          } else {
+            roleEl.className = "px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30";
+          }
+        }
+      }
+
+      lucide.createIcons();
+    }
+
+    async function handleLogin() {
+      const userEl = document.getElementById('login-username');
+      const passEl = document.getElementById('login-password');
+      const errAlert = document.getElementById('login-error-alert');
+      const errText = document.getElementById('login-error-text');
+      const btn = document.getElementById('btn-login-submit');
+
+      const username = userEl ? userEl.value.trim() : '';
+      const password = passEl ? passEl.value : '';
+
+      if (!username || !password) {
+        if (errAlert) {
+          errText.innerText = 'Preencha o usuário e a senha.';
+          errAlert.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const origBtnText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1.5"></div> Autenticando...`;
+        btn.disabled = true;
+      }
+      if (errAlert) errAlert.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.access_token) {
+          setAuthSession(data.access_token, data.user);
+          showToast(`Bem-vindo, ${data.user ? data.user.username : username}!`);
+          showAppScreen(data.user);
+          checkServer();
+        } else {
+          if (errAlert) {
+            errText.innerText = data.detail || 'Usuário ou senha incorretos.';
+            errAlert.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (errAlert) {
+          errText.innerText = 'Falha ao conectar com o servidor: ' + err.message;
+          errAlert.classList.remove('hidden');
+        }
+      } finally {
+        if (btn) {
+          btn.innerHTML = origBtnText;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    function logout() {
+      clearAuthSession();
+      showToast('Sessão encerrada.');
+      window.location.reload();
+    }
+
+    async function initAuthCheck() {
+      const token = getAuthToken();
+      if (!token) {
+        showLoginScreen();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setAuthSession(token, data.user);
+          showAppScreen(data.user);
+          checkServer();
+        } else {
+          clearAuthSession();
+          showLoginScreen();
+        }
+      } catch (e) {
+        const cached = getCachedUser();
+        if (cached) {
+          showAppScreen(cached);
+          checkServer();
+        } else {
+          showLoginScreen();
+        }
+      }
+    }
+
     const BLOCK_0_HEX = "268ea2dd4b1dbec8";
     const BLOCK_1_MAP = {
       '0':'b2e21fcbcf6df76d','1':'920694d567b2a07d','2':'9b7d9b3e9ec105b3','3':'98e2032e347b3591',
@@ -945,14 +1204,14 @@
       const model = document.getElementById('input-model') ? document.getElementById('input-model').value : "SBTHD";
       
       try {
-        const res = await fetch('/api/generate-single', {
+        const res = await authFetch('/api/generate-single', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mac: mac, folder_name: folder, user_id: uid, channel_code: model, fresh_account: true, device_id_hex: currentDeviceIdHex })
         });
         const data = await res.json();
         
-        const saveRes = await fetch('/api/save-to-disk', {
+        const saveRes = await authFetch('/api/save-to-disk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ configs: [data] })
@@ -1301,7 +1560,7 @@
     async function saveBulkToDisk() {
       if (!currentBulkList || currentBulkList.length === 0) return;
       try {
-        const res = await fetch('/api/save-to-disk', {
+        const res = await authFetch('/api/save-to-disk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ configs: currentBulkList })
@@ -1389,7 +1648,7 @@
       btn.disabled = true;
 
       try {
-        const res = await fetch('/api/adb/inject', {
+        const res = await authFetch('/api/adb/inject', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1597,7 +1856,7 @@
         const tStart = performance.now();
 
         try {
-          const res = await fetch('/api/adb/inject', {
+          const res = await authFetch('/api/adb/inject', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1947,7 +2206,7 @@
       try {
         const inputAddr = document.getElementById('apps-adb-input') ? document.getElementById('apps-adb-input').value.trim() : "";
         const url = inputAddr ? `/api/adb/devices?device_addr=${encodeURIComponent(inputAddr)}` : '/api/adb/devices';
-        const res = await fetch(url);
+        const res = await authFetch(url);
         const data = await res.json();
         const scLabel = document.getElementById('scanner-adb-label');
         const appsDot = document.getElementById('apps-adb-dot');
@@ -1981,7 +2240,7 @@
       btn.disabled = true;
 
       try {
-        const res = await fetch('/api/adb/reconnect', {
+        const res = await authFetch('/api/adb/reconnect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ device_addr: addr })
@@ -2010,7 +2269,7 @@
       btn.disabled = true;
 
       try {
-        const res = await fetch('/api/adb/clear-app', {
+        const res = await authFetch('/api/adb/clear-app', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ device_addr: addr })
@@ -2038,7 +2297,7 @@
       btn.disabled = true;
 
       try {
-        const res = await fetch('/api/adb/launch-app', {
+        const res = await authFetch('/api/adb/launch-app', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ device_addr: addr })
@@ -2060,7 +2319,7 @@
 
     async function checkServer() {
       try {
-        const res = await fetch('/health');
+        const res = await authFetch('/health');
         if (res.ok) {
           const dot = document.getElementById('status-dot');
           const txt = document.getElementById('status-text');
@@ -2083,7 +2342,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
-      checkServer();
+      initAuthCheck();
       onBatchQtyChange();
     });
   </script>

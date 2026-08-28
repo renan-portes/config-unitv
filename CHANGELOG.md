@@ -6,6 +6,10 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Tela de Login e Proteção Visual no Frontend:** Novo card de login em glassmorphism dark mode com Tailwind CSS, que oculta todo o painel principal até a autenticação com sucesso.
+- **Gerenciamento de Sessão JWT no Navegador:** Armazenamento do token de acesso no `localStorage`, validação persistente ao recarregar a página (`/api/auth/me`) e encerramento de sessão com logout seguro.
+- **Interceptador Universal `authFetch`:** Injeção automática do cabeçalho `Authorization: Bearer <TOKEN>` em todas as requisições assíncronas do frontend e redirecionamento suave em caso de token expirado (401).
+- **Header Dinâmico de Usuário:** Exibição do nome de usuário conectado e badge de papel (`USER` / `ADMIN`), acompanhado do botão de Sair (Logout).
 - **Sistema de Usuários e Segurança JWT:** Mapeamento do modelo `User` com hashing seguro via `bcrypt` e emissão de tokens `JWT` com controle de papéis (`user` / `admin`).
 - **Isolamento Multi-tenant no Histórico:** Relação `user_id` Foreign Key em `AccountHistory`. Usuários comuns visualizam exclusivamente suas próprias configurações mineradas no endpoint `/api/history`, enquanto administradores possuem visão global.
 - **Proteção de Rotas com Bearer Auth:** Endpoints sensíveis (`/api/adb/inject`, `/api/history`) agora exigem autenticação JWT válida via header `Authorization: Bearer <token>`.
