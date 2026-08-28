@@ -6,6 +6,10 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Gestão Avançada de Assinaturas & Expiração (SaaS):** Adicionada coluna `expires_at` com migração automática no banco (`ensure_schema_migrations()`), trava comercial de bloqueio 403 Forbidden para contas vencidas no login e rotas protegidas.
+- **CRUD Completo de Usuários no Painel Admin:** Endpoints `PUT /api/admin/users/{id}` (alteração de papel, redefinição de senha e renovação/extensão de dias) e `DELETE /api/admin/users/{id}` (com proteção contra auto-exclusão do admin logado).
+- **Interface Visual de Assinaturas:** Seletor de validade no formulário de cadastro (7d, 15d, 30d, 90d, 365d, Vitalício), coluna de vencimento com status visual (Válido, Expirado, Vitalício) e modal de edição rápida para renovação de planos.
+- **Empacotamento e Deploy Docker / Proxmox:** `Dockerfile` leve (`python:3.11-slim` com uvicorn) e `docker-compose.yml` isolado no serviço `config_generator_app`, mapeando a porta `8095:8000` para integração sem conflito com o Portainer e Nginx Proxy Manager, com volume persistente do SQLite (`./mining_history.db`).
 - **Painel de Gestão Admin (UI & API):** Nova aba 'Gestão de Clientes' exclusiva para administradores com listagem de clientes cadastrados e formulário rápido para criação de novos usuários/admins sem necessidade de acesso ao terminal CLI.
 - **Segurança e Proteção RBAC no Backend:** Endpoints `/api/admin/users` estritamente protegidos com `Depends(get_current_admin)`, rejeitando tentativas de acesso de usuários comuns com erro 403 Forbidden.
 - **Exportação Direta de Contas Virgens (.ZIP):** Botão 'Baixar Virgens (.ZIP)' no Cofre consumindo `/api/vault/export-virgins` e gerando pacotes compactados automáticos via JSZip com estruturas `CONFIG_{ID}_0DIAS` e `cache.config.xml`.

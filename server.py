@@ -77,15 +77,23 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(20), default="user", nullable=False) # 'user' ou 'admin'
+    expires_at = Column(DateTime, nullable=True) # Prazo de validade da assinatura (None = Vitalício)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     history = relationship("AccountHistory", back_populates="user", cascade="all, delete-orphan")
+
+    def is_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        return datetime.utcnow() > self.expires_at
 
     def to_dict(self):
         return {
             "id": self.id,
             "username": self.username,
             "role": self.role,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "is_expired": self.is_expired(),
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
@@ -129,14 +137,22 @@ Base.metadata.create_all(bind=db_engine)
 
 
 def ensure_schema_migrations():
-    """Garante que colunas novas como user_id existam em bancos de dados já existentes"""
+    """Garante que colunas novas como user_id e expires_at existam em bancos de dados já existentes"""
     try:
         with db_engine.connect() as conn:
             if DATABASE_URL.startswith("sqlite"):
+                # Migração account_history.user_id
                 cursor = conn.exec_driver_sql("PRAGMA table_info(account_history)")
                 columns = [row[1] for row in cursor.fetchall()]
                 if columns and "user_id" not in columns:
                     conn.exec_driver_sql("ALTER TABLE account_history ADD COLUMN user_id INTEGER REFERENCES users(id)")
+                    conn.commit()
+
+                # Migração users.expires_at
+                cursor_users = conn.exec_driver_sql("PRAGMA table_info(users)")
+                u_columns = [row[1] for row in cursor_users.fetchall()]
+                if u_columns and "expires_at" not in u_columns:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN expires_at DATETIME")
                     conn.commit()
     except Exception as e:
         print(f"[DB Migration Note] {e}")
@@ -234,6 +250,14 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
                 detail="Usuário não encontrado.",
                 headers={"WWW-Authenticate": "Bearer"}
             )
+
+        # Trava comercial SaaS: Verificação de assinatura expirada
+        if user.is_expired():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Assinatura expirada. Entre em contato com o administrador para renovar seu acesso."
+            )
+
         return user
     finally:
         session.close()
@@ -365,6 +389,16 @@ class CreateUserRequest(BaseModel):
     username: str
     password: str
     role: Optional[str] = "user"
+    duration_days: Optional[int] = None
+    expires_at: Optional[str] = None
+
+
+class UpdateUserRequest(BaseModel):
+    role: Optional[str] = None
+    password: Optional[str] = None
+    duration_days: Optional[int] = None
+    expires_at: Optional[str] = None
+    set_lifetime: Optional[bool] = False
 
 
 # --- ROTAS DE AUTENTICAÇÃO & ADMINISTRAÇÃO (SaaS / JWT) ---
@@ -388,6 +422,12 @@ def login(req: LoginRequest):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuário ou senha incorretos.",
                 headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        if user.is_expired():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Assinatura expirada. Entre em contato com o administrador para renovar seu acesso."
             )
 
         token = create_access_token(user)
@@ -430,7 +470,7 @@ def create_admin_user(
     current_admin: User = Depends(get_current_admin)
 ):
     """
-    Cria um novo usuário ou administrador no sistema (Apenas Administradores).
+    Cria um novo usuário ou administrador no sistema com controle de validade/assinatura (Apenas Administradores).
     """
     username_clean = req.username.strip()
     if not username_clean:
@@ -442,6 +482,15 @@ def create_admin_user(
     if role_clean not in ("user", "admin"):
         role_clean = "user"
 
+    expires = None
+    if req.expires_at:
+        try:
+            expires = datetime.fromisoformat(req.expires_at.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            expires = None
+    elif req.duration_days and req.duration_days > 0:
+        expires = datetime.utcnow() + timedelta(days=req.duration_days)
+
     session = SessionLocal()
     try:
         existing = session.query(User).filter(User.username == username_clean).first()
@@ -451,7 +500,8 @@ def create_admin_user(
         new_user = User(
             username=username_clean,
             password_hash=hash_password(req.password),
-            role=role_clean
+            role=role_clean,
+            expires_at=expires
         )
         session.add(new_user)
         session.commit()
@@ -460,6 +510,87 @@ def create_admin_user(
             "success": True,
             "message": f"Usuário '{username_clean}' criado com sucesso!",
             "user": new_user.to_dict()
+        }
+    finally:
+        session.close()
+
+
+@app.put("/api/admin/users/{user_id}")
+def update_admin_user(
+    user_id: int,
+    req: UpdateUserRequest,
+    current_admin: User = Depends(get_current_admin)
+):
+    """
+    Atualiza dados, permissões, senha e validade de acesso de um usuário (Apenas Administradores).
+    """
+    session = SessionLocal()
+    try:
+        target_user = session.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+        if req.role:
+            role_clean = req.role.strip().lower()
+            if role_clean in ("user", "admin"):
+                if target_user.id == current_admin.id and role_clean != "admin":
+                    raise HTTPException(status_code=400, detail="Você não pode revogar seus próprios privilégios de administrador.")
+                target_user.role = role_clean
+
+        if req.password and req.password.strip():
+            target_user.password_hash = hash_password(req.password.strip())
+
+        if req.set_lifetime:
+            target_user.expires_at = None
+        elif req.duration_days is not None:
+            if req.duration_days <= 0:
+                target_user.expires_at = None
+            else:
+                base_time = target_user.expires_at if (target_user.expires_at and target_user.expires_at > datetime.utcnow()) else datetime.utcnow()
+                target_user.expires_at = base_time + timedelta(days=req.duration_days)
+        elif req.expires_at is not None:
+            if req.expires_at.lower() in ("null", "none", "lifetime", ""):
+                target_user.expires_at = None
+            else:
+                try:
+                    target_user.expires_at = datetime.fromisoformat(req.expires_at.replace("Z", "+00:00")).replace(tzinfo=None)
+                except Exception:
+                    pass
+
+        session.commit()
+        session.refresh(target_user)
+        return {
+            "success": True,
+            "message": f"Usuário '{target_user.username}' atualizado com sucesso!",
+            "user": target_user.to_dict()
+        }
+    finally:
+        session.close()
+
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_admin_user(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin)
+):
+    """
+    Exclui um usuário do sistema (Apenas Administradores).
+    """
+    if user_id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Você não pode excluir sua própria conta de administrador.")
+
+    session = SessionLocal()
+    try:
+        target_user = session.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+        deleted_name = target_user.username
+        session.delete(target_user)
+        session.commit()
+        return {
+            "success": True,
+            "message": f"Usuário '{deleted_name}' (ID: {user_id}) excluído com sucesso!"
         }
     finally:
         session.close()

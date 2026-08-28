@@ -12,3 +12,9 @@ venv/
 .idea/
 *.log
 scratch/
+dist/
+build/
+temp/
+tools/
+*.spec
+*.bat

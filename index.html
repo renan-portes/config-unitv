@@ -696,7 +696,7 @@
               <h2 class="text-base font-bold text-white flex items-center gap-2">
                 <i data-lucide="user-plus" class="w-5 h-5 text-amber-400"></i> Adicionar Novo Cliente
               </h2>
-              <p class="text-xs text-slate-400 mt-0.5">Cadastre novos usuários com acesso ao SaaS</p>
+              <p class="text-xs text-slate-400 mt-0.5">Cadastre novos usuários e defina o prazo de acesso</p>
             </div>
 
             <!-- Feedback de Alerta -->
@@ -732,17 +732,36 @@
                 >
               </div>
 
-              <div class="flex flex-col gap-1.5">
-                <label for="admin-new-role" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
-                  <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i> Papel / Permissão
-                </label>
-                <select
-                  id="admin-new-role"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
-                >
-                  <option value="user">Cliente Padrão (User)</option>
-                  <option value="admin">Administrador Total (Admin)</option>
-                </select>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1.5">
+                  <label for="admin-new-role" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i> Papel / Tipo
+                  </label>
+                  <select
+                    id="admin-new-role"
+                    class="w-full px-3 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                  >
+                    <option value="user">Cliente (User)</option>
+                    <option value="admin">Admin (Total)</option>
+                  </select>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label for="admin-new-duration" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Validade
+                  </label>
+                  <select
+                    id="admin-new-duration"
+                    class="w-full px-3 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                  >
+                    <option value="30" selected>30 Dias (1 Mês)</option>
+                    <option value="7">7 Dias (Semanal)</option>
+                    <option value="15">15 Dias (Quinzenal)</option>
+                    <option value="90">90 Dias (3 Meses)</option>
+                    <option value="365">365 Dias (1 Ano)</option>
+                    <option value="0">Vitalício (Ilimitado)</option>
+                  </select>
+                </div>
               </div>
 
               <button
@@ -766,7 +785,7 @@
                 <h2 class="text-base font-bold text-white flex items-center gap-2">
                   <i data-lucide="users" class="w-5 h-5 text-amber-400"></i> Usuários do Sistema
                 </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Todos os operadores e clientes registrados na plataforma</p>
+                <p class="text-xs text-slate-400 mt-0.5">Gestão de assinaturas, prazos e controle de permissões</p>
               </div>
 
               <button
@@ -783,15 +802,16 @@
               <table class="w-full text-left text-xs">
                 <thead class="bg-dark-card/90 text-slate-400 border-b border-dark-border font-sans">
                   <tr>
-                    <th class="py-3 px-4 font-semibold w-12 text-center">ID</th>
+                    <th class="py-3 px-3 font-semibold w-10 text-center">ID</th>
                     <th class="py-3 px-4 font-semibold">Nome de Usuário</th>
-                    <th class="py-3 px-4 font-semibold">Papel / Nível</th>
-                    <th class="py-3 px-4 font-semibold">Criado em</th>
+                    <th class="py-3 px-3 font-semibold">Nível</th>
+                    <th class="py-3 px-4 font-semibold">Vencimento</th>
+                    <th class="py-3 px-3 font-semibold text-center w-24">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-table-body" class="divide-y divide-dark-border font-mono">
                   <tr>
-                    <td colspan="4" class="py-8 text-center text-slate-500 font-sans">
+                    <td colspan="5" class="py-8 text-center text-slate-500 font-sans">
                       Carregando usuários...
                     </td>
                   </tr>
@@ -811,6 +831,94 @@
 
       </div>
 
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE USUÁRIO / ASSINATURA -->
+    <div id="admin-edit-user-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="glass-panel p-6 rounded-2xl border border-dark-border w-full max-w-md flex flex-col gap-4 shadow-2xl animate-in fade-in zoom-in duration-200">
+        
+        <div class="flex items-center justify-between border-b border-dark-border pb-3">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="user-cog" class="w-5 h-5 text-amber-400"></i>
+            <span>Editar: <span id="edit-user-name" class="text-brand-400 font-mono"></span></span>
+          </h3>
+          <button onclick="closeEditUserModal()" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-dark-hover transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Feedback de Alerta Modal -->
+        <div id="edit-user-alert" class="hidden p-3 rounded-xl text-xs flex items-center gap-2">
+          <i id="edit-user-alert-icon" data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="edit-user-alert-msg">Mensagem</span>
+        </div>
+
+        <form id="admin-edit-user-form" onsubmit="event.preventDefault(); handleSaveEditUser();" class="flex flex-col gap-3.5">
+          <input type="hidden" id="edit-user-id">
+
+          <div class="flex flex-col gap-1.5">
+            <label for="edit-user-role" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i> Papel / Nível
+            </label>
+            <select
+              id="edit-user-role"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+              <option value="user">Cliente Padrão (User)</option>
+              <option value="admin">Administrador Total (Admin)</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="edit-user-password" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+              <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i> Redefinir Senha (Opcional)
+            </label>
+            <input
+              type="password"
+              id="edit-user-password"
+              placeholder="Deixe em branco para manter a senha atual"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="edit-user-duration-action" class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Gestão da Assinatura / Validade
+            </label>
+            <select
+              id="edit-user-duration-action"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+              <option value="keep" selected>Manter vencimento atual</option>
+              <option value="add_30">Renovar +30 Dias (1 Mês)</option>
+              <option value="add_7">Renovar +7 Dias (1 Semana)</option>
+              <option value="add_90">Renovar +90 Dias (3 Meses)</option>
+              <option value="add_365">Renovar +365 Dias (1 Ano)</option>
+              <option value="lifetime">Tornar Vitalício (Sem Expiração)</option>
+              <option value="expire_now">Bloquear / Expirar Acesso Imediatamente</option>
+            </select>
+            <p id="edit-user-current-status" class="text-[11px] text-slate-400 mt-0.5 font-sans"></p>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-dark-border">
+            <button
+              type="button"
+              onclick="closeEditUserModal()"
+              class="px-4 py-2 rounded-xl bg-dark-card hover:bg-slate-700 border border-dark-border text-slate-300 font-semibold text-xs transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              id="btn-edit-save-user"
+              class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs shadow-lg shadow-brand-600/25 transition flex items-center gap-1.5 active:scale-[0.99]"
+            >
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> Salvar Alterações
+            </button>
+          </div>
+        </form>
+
+      </div>
     </div>
 
     <!-- FOOTER WITH SUPPORT & GITHUB BUTTONS -->
@@ -2182,7 +2290,7 @@
       if (!users || users.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="4" class="py-8 text-center text-slate-500 font-sans">
+            <td colspan="5" class="py-8 text-center text-slate-500 font-sans">
               Nenhum usuário cadastrado no sistema.
             </td>
           </tr>
@@ -2191,6 +2299,7 @@
         return;
       }
 
+      const currentUser = getCachedUser();
       let html = '';
       users.forEach(u => {
         const isAdmin = u.role === 'admin';
@@ -2198,26 +2307,46 @@
           ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Admin</span>`
           : `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">👤 Cliente</span>`;
 
-        let dateStr = '-';
-        if (u.created_at) {
-          try {
-            dateStr = new Date(u.created_at).toLocaleString('pt-BR');
-          } catch(e) {
-            dateStr = u.created_at.slice(0, 19).replace('T', ' ');
+        let expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">♾️ Vitalício</span>`;
+        if (u.is_expired) {
+          let dateStr = '-';
+          if (u.expires_at) {
+            try { dateStr = new Date(u.expires_at).toLocaleDateString('pt-BR'); } catch(e) {}
           }
+          expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">❌ Expirado (${dateStr})</span>`;
+        } else if (u.expires_at) {
+          let dateStr = '-';
+          try { dateStr = new Date(u.expires_at).toLocaleString('pt-BR'); } catch(e) {}
+          expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">📅 ${dateStr}</span>`;
         }
+
+        const isSelf = currentUser && currentUser.id === u.id;
+        const deleteBtn = isSelf
+          ? `<button disabled title="Você não pode excluir sua própria conta" class="p-1.5 rounded-lg bg-dark-card text-slate-600 border border-dark-border cursor-not-allowed opacity-50"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`
+          : `<button onclick="confirmDeleteUser(${u.id}, '${u.username}')" title="Excluir Usuário" class="p-1.5 rounded-lg bg-dark-card hover:bg-rose-500/20 text-rose-400 border border-dark-border hover:border-rose-500/40 transition active:scale-95"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`;
 
         html += `
           <tr class="hover:bg-dark-hover transition font-mono">
-            <td class="py-3 px-4 text-center text-slate-400 font-bold">${u.id}</td>
-            <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-dark-card border border-dark-border flex items-center justify-center text-xs">
-                ${u.username.slice(0, 1).toUpperCase()}
-              </span>
-              <span>${u.username}</span>
+            <td class="py-3 px-3 text-center text-slate-400 font-bold">${u.id}</td>
+            <td class="py-3 px-4 font-bold text-white">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-dark-card border border-dark-border flex items-center justify-center text-xs shrink-0">
+                  ${u.username.slice(0, 1).toUpperCase()}
+                </span>
+                <span>${u.username}</span>
+                ${isSelf ? '<span class="text-[9px] px-1 rounded bg-brand-500/20 text-brand-300 font-sans">(Você)</span>' : ''}
+              </div>
             </td>
-            <td class="py-3 px-4 font-sans">${roleBadge}</td>
-            <td class="py-3 px-4 text-slate-400 font-sans text-xs">${dateStr}</td>
+            <td class="py-3 px-3 font-sans">${roleBadge}</td>
+            <td class="py-3 px-4 font-sans">${expiryBadge}</td>
+            <td class="py-3 px-3 text-center font-sans">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="openEditUserModal(${u.id})" title="Editar Usuário / Renovar Assinatura" class="p-1.5 rounded-lg bg-dark-card hover:bg-amber-500/20 text-amber-400 border border-dark-border hover:border-amber-500/40 transition active:scale-95">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+                ${deleteBtn}
+              </div>
+            </td>
           </tr>
         `;
       });
@@ -2231,14 +2360,15 @@
       const userEl = document.getElementById('admin-new-username');
       const passEl = document.getElementById('admin-new-password');
       const roleEl = document.getElementById('admin-new-role');
+      const durationEl = document.getElementById('admin-new-duration');
       const alertBox = document.getElementById('admin-user-alert');
       const alertMsg = document.getElementById('admin-user-alert-msg');
-      const alertIcon = document.getElementById('admin-user-alert-icon');
       const btn = document.getElementById('btn-admin-submit-user');
 
       const username = userEl ? userEl.value.trim() : '';
       const password = passEl ? passEl.value : '';
       const role = roleEl ? roleEl.value : 'user';
+      const durationDays = durationEl ? parseInt(durationEl.value, 10) : 30;
 
       if (!username || !password) {
         if (alertBox) {
@@ -2260,7 +2390,7 @@
         const res = await authFetch('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, role })
+          body: JSON.stringify({ username, password, role, duration_days: durationDays })
         });
 
         const data = await res.json();
@@ -2293,6 +2423,142 @@
           btn.disabled = false;
         }
         lucide.createIcons();
+      }
+    }
+
+    function openEditUserModal(userId) {
+      const user = adminUsersList.find(u => u.id === userId);
+      if (!user) {
+        showToast('Usuário não encontrado.', true);
+        return;
+      }
+
+      const modal = document.getElementById('admin-edit-user-modal');
+      const nameEl = document.getElementById('edit-user-name');
+      const idInput = document.getElementById('edit-user-id');
+      const roleSelect = document.getElementById('edit-user-role');
+      const passInput = document.getElementById('edit-user-password');
+      const actionSelect = document.getElementById('edit-user-duration-action');
+      const statusText = document.getElementById('edit-user-current-status');
+      const alertBox = document.getElementById('edit-user-alert');
+
+      if (alertBox) alertBox.classList.add('hidden');
+      if (nameEl) nameEl.innerText = user.username;
+      if (idInput) idInput.value = user.id;
+      if (roleSelect) roleSelect.value = user.role || 'user';
+      if (passInput) passInput.value = '';
+      if (actionSelect) actionSelect.value = 'keep';
+
+      if (statusText) {
+        if (user.is_expired) {
+          let dateStr = user.expires_at ? new Date(user.expires_at).toLocaleString('pt-BR') : '';
+          statusText.innerHTML = `<span class="text-rose-400 font-semibold">Status atual: Expirado em ${dateStr}</span>`;
+        } else if (user.expires_at) {
+          let dateStr = new Date(user.expires_at).toLocaleString('pt-BR');
+          statusText.innerHTML = `<span class="text-emerald-400 font-semibold">Status atual: Válido até ${dateStr}</span>`;
+        } else {
+          statusText.innerHTML = `<span class="text-cyan-400 font-semibold">Status atual: Acesso Vitalício (Sem Vencimento)</span>`;
+        }
+      }
+
+      if (modal) modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeEditUserModal() {
+      const modal = document.getElementById('admin-edit-user-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function handleSaveEditUser() {
+      const idInput = document.getElementById('edit-user-id');
+      const roleSelect = document.getElementById('edit-user-role');
+      const passInput = document.getElementById('edit-user-password');
+      const actionSelect = document.getElementById('edit-user-duration-action');
+      const alertBox = document.getElementById('edit-user-alert');
+      const alertMsg = document.getElementById('edit-user-alert-msg');
+      const btn = document.getElementById('btn-edit-save-user');
+
+      const userId = idInput ? parseInt(idInput.value, 10) : null;
+      if (!userId) return;
+
+      const role = roleSelect ? roleSelect.value : 'user';
+      const password = passInput ? passInput.value.trim() : '';
+      const action = actionSelect ? actionSelect.value : 'keep';
+
+      const payload = { role };
+      if (password) {
+        payload.password = password;
+      }
+
+      if (action === 'lifetime') {
+        payload.set_lifetime = true;
+      } else if (action === 'expire_now') {
+        payload.expires_at = new Date(Date.now() - 60000).toISOString();
+      } else if (action.startsWith('add_')) {
+        const days = parseInt(action.replace('add_', ''), 10);
+        payload.duration_days = days;
+      }
+
+      const origBtn = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1"></div> Salvando...`;
+        btn.disabled = true;
+      }
+      if (alertBox) alertBox.classList.add('hidden');
+
+      try {
+        const res = await authFetch(`/api/admin/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✔ Usuário atualizado com sucesso!`);
+          closeEditUserModal();
+          loadAdminUsers();
+        } else {
+          if (alertBox) {
+            alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+            alertMsg.innerText = data.detail || 'Falha ao atualizar usuário.';
+            alertBox.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-xl text-xs flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400";
+          alertMsg.innerText = 'Erro ao comunicar com o servidor: ' + err.message;
+          alertBox.classList.remove('hidden');
+        }
+      } finally {
+        if (btn) {
+          btn.innerHTML = origBtn;
+          btn.disabled = false;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    async function confirmDeleteUser(userId, username) {
+      if (!confirm(`Tem certeza que deseja excluir permanentemente o usuário "${username}" (ID: ${userId})? Esta ação não pode ser desfeita.`)) {
+        return;
+      }
+
+      try {
+        const res = await authFetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✔ ${data.message}`);
+          loadAdminUsers();
+        } else {
+          showToast(`Erro: ${data.detail || 'Falha ao excluir usuário'}`, true);
+        }
+      } catch (err) {
+        showToast(`Erro ao excluir usuário: ${err.message}`, true);
       }
     }
 

@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  config-generator:
-    build: https://github.com/renan-portes/config-unitv.git#main
+  config_generator_app:
+    build: .
     container_name: config_generator_app
     restart: unless-stopped
     ports:
@@ -10,12 +10,14 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-      - DOMAIN=config.servidor.xyz.br
+      - DATABASE_URL=sqlite:////app/mining_history.db
+      - JWT_SECRET=super-secret-mining-key-saas-unitv-2026-auth-token-key-32b
     volumes:
-      # Mapeia diretório caso queira persistir novas configs geradas no host
-      - ./generated_configs:/app/generated_configs
+      - ./mining_history.db:/app/mining_history.db
+      - ./configs:/app/configs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
