@@ -607,20 +607,47 @@
                 id="vault-search-input"
                 oninput="filterVaultTable()"
                 placeholder="Buscar por MAC ou ID..."
-                class="w-44 sm:w-56 px-3 py-2 pl-8 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                class="w-36 sm:w-48 px-3 py-2 pl-8 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
               >
               <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
             </div>
 
+            <!-- Filtro por Status Geral -->
             <select
               id="vault-filter-select"
               onchange="filterVaultTable()"
-              class="px-3 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+              title="Filtrar por Status"
+              class="px-2.5 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
             >
               <option value="all">Todos os Status</option>
-              <option value="valid">Apenas Válidas / Virgens</option>
+              <option value="valid">Apenas Válidas</option>
               <option value="invalid">Apenas Banidas / EF9</option>
             </select>
+
+            <!-- Filtro por Dias Ativos -->
+            <select
+              id="vault-days-filter"
+              onchange="filterVaultTable()"
+              title="Filtrar por Dias Ativos"
+              class="px-2.5 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+            >
+              <option value="all">Todos os Dias</option>
+              <option value="virgin">✨ 0 Dias (Virgens)</option>
+              <option value="active">⭐ Ativas (&gt;0 Dias)</option>
+              <option value="banned">❌ Banidas / Sem Dias</option>
+            </select>
+
+            <!-- Filtro por Usuário (Exibido para Admin) -->
+            <div id="vault-user-filter-container" class="hidden">
+              <select
+                id="vault-user-filter"
+                onchange="filterVaultTable()"
+                title="Filtrar por Usuário (Admin)"
+                class="px-2.5 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition font-sans"
+              >
+                <option value="all">Todos os Usuários</option>
+              </select>
+            </div>
 
             <button
               onclick="loadVaultHistory()"
@@ -644,18 +671,54 @@
           </div>
         </div>
 
-        <!-- Tabela Responsiva do Cofre -->
+        <!-- Tabela Responsiva do Cofre com Ordenação Clicável -->
         <div class="overflow-x-auto rounded-xl border border-dark-border">
           <table class="w-full text-left text-xs">
-            <thead class="bg-dark-card/90 text-slate-400 border-b border-dark-border font-sans">
+            <thead class="bg-dark-card/90 text-slate-400 border-b border-dark-border font-sans select-none">
               <tr>
                 <th class="py-3 px-4 font-semibold w-12 text-center">#</th>
-                <th class="py-3 px-4 font-semibold">Endereço MAC</th>
-                <th class="py-3 px-4 font-semibold">ID da Conta</th>
-                <th class="py-3 px-4 font-semibold">Dias Ativos</th>
-                <th class="py-3 px-4 font-semibold">Status / Diagnóstico</th>
-                <th class="py-3 px-4 font-semibold">Data do Teste</th>
-                <th class="py-3 px-4 font-semibold">Usuário</th>
+                
+                <th onclick="toggleVaultSort('mac')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por MAC">
+                  <div class="flex items-center gap-1.5">
+                    <span>Endereço MAC</span>
+                    <span id="sort-icon-mac" class="text-slate-600 group-hover:text-slate-300 text-[10px] transition">↕</span>
+                  </div>
+                </th>
+
+                <th onclick="toggleVaultSort('account_id')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por ID da Conta">
+                  <div class="flex items-center gap-1.5">
+                    <span>ID da Conta</span>
+                    <span id="sort-icon-account_id" class="text-slate-600 group-hover:text-slate-300 text-[10px] transition">↕</span>
+                  </div>
+                </th>
+
+                <th onclick="toggleVaultSort('days_active')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por Dias Ativos">
+                  <div class="flex items-center gap-1.5">
+                    <span>Dias Ativos</span>
+                    <span id="sort-icon-days_active" class="text-slate-600 group-hover:text-slate-300 text-[10px] transition">↕</span>
+                  </div>
+                </th>
+
+                <th onclick="toggleVaultSort('status_message')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por Status">
+                  <div class="flex items-center gap-1.5">
+                    <span>Status / Diagnóstico</span>
+                    <span id="sort-icon-status_message" class="text-slate-600 group-hover:text-slate-300 text-[10px] transition">↕</span>
+                  </div>
+                </th>
+
+                <th onclick="toggleVaultSort('tested_at')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por Data do Teste">
+                  <div class="flex items-center gap-1.5">
+                    <span>Data do Teste</span>
+                    <span id="sort-icon-tested_at" class="text-emerald-400 font-bold text-[10px] transition">▼</span>
+                  </div>
+                </th>
+
+                <th onclick="toggleVaultSort('username')" class="py-3 px-4 font-semibold cursor-pointer hover:text-white transition group" title="Clique para ordenar por Usuário">
+                  <div class="flex items-center gap-1.5">
+                    <span>Usuário</span>
+                    <span id="sort-icon-username" class="text-slate-600 group-hover:text-slate-300 text-[10px] transition">↕</span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody id="vault-table-body" class="divide-y divide-dark-border font-mono">
@@ -1035,6 +1098,15 @@
             adminTabBtn.classList.remove('hidden');
           } else {
             adminTabBtn.classList.add('hidden');
+          }
+        }
+
+        const userFilterContainer = document.getElementById('vault-user-filter-container');
+        if (userFilterContainer) {
+          if (user.role === 'admin') {
+            userFilterContainer.classList.remove('hidden');
+          } else {
+            userFilterContainer.classList.add('hidden');
           }
         }
       }
@@ -2041,6 +2113,62 @@
 
     // --- COFRE DE MINERAÇÃO & INTELIGÊNCIA COLETIVA ---
     let vaultRecords = [];
+    let vaultSortColumn = 'tested_at';
+    let vaultSortDirection = 'desc';
+
+    function toggleVaultSort(col) {
+      if (vaultSortColumn === col) {
+        vaultSortDirection = vaultSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        vaultSortColumn = col;
+        vaultSortDirection = (col === 'tested_at' || col === 'days_active') ? 'desc' : 'asc';
+      }
+      updateSortIcons();
+      filterVaultTable();
+    }
+
+    function updateSortIcons() {
+      const columns = ['mac', 'account_id', 'days_active', 'status_message', 'tested_at', 'username'];
+      columns.forEach(c => {
+        const el = document.getElementById(`sort-icon-${c}`);
+        if (!el) return;
+        if (vaultSortColumn === c) {
+          el.innerHTML = vaultSortDirection === 'asc' ? '▲' : '▼';
+          el.className = 'text-emerald-400 font-bold text-[10px]';
+        } else {
+          el.innerHTML = '↕';
+          el.className = 'text-slate-600 group-hover:text-slate-400 transition text-[10px]';
+        }
+      });
+    }
+
+    function updateVaultUserFilterOptions() {
+      const select = document.getElementById('vault-user-filter');
+      if (!select) return;
+
+      const currentVal = select.value || 'all';
+      const distinctUsers = new Set();
+
+      vaultRecords.forEach(r => {
+        const uName = (r.username || (r.user_id ? `User #${r.user_id}` : 'Admin / Sistema')).trim();
+        if (uName) distinctUsers.add(uName);
+      });
+
+      const sortedUsers = Array.from(distinctUsers).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+      let html = `<option value="all">Todos os Usuários</option>`;
+      sortedUsers.forEach(u => {
+        const escaped = u.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        html += `<option value="${escaped}">${escaped}</option>`;
+      });
+
+      select.innerHTML = html;
+      if (distinctUsers.has(currentVal)) {
+        select.value = currentVal;
+      } else {
+        select.value = 'all';
+      }
+    }
 
     async function loadVaultHistory() {
       const btn = document.getElementById('btn-refresh-vault');
@@ -2059,6 +2187,8 @@
         const data = await res.json();
         vaultRecords = data.history || [];
         updateVaultMetrics();
+        updateVaultUserFilterOptions();
+        updateSortIcons();
         filterVaultTable();
       } catch (err) {
         console.error(err);
@@ -2091,16 +2221,37 @@
 
     function filterVaultTable() {
       const query = (document.getElementById('vault-search-input')?.value || '').trim().toUpperCase();
-      const filter = document.getElementById('vault-filter-select')?.value || 'all';
+      const statusFilter = document.getElementById('vault-filter-select')?.value || 'all';
+      const daysFilter = document.getElementById('vault-days-filter')?.value || 'all';
+      const userFilter = document.getElementById('vault-user-filter')?.value || 'all';
 
-      let filtered = vaultRecords;
+      let filtered = [...vaultRecords];
 
-      if (filter === 'valid') {
+      // 1. Filtro por Status Geral
+      if (statusFilter === 'valid') {
         filtered = filtered.filter(r => r.is_valid);
-      } else if (filter === 'invalid') {
+      } else if (statusFilter === 'invalid') {
         filtered = filtered.filter(r => !r.is_valid);
       }
 
+      // 2. Filtro por Dias Ativos
+      if (daysFilter === 'virgin') {
+        filtered = filtered.filter(r => r.is_valid && (r.days_active === 0 || (r.status_message && r.status_message.includes('VIRGEM'))));
+      } else if (daysFilter === 'active') {
+        filtered = filtered.filter(r => r.is_valid && r.days_active > 0);
+      } else if (daysFilter === 'banned') {
+        filtered = filtered.filter(r => !r.is_valid || r.days_active === null);
+      }
+
+      // 3. Filtro por Usuário
+      if (userFilter !== 'all') {
+        filtered = filtered.filter(r => {
+          const uName = (r.username || (r.user_id ? `User #${r.user_id}` : 'Admin / Sistema')).trim();
+          return uName === userFilter;
+        });
+      }
+
+      // 4. Busca Textual Ampla
       if (query) {
         filtered = filtered.filter(r => 
           (r.mac && r.mac.toUpperCase().includes(query)) ||
@@ -2109,6 +2260,39 @@
           (r.status_message && r.status_message.toUpperCase().includes(query))
         );
       }
+
+      // 5. Ordenação Local Multicoluna
+      filtered.sort((a, b) => {
+        let valA = a[vaultSortColumn];
+        let valB = b[vaultSortColumn];
+
+        if (vaultSortColumn === 'username') {
+          valA = (a.username || (a.user_id ? `User #${a.user_id}` : 'Admin / Sistema')).trim();
+          valB = (b.username || (b.user_id ? `User #${b.user_id}` : 'Admin / Sistema')).trim();
+        } else if (vaultSortColumn === 'days_active') {
+          valA = (valA === null || valA === undefined) ? -1 : Number(valA);
+          valB = (valB === null || valB === undefined) ? -1 : Number(valB);
+        } else if (vaultSortColumn === 'account_id') {
+          valA = (valA === null || valA === undefined || valA === '-') ? '' : String(valA);
+          valB = (valB === null || valB === undefined || valB === '-') ? '' : String(valB);
+        } else if (vaultSortColumn === 'tested_at') {
+          valA = valA ? new Date(valA).getTime() : 0;
+          valB = valB ? new Date(valB).getTime() : 0;
+        }
+
+        if (valA === valB) return 0;
+        if (valA === null || valA === undefined) return 1;
+        if (valB === null || valB === undefined) return -1;
+
+        let res = 0;
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          res = valA.localeCompare(valB, 'pt-BR', { numeric: true, sensitivity: 'base' });
+        } else {
+          res = valA < valB ? -1 : 1;
+        }
+
+        return vaultSortDirection === 'asc' ? res : -res;
+      });
 
       renderVaultTable(filtered);
     }
@@ -2124,7 +2308,7 @@
             <td colspan="7" class="py-8 text-center text-slate-500 font-sans">
               <div class="flex flex-col items-center gap-2">
                 <i data-lucide="inbox" class="w-6 h-6 text-slate-500"></i>
-                <span>Nenhum registro encontrado no cofre.</span>
+                <span>Nenhum registro encontrado para os filtros selecionados.</span>
               </div>
             </td>
           </tr>
