@@ -6,6 +6,9 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Seleção em Massa e Download Personalizado no Cofre:** Adição de checkboxes individuais e cabeçalho mestre ("selecionar todos os visíveis") na tabela do Cofre, com o novo botão "Baixar Selecionadas (.ZIP)" gerando pacotes compactados dinamicamente via JSZip.
+- **Renomeação Semântica de Exportação:** Atualização do botão de exportação global de contas virgens para "Exportar 0 Dias (.ZIP)".
+- **Modal 'Meu Perfil' & Troca de Senha:** Novo modal de autoatendimento para o usuário conectado com exibição de nome, permissão e prazo de validade da assinatura (`expires_at`), acompanhado de formulário seguro para redefinição de senha com validação de senha atual via `PUT /api/auth/me/password`.
 - **Ordenação Interativa e Multicoluna no Cofre:** Cabeçalhos clicáveis na tabela do Cofre (`Endereço MAC`, `ID da Conta`, `Dias Ativos`, `Status`, `Data do Teste`, `Usuário`) com ordenação ascendente/descendente e indicadores visuais dinâmicos (`▲`, `▼`, `↕`).
 - **Filtros Avançados Combinados no Cofre:** Novos seletores dropdown de 'Dias Ativos' (Virgens 0 Dias, Ativas >0 Dias, Banidas) e 'Filtro de Usuário' exclusivo para administradores, operando em sincronia com a busca textual e o filtro de status geral.
 - **Gestão Avançada de Assinaturas & Expiração (SaaS):** Adicionada coluna `expires_at` com migração automática no banco (`ensure_schema_migrations()`), trava comercial de bloqueio 403 Forbidden para contas vencidas no login e rotas protegidas.
