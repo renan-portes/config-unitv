@@ -781,7 +781,7 @@ def get_mining_history(
 def worker_check_mac(
     mac: Optional[str] = None,
     mac_address: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Consulta o banco de dados na nuvem para o MAC fornecido (Smart Skip).
@@ -818,11 +818,11 @@ def worker_check_mac(
 @app.post("/api/worker/report")
 def worker_report(
     req: WorkerReportRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Recebe os resultados do teste executado no worker/cliente remoto.
-    Persiste no banco de dados vinculando ao user_id logado.
+    Persiste no banco de dados vinculando ao user_id logado (se fornecido).
     Totalmente desacoplado de execução ADB local.
     """
     target_mac = req.mac_address or req.mac
@@ -830,10 +830,11 @@ def worker_report(
         raise HTTPException(status_code=400, detail="Parâmetro 'mac_address' ou 'mac' é obrigatório.")
 
     acc_id_str = str(req.account_id) if (req.account_id is not None and str(req.account_id) != "-") else None
+    uid = current_user.id if current_user else None
 
     record = save_account_history(
         mac=target_mac,
-        user_id=current_user.id,
+        user_id=uid,
         account_id=acc_id_str,
         days_active=req.days_active,
         status_message=req.status_message or ("✨ 0 DIAS (VIRGEM)" if req.is_valid else "❌ Inválida / Rejeitada"),
