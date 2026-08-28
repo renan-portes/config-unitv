@@ -15,6 +15,8 @@ import hashlib
 import threading
 import subprocess
 import requests
+import io
+import base64
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 
@@ -22,13 +24,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-
-try:
-    import pytesseract
-    from PIL import Image
-    OCR_AVAILABLE = True
-except ImportError:
-    OCR_AVAILABLE = False
+from PIL import Image
 
 import generator_engine as engine
 
@@ -217,19 +213,26 @@ def deep_wipe_emulator(device: str):
     grant_all_app_permissions(device)
 
 
-def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None) -> Dict[str, Any]:
+def inspect_emulator_account_info(
+    device: str,
+    target_mac: Optional[str] = None,
+    master_url: Optional[str] = None,
+    auth_headers: Optional[Dict[str, str]] = None
+) -> Dict[str, Any]:
     """
-    Inspeciona a conta carregada no emulador.
+    Inspeciona a conta carregada no emulador via Cloud OCR Offload.
 
     PIPELINE:
     1. Lê o ID numérico via XML (cache.config.xml).
     2. Se ID > 0 (qualquer valor, sem filtro de 567M):
        a. ADB tap nas coordenadas do botão Avatar/Perfil.
-       b. Aguarda animação de transição de tela (2-3s).
+       b. Aguarda animação de transição de tela (2.5s).
        c. Executa screencap ADB e puxa a imagem para o PC.
        d. Carrega com PIL, faz crop na região DAYS_CROP_REGION.
-       e. Roda pytesseract para extrair o número de dias.
-    3. Aprovação baseada EXCLUSIVAMENTE nos dias lidos pelo OCR.
+       e. Converte a imagem recortada para Base64.
+       f. Envia POST para /api/worker/process-ocr no Master Server (Cloud Vision).
+       g. Extrai o número de dias retornado pelo servidor.
+    3. Aprovação baseada EXCLUSIVAMENTE nos dias lidos pelo Cloud OCR.
     """
     adb_bin = get_adb_cmd()
     account_id = None
@@ -264,7 +267,7 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
 
         user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
 
-        # ETAPA 3 — Se qualquer ID numérico foi lido, aciona o pipeline de OCR
+        # ETAPA 3 — Se qualquer ID numérico foi lido, aciona o pipeline de captura e Cloud OCR
         if user_id_int > 0:
 
             # 3a. ADB Tap no botão Avatar/Perfil
@@ -287,31 +290,45 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
                 capture_output=True, timeout=8
             )
 
-            # 3d. Carrega imagem, faz crop e roda OCR com pytesseract
+            # 3d. Carrega imagem, faz crop e converte para Base64
             days_read = None
-            ocr_raw = ""
 
-            if OCR_AVAILABLE and os.path.exists(SCREEN_LOCAL_PATH):
+            if os.path.exists(SCREEN_LOCAL_PATH):
                 try:
-                    img = Image.open(SCREEN_LOCAL_PATH).convert("L")  # Grayscale melhora OCR
+                    img = Image.open(SCREEN_LOCAL_PATH).convert("L")  # Grayscale
                     cropped = img.crop(DAYS_CROP_REGION)
 
-                    # Config pytesseract: apenas dígitos e espaços (psm 7 = linha única)
-                    ocr_cfg = r"--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789 "
-                    ocr_raw = pytesseract.image_to_string(cropped, config=ocr_cfg).strip()
+                    buffered = io.BytesIO()
+                    cropped.save(buffered, format="PNG")
+                    img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-                    # Extrai o primeiro número inteiro da string OCR
-                    digits_match = re.search(r"\d+", ocr_raw)
-                    if digits_match:
-                        days_read = int(digits_match.group(0))
+                    # 3e. Envia a imagem em Base64 para o Master API (Cloud Vision)
+                    target_master = master_url or agent.master_url
+                    headers = auth_headers or ({"Authorization": f"Bearer {agent.auth_token}"} if agent.auth_token else {})
+
+                    if target_master:
+                        ocr_resp = requests.post(
+                            f"{target_master}/api/worker/process-ocr",
+                            json={"image_base64": img_b64},
+                            headers=headers,
+                            timeout=8
+                        )
+                        if ocr_resp.status_code == 200:
+                            ocr_data = ocr_resp.json()
+                            if ocr_data.get("success") is True and ocr_data.get("days") is not None:
+                                days_read = int(ocr_data.get("days"))
+                            else:
+                                status_msg = f"❌ Cloud OCR não detectou dias ({ocr_data.get('error', 'sem dígitos')})"
+                        else:
+                            status_msg = f"⚠️ Falha HTTP {ocr_resp.status_code} na API Master OCR"
+                    else:
+                        status_msg = "⚠️ Master URL não configurada para Cloud OCR"
                 except Exception as ocr_err:
-                    status_msg = f"⚠️ OCR Falhou: {ocr_err}"
-            elif not OCR_AVAILABLE:
-                status_msg = "⚠️ pytesseract/PIL não instalados — OCR indisponível"
+                    status_msg = f"⚠️ Erro ao enviar imagem ao Cloud OCR: {ocr_err}"
             else:
                 status_msg = "⚠️ Screencap não encontrado localmente"
 
-            # 3e. Decide aprovação com base nos dias lidos
+            # 3f. Decide aprovação com base nos dias retornados pela API Master
             if days_read is not None:
                 days_active = days_read
                 is_valid = True
@@ -322,8 +339,8 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
             else:
                 is_valid = False
                 days_active = None
-                if not status_msg.startswith("⚠️"):
-                    status_msg = f"❌ ID {user_id_int} lido — OCR não extraiu dias da tela de perfil"
+                if not status_msg.startswith("⚠️") and not status_msg.startswith("❌"):
+                    status_msg = f"❌ ID {user_id_int} lido — Cloud OCR não extraiu dias"
 
         else:
             is_valid = False
@@ -349,6 +366,7 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
             "is_valid": False,
             "mac": final_mac
         }
+
 
 
 # --- GERENCIADOR DO AGENTE / MOTOR DE SCANNER ---
@@ -547,7 +565,12 @@ def run_scanner_worker(
                 subprocess.run([adb_bin, "-s", agent.active_device, "shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1"], capture_output=True, timeout=5)
 
             # Inspeciona resultado
-            info = inspect_emulator_account_info(agent.active_device, target_mac=target_mac)
+            info = inspect_emulator_account_info(
+                agent.active_device,
+                target_mac=target_mac,
+                master_url=agent.master_url,
+                auth_headers=auth_headers
+            )
             duration = round(time.time() - t_start, 1)
 
             acc_id = info.get("account_id") or "-"

@@ -11,6 +11,7 @@ ENV/
 # Temporary files & caches
 .temp/
 temp/
+temp_*
 configs/
 CONFIG_*/
 *.log
