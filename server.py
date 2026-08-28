@@ -1711,20 +1711,18 @@ def inspect_emulator_account_info(
                 "folder_name": folder_name
             }
 
-        if user_id_int >= 567000000:
+        # Regra de Negócio: Se a conta possui dias ativos (> 0), é SEMPRE Válida (Ativa) independente do ID
+        if days_active is not None and days_active > 0:
             is_valid = True
-            if days_active is None:
-                days_active = 0
-            if days_active == 0:
-                status_msg = "✨ 0 DIAS (VIRGEM)"
-            else:
-                status_msg = f"⭐ {days_active} DIAS"
+            status_msg = f"⭐ {days_active} DIAS"
+        elif user_id_int >= 567000000:
+            is_valid = True
+            days_active = 0 if days_active is None else days_active
+            status_msg = "✨ 0 DIAS (VIRGEM)"
         else:
             is_valid = False
-            if days_active is not None:
-                status_msg = f"❌ {days_active}d (< 567M Reciclada)"
-            else:
-                status_msg = f"❌ Reciclada (ID: {user_id_int} < 567M)"
+            days_active = 0 if days_active is None else days_active
+            status_msg = f"❌ Reciclada (ID: {user_id_int} < 567M)"
 
         if not activation_date:
             activation_date = datetime.now().strftime("%d-%m-%Y")

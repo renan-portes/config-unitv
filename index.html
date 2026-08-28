@@ -107,15 +107,27 @@
           <label for="login-password" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
             <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i> Senha
           </label>
-          <input
-            type="password"
-            id="login-password"
-            name="password"
-            placeholder="••••••••"
-            required
-            autocomplete="current-password"
-            class="w-full px-4 py-3 rounded-xl bg-dark-input border border-dark-border text-white text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
-          >
+          <div class="relative">
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+              class="w-full px-4 py-3 pr-11 rounded-xl bg-dark-input border border-dark-border text-white text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
+            >
+            <button
+              type="button"
+              id="btn-toggle-login-password"
+              onclick="toggleLoginPasswordVisibility()"
+              tabindex="-1"
+              title="Mostrar / Ocultar Senha"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition p-1"
+            >
+              <i id="icon-toggle-login-password" data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
 
         <button
@@ -138,7 +150,7 @@
 
     <!-- TOP NAVIGATION BAR -->
     <header class="glass-panel sticky top-0 z-50 border-b border-dark-border px-4 lg:px-8 py-3.5">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="max-w-screen-2xl mx-auto flex items-center justify-between">
         <div class="flex items-center gap-3">
           <img src="/logo.png" alt="Logo" class="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/30 border border-brand-500/20" onerror="this.outerHTML='<div class=\'w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/30\'><i data-lucide=\'sparkles\' class=\'w-5 h-5 text-white\'></i></div>'">
           <div>
@@ -181,7 +193,7 @@
     </header>
 
     <!-- MAIN CONTAINER -->
-    <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 flex flex-col gap-6">
+    <main class="max-w-screen-2xl w-full mx-auto px-4 lg:px-8 py-6 flex-1 flex flex-col gap-6">
 
     <!-- NAV TABS -->
     <div class="flex items-center gap-2 border-b border-dark-border overflow-x-auto pb-2 scrollbar-none">
@@ -606,16 +618,16 @@
             <p class="text-xs text-slate-400 mt-0.5">Histórico persistente de contas mineradas e cache de Inteligência Coletiva</p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2.5">
             <div class="relative">
               <input
                 type="text"
                 id="vault-search-input"
                 oninput="filterVaultTable()"
                 placeholder="Buscar por MAC ou ID..."
-                class="w-36 sm:w-48 px-3 py-2 pl-8 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                class="w-44 sm:w-60 px-3.5 py-2 pl-9 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
               >
-              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
             </div>
 
             <!-- Filtro por Status Geral -->
@@ -623,7 +635,7 @@
               id="vault-filter-select"
               onchange="filterVaultTable()"
               title="Filtrar por Status"
-              class="px-2.5 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+              class="px-3 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
             >
               <option value="all">Todos os Status</option>
               <option value="valid">Apenas Válidas</option>
@@ -635,7 +647,7 @@
               id="vault-days-filter"
               onchange="filterVaultTable()"
               title="Filtrar por Dias Ativos"
-              class="px-2.5 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
+              class="px-3 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition"
             >
               <option value="all">Todos os Dias</option>
               <option value="virgin">✨ 0 Dias (Virgens)</option>
@@ -649,7 +661,7 @@
                 id="vault-user-filter"
                 onchange="filterVaultTable()"
                 title="Filtrar por Usuário (Admin)"
-                class="px-2.5 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition font-sans"
+                class="px-3 py-2 rounded-xl bg-dark-input border border-dark-border text-white text-xs focus:outline-none focus:border-brand-500 transition font-sans"
               >
                 <option value="all">Todos os Usuários</option>
               </select>
@@ -659,7 +671,7 @@
               onclick="loadVaultHistory()"
               id="btn-refresh-vault"
               title="Atualizar Histórico"
-              class="px-3 py-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 text-xs font-semibold transition flex items-center gap-1.5"
+              class="px-3.5 py-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border text-slate-200 text-xs font-semibold transition flex items-center gap-1.5"
             >
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-brand-400"></i>
               <span>Atualizar</span>
@@ -669,20 +681,10 @@
               onclick="downloadSelectedVaultZip()"
               id="btn-export-selected"
               title="Baixar apenas as contas selecionadas com checkbox em arquivo .ZIP"
-              class="px-3.5 py-2 rounded-xl bg-dark-card hover:bg-slate-700 border border-brand-500/40 text-brand-300 hover:text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5 active:scale-[0.98]"
-            >
-              <i data-lucide="check-square" class="w-3.5 h-3.5 text-brand-400"></i>
-              <span id="btn-export-selected-label">Baixar Selecionadas (.ZIP)</span>
-            </button>
-
-            <button
-              onclick="downloadVirginVaultZip()"
-              id="btn-export-virgins"
-              title="Exportar todas as contas 0 Dias (Virgens) em arquivo .ZIP"
-              class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5 active:scale-[0.98]"
+              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5 active:scale-[0.98]"
             >
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span>Exportar 0 Dias (.ZIP)</span>
+              <span id="btn-export-selected-label">Baixar Selecionadas (.ZIP)</span>
             </button>
           </div>
         </div>
@@ -1109,21 +1111,14 @@
       </div>
     </div>
 
-    <!-- FOOTER WITH SUPPORT & GITHUB BUTTONS -->
+    <!-- FOOTER WITH SUPPORT BUTTON -->
     <footer class="mt-8 pt-6 border-t border-dark-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
       <div class="flex items-center gap-2">
-        <span class="text-slate-300 font-medium">Gerador de Configurações</span>
+        <span class="text-slate-300 font-medium">Gerador de Configurações IPTV</span>
         <span>•</span>
-        <span>Mineração Local &amp; Validador ADB</span>
+        <span>Mineração Local &amp; Validador ADB SaaS</span>
       </div>
       <div class="flex items-center gap-3">
-        <a href="https://github.com/renan-portes/config-unitv" target="_blank" rel="noopener noreferrer" 
-           class="px-4 py-2.5 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-200 hover:text-white font-medium text-xs shadow-md transition flex items-center gap-2">
-          <svg class="w-4 h-4 text-white fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-          </svg>
-          <span>Contribuir no GitHub</span>
-        </a>
         <a href="https://pixgg.com.br/rzao" target="_blank" rel="noopener noreferrer" 
            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/25 transition flex items-center gap-2">
           <i data-lucide="heart" class="w-4 h-4 text-rose-300 fill-rose-300"></i> Apoiar o Projeto (Pix)
@@ -1236,6 +1231,21 @@
         }
       }
 
+      lucide.createIcons();
+    }
+
+    function toggleLoginPasswordVisibility() {
+      const input = document.getElementById('login-password');
+      const icon = document.getElementById('icon-toggle-login-password');
+      if (!input || !icon) return;
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
       lucide.createIcons();
     }
 
@@ -3391,23 +3401,18 @@
 
           const uidInt = info.user_id_int || (info.account_id && !isNaN(info.account_id) ? parseInt(info.account_id, 10) : 0);
 
-          if (uidInt >= 567000000) {
+          if (info.days_active !== null && info.days_active !== undefined && info.days_active > 0) {
+            days = info.days_active;
+            isTarget = true;
+            statusText = info.status_message || `⭐ ${days} DIAS`;
+          } else if (uidInt >= 567000000) {
             days = 0;
             isTarget = true;
             statusText = "✨ 0 DIAS (VIRGEM)";
           } else if (uidInt > 0 && uidInt < 567000000) {
-            days = info.days_active;
+            days = info.days_active !== undefined ? info.days_active : 0;
             isTarget = false;
             statusText = "🗑️ Reciclada (< 567M)";
-          } else if (info.days_active !== null && info.days_active !== undefined && info.is_valid !== false) {
-            days = info.days_active;
-            if (days === 0) {
-              isTarget = true;
-              statusText = "✨ 0 DIAS (VIRGEM)";
-            } else {
-              isTarget = false;
-              statusText = `🗑️ ${days}d (Reciclada)`;
-            }
           } else {
             statusText = (info.status_message && info.status_message.includes("rejeitada")) ? "❌ Chute Rejeitado" : (info.status_message || "❌ Falha no Acesso");
           }
@@ -3424,7 +3429,7 @@
             days_active: (days !== null) ? `${days} dias` : "-",
             duration_sec: durationSec,
             is_target: isTarget,
-            is_valid: (info.is_valid !== false && uidInt >= 567000000),
+            is_valid: (info.is_valid === true || (info.days_active !== null && info.days_active > 0) || (info.is_valid !== false && uidInt >= 567000000)),
             status: statusText
           };
 
