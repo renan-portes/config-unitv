@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 LABEL maintainer="Gerador de Configurações IPTV SaaS"
-LABEL description="API REST e Painel Web para Mineração, Inteligência Coletiva e Gestão de Assinaturas"
+LABEL description="API REST e Painel Web para Scanner, Inteligência Coletiva e Gestão de Assinaturas"
 
 WORKDIR /app
 
