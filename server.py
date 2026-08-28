@@ -4,6 +4,7 @@ Suporta geração local de novas contas, injeção ADB no emulador e integraçã
 """
 
 import os
+import sys
 import io
 import re
 import time
@@ -28,6 +29,21 @@ import jwt
 import bcrypt
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, joinedload
+import pytesseract
+from PIL import Image
+
+# Configuração automática do caminho do executável Tesseract no Windows
+if sys.platform == "win32":
+    tess_candidates = [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        r"C:\Users\renan\AppData\Local\Programs\Tesseract-OCR\tesseract.exe",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools", "tesseract.exe")
+    ]
+    for tc in tess_candidates:
+        if os.path.exists(tc):
+            pytesseract.pytesseract.tesseract_cmd = tc
+            break
 
 import generator_engine as engine
 
@@ -45,7 +61,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import sys
 import webbrowser
 import threading
 
@@ -446,6 +461,10 @@ class WorkerReportRequest(BaseModel):
     days_active: Optional[int] = None
     status_message: Optional[str] = None
     is_valid: bool = False
+
+
+class ProcessOCRRequest(BaseModel):
+    image_base64: str
 
 
 # --- ROTAS DE AUTENTICAÇÃO & ADMINISTRAÇÃO (SaaS / JWT) ---
@@ -877,6 +896,51 @@ def worker_report(
         "message": f"Relatório do MAC {record.mac} registrado com sucesso!",
         "record": record.to_dict()
     }
+
+
+@app.post("/api/worker/process-ocr")
+def worker_process_ocr(
+    req: ProcessOCRRequest,
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """
+    Processa OCR na nuvem (Cloud Vision Offload).
+    Recebe imagem Base64 enviada pelo Worker/Cliente, decodifica, executa Tesseract
+    com whitelist de dígitos e retorna a quantidade de dias ativos.
+    """
+    if not req.image_base64:
+        return {"success": False, "days": None, "error": "Imagem Base64 não fornecida"}
+
+    try:
+        raw_b64 = req.image_base64
+        if "," in raw_b64:
+            raw_b64 = raw_b64.split(",", 1)[1]
+
+        image_bytes = base64.b64decode(raw_b64)
+        image = Image.open(io.BytesIO(image_bytes)).convert("L")
+
+        ocr_cfg = r"--psm 7 -c tessedit_char_whitelist=0123456789"
+        ocr_raw = pytesseract.image_to_string(image, config=ocr_cfg).strip()
+
+        digits_match = re.search(r"\d+", ocr_raw)
+        if digits_match:
+            days = int(digits_match.group(0))
+            return {
+                "success": True,
+                "days": days
+            }
+        else:
+            return {
+                "success": False,
+                "days": None,
+                "raw_ocr": ocr_raw
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "days": None,
+            "error": f"Erro no processamento OCR: {str(e)}"
+        }
 
 
 @app.get("/api/configs")
