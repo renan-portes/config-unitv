@@ -361,7 +361,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# --- ROTAS DE AUTENTICAÇÃO (SaaS / JWT) ---
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: Optional[str] = "user"
+
+
+# --- ROTAS DE AUTENTICAÇÃO & ADMINISTRAÇÃO (SaaS / JWT) ---
 
 @app.post("/api/auth/login")
 def login(req: LoginRequest):
@@ -400,6 +406,92 @@ def get_me(current_user: User = Depends(get_current_user)):
     return {
         "user": current_user.to_dict()
     }
+
+
+@app.get("/api/admin/users")
+def list_admin_users(current_admin: User = Depends(get_current_admin)):
+    """
+    Retorna a lista de todos os usuários cadastrados no sistema (Apenas Administradores).
+    """
+    session = SessionLocal()
+    try:
+        users = session.query(User).order_by(User.id.asc()).all()
+        return {
+            "total": len(users),
+            "users": [u.to_dict() for u in users]
+        }
+    finally:
+        session.close()
+
+
+@app.post("/api/admin/users")
+def create_admin_user(
+    req: CreateUserRequest,
+    current_admin: User = Depends(get_current_admin)
+):
+    """
+    Cria um novo usuário ou administrador no sistema (Apenas Administradores).
+    """
+    username_clean = req.username.strip()
+    if not username_clean:
+        raise HTTPException(status_code=400, detail="Nome de usuário não pode ser vazio.")
+    if not req.password:
+        raise HTTPException(status_code=400, detail="A senha não pode ser vazia.")
+
+    role_clean = (req.role or "user").strip().lower()
+    if role_clean not in ("user", "admin"):
+        role_clean = "user"
+
+    session = SessionLocal()
+    try:
+        existing = session.query(User).filter(User.username == username_clean).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"O usuário '{username_clean}' já existe.")
+
+        new_user = User(
+            username=username_clean,
+            password_hash=hash_password(req.password),
+            role=role_clean
+        )
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+        return {
+            "success": True,
+            "message": f"Usuário '{username_clean}' criado com sucesso!",
+            "user": new_user.to_dict()
+        }
+    finally:
+        session.close()
+
+
+@app.get("/api/vault/export-virgins")
+def export_virgins(current_user: User = Depends(get_current_user)):
+    """
+    Retorna apenas os registros onde is_valid == True e days_active == 0 (Contas Virgens).
+    Multi-tenant: Usuários comuns recebem apenas suas contas virgens.
+    Administradores recebem todas as contas virgens do sistema.
+    """
+    session = SessionLocal()
+    try:
+        query = session.query(AccountHistory).options(joinedload(AccountHistory.user)).filter(
+            AccountHistory.is_valid == True,
+            AccountHistory.days_active == 0
+        )
+
+        if current_user.role != "admin":
+            query = query.filter(AccountHistory.user_id == current_user.id)
+
+        records = query.order_by(AccountHistory.tested_at.desc()).all()
+        return {
+            "total": len(records),
+            "user_role": current_user.role,
+            "virgins": [r.to_dict() for r in records]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao exportar contas virgens: {str(e)}")
+    finally:
+        session.close()
 
 
 # --- ROTAS DA API ---
