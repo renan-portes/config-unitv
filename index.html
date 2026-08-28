@@ -1473,16 +1473,35 @@
 </map>`;
     }
 
-    function buildSingleConfig(mac, folderName) {
+    function generateConfigFileContent(mac, devIdHex, nBtHex) {
+      mac = (mac || generateSmartRandomMAC()).trim().toUpperCase();
+      const token = generateSnToken(mac);
+      const dateHeader = getJavaDateHeader();
+      const devHex = devIdHex || generateFreshDeviceId().hex;
+      const nBt = nBtHex || DEFAULT_N_BT;
+      return `#personal info\n# MAC: ${mac}\nKEY_SP_SN=${mac}\n${dateHeader}\nkey_n_bt=${nBt}\nkey_device_id_unitvfree=${devHex}\nkey_sn_token_unitvfree=${token.hex}\n`;
+    }
+
+    function buildSingleConfig(mac, folderName, userId, channelCode, devIdObj) {
       mac = (mac || generateSmartRandomMAC()).trim().toUpperCase();
       folderName = folderName || "CONFIG_1";
+      userId = userId || generateRandomUserId();
+      channelCode = channelCode || "SBTHD";
+      devIdObj = devIdObj || generateFreshDeviceId();
+
       const xmlText = generateXmlTemplate(mac);
+      const configText = generateConfigFileContent(mac, devIdObj.hex);
+      const propText = configText;
 
       return {
         folder_name: folderName,
         mac: mac,
+        user_id: userId,
+        dev_id_b64: devIdObj.b64,
         files: {
-          'cache.config.xml': xmlText
+          'cache.config.xml': xmlText,
+          '.config': configText,
+          '.properties': propText
         }
       };
     }
@@ -1787,15 +1806,21 @@
 
     async function downloadSingleZip() {
       const folder = (document.getElementById('input-folder') ? document.getElementById('input-folder').value : "") || "CONFIG_1";
+      const mac = (document.getElementById('input-mac') ? document.getElementById('input-mac').value : "") || generateSmartRandomMAC();
       const zip = new JSZip();
       const folderZip = zip.folder(folder);
       
-      const xmlContent = currentSingleFiles['cache.config.xml'] || generateXmlTemplate(document.getElementById('input-mac') ? document.getElementById('input-mac').value : "");
+      const xmlContent = currentSingleFiles['cache.config.xml'] || generateXmlTemplate(mac);
+      const configContent = currentSingleFiles['.config'] || generateConfigFileContent(mac, currentDeviceIdHex);
+      const propContent = currentSingleFiles['.properties'] || configContent;
+
       folderZip.file('cache.config.xml', xmlContent);
+      folderZip.file('.config', configContent);
+      folderZip.file('.properties', propContent);
       
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `${folder}.zip`);
-      showToast(`Pacote ${folder}.zip (cache.config.xml) baixado com sucesso!`);
+      showToast(`Pacote ${folder}.zip baixado com sucesso!`);
     }
 
     async function saveSingleToDisk() {
@@ -2155,7 +2180,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`📦 Pacote ZIP com todas as ${currentBulkList.length} configs (apenas cache.config.xml) baixado com sucesso!`);
+      showToast(`📦 Pacote ZIP com todas as ${currentBulkList.length} configs baixado com sucesso!`);
     }
 
     async function saveBulkToDisk() {
@@ -2597,8 +2622,11 @@
             : (item.user_id_int || (item.mac ? item.mac.replace(/:/g, '') : `SELECIONADA_${idx + 1}`));
           const daysSuffix = (item.days_active !== null && item.days_active !== undefined) ? `${item.days_active}DIAS` : 'CHECK';
           const folderName = `CONFIG_${idVal}_${daysSuffix}`;
-          const xmlContent = generateXmlTemplate(item.mac);
+          const xmlContent = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(item.mac);
+          const configContent = generateConfigFileContent(item.mac);
           zip.file(`${folderName}/cache.config.xml`, xmlContent);
+          zip.file(`${folderName}/.config`, configContent);
+          zip.file(`${folderName}/.properties`, configContent);
         });
 
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -2653,8 +2681,11 @@
             ? item.account_id 
             : (item.user_id_int || (item.mac ? item.mac.replace(/:/g, '') : `VIRGEM_${idx + 1}`));
           const folderName = `CONFIG_${idVal}_0DIAS`;
-          const xmlContent = generateXmlTemplate(item.mac);
+          const xmlContent = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(item.mac);
+          const configContent = generateConfigFileContent(item.mac);
           zip.file(`${folderName}/cache.config.xml`, xmlContent);
+          zip.file(`${folderName}/.config`, configContent);
+          zip.file(`${folderName}/.properties`, configContent);
         });
 
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -3601,7 +3632,10 @@
         const idVal = (item.user_id_int && item.user_id_int > 0) ? item.user_id_int : (item.account_id && item.account_id !== "-" ? item.account_id : (item.id ? item.id.slice(0, 8) : (idx + 1)));
         const folderName = `CONFIG_${idVal}_0DIAS`;
         const xmlContent = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(item.mac);
+        const configContent = generateConfigFileContent(item.mac);
         zip.file(`${folderName}/cache.config.xml`, xmlContent);
+        zip.file(`${folderName}/.config`, configContent);
+        zip.file(`${folderName}/.properties`, configContent);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -3611,7 +3645,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com ${approved.length} configs aprovadas (CONFIG_{ID}_0DIAS/cache.config.xml) baixado com sucesso!`);
+      showToast(`✔ Pacote ZIP com ${approved.length} configs aprovadas exportado com sucesso!`);
     }
 
     async function downloadAllBatchZip() {
@@ -3624,8 +3658,11 @@
       batchResults.forEach((item, idx) => {
         const daysClean = (item.days_raw !== null) ? `${item.days_raw}DIAS` : "0DIAS";
         const folderName = (item.account_id && item.account_id !== "-") ? `CONFIG_${item.account_id}_${daysClean}` : `CONFIG_ERRO_EF9_${idx + 1}`;
-        const xmlContent = generateXmlTemplate(item.mac);
+        const xmlContent = (item.config && item.config.includes('<?xml')) ? item.config : generateXmlTemplate(item.mac);
+        const configContent = generateConfigFileContent(item.mac);
         zip.file(`${folderName}/cache.config.xml`, xmlContent);
+        zip.file(`${folderName}/.config`, configContent);
+        zip.file(`${folderName}/.properties`, configContent);
       });
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -3635,7 +3672,7 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast(`Pacote ZIP com todas as ${batchResults.length} configs testadas (apenas cache.config.xml) baixado com sucesso!`);
+      showToast(`✔ Pacote ZIP com todas as ${batchResults.length} configs testadas exportado com sucesso!`);
     }
 
     async function generateAndDownloadOfflineZip() {
@@ -3683,7 +3720,10 @@
 
           const folderName = `${prefix}${idx}_${mac.replace(/:/g, '')}`;
           const xmlText = generateXmlTemplate(mac);
+          const configContent = generateConfigFileContent(mac);
           zip.file(`${folderName}/cache.config.xml`, xmlText);
+          zip.file(`${folderName}/.config`, configContent);
+          zip.file(`${folderName}/.properties`, configContent);
         }
 
         const blob = await zip.generateAsync({ type: 'blob' });
