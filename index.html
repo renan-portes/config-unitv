@@ -76,7 +76,7 @@
         </div>
         <div>
           <h2 class="text-xl font-bold text-white tracking-tight">Gerador de .config IPTV</h2>
-          <p class="text-xs text-slate-400 mt-1">Acesso exclusivo ao Painel de Mineração SaaS</p>
+          <p class="text-xs text-slate-400 mt-1">Acesso exclusivo ao Painel Validador SaaS</p>
         </div>
       </div>
 
@@ -99,13 +99,13 @@
             placeholder="Digite seu usuário"
             required
             autocomplete="username"
-            class="w-full px-4 py-3 rounded-xl bg-dark-input border border-dark-border text-white text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-dark-input border border-dark-border text-white text-xs placeholder-slate-500 focus:outline-none focus:border-brand-500 transition"
           >
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label for="login-password" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-            <i data-lucide="key" class="w-3.5 h-3.5 text-brand-400"></i> Senha
+            <i data-lucide="lock" class="w-3.5 h-3.5 text-brand-400"></i> Senha de Acesso
           </label>
           <div class="relative">
             <input
@@ -115,7 +115,7 @@
               placeholder="••••••••"
               required
               autocomplete="current-password"
-              class="w-full px-4 py-3 pr-11 rounded-xl bg-dark-input border border-dark-border text-white text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
+              class="w-full px-3.5 py-2.5 pr-11 rounded-xl bg-dark-input border border-dark-border text-white text-xs placeholder-slate-500 focus:outline-none focus:border-brand-500 transition"
             >
             <button
               type="button"
@@ -133,20 +133,23 @@
         <button
           type="submit"
           id="btn-login-submit"
-          class="w-full mt-2 py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 active:scale-[0.99]"
+          class="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 active:scale-[0.99]"
         >
           <i data-lucide="log-in" class="w-4 h-4"></i> Entrar no Painel
         </button>
       </form>
 
-      <div class="text-center">
-        <p class="text-[11px] text-slate-500">Autenticação JWT Segura • Arquitetura Multi-tenant</p>
+      <!-- Footer do Login -->
+      <div class="border-t border-dark-border/60 pt-4 text-center">
+        <p class="text-[11px] text-slate-500">
+          Precisa de uma conta ou suporte? Fale com seu administrador.
+        </p>
       </div>
     </div>
   </div>
 
-  <!-- PAINEL PRINCIPAL DA APLICAÇÃO (Inicia Oculto até autenticar) -->
-  <div id="app-wrapper" class="hidden min-h-screen flex flex-col">
+  <!-- APLICAÇÃO PRINCIPAL (PROTEGIDA POR LOGIN) -->
+  <div id="app-wrapper" class="hidden min-h-screen flex-col flex-1">
 
     <!-- TOP NAVIGATION BAR -->
     <header class="glass-panel sticky top-0 z-50 border-b border-dark-border px-4 lg:px-8 py-3.5">
@@ -162,7 +165,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gerador Ativo
               </span>
             </div>
-            <p class="text-xs text-slate-400">Geração de Arquivos .config • Validador ADB &amp; Mineração Local</p>
+            <p class="text-xs text-slate-400">Geração de Arquivos .config • Validador ADB &amp; Scanner Local</p>
           </div>
         </div>
 
@@ -198,7 +201,7 @@
     <!-- NAV TABS -->
     <div class="flex items-center gap-2 border-b border-dark-border overflow-x-auto pb-2 scrollbar-none">
       <button onclick="switchTab('scanner')" id="tab-btn-scanner" class="tab-btn active px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-purple-400 bg-purple-500/10 border border-purple-500/30">
-        <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i> Minerador &amp; Scanner ADB
+        <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i> Scanner &amp; Validador ADB
       </button>
       <button onclick="switchTab('vault')" id="tab-btn-vault" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover">
         <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Cofre &amp; Histórico
@@ -211,10 +214,10 @@
       </button>
     </div>
 
-    <!-- TAB 1: SCANNER & VALIDADOR ADB (MINERADOR ADB) -->
+    <!-- TAB 1: SCANNER & VALIDADOR ADB -->
     <div id="tab-scanner" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Coluna da Esquerda: Controles do Minerador & Scanner ADB (4 Colunas) -->
+      <!-- Coluna da Esquerda: Controles do Scanner & Validador ADB (4 Colunas) -->
       <div class="lg:col-span-4 flex flex-col gap-4">
         <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
           
@@ -222,7 +225,7 @@
           <div class="flex items-center justify-between border-b border-dark-border pb-3">
             <div>
               <h2 class="text-base font-bold text-white flex items-center gap-2">
-                <i data-lucide="zap" class="w-5 h-5 text-purple-400"></i> Minerador &amp; Scanner ADB
+                <i data-lucide="zap" class="w-5 h-5 text-purple-400"></i> Scanner &amp; Validador ADB
               </h2>
               <p class="text-xs text-slate-400 mt-0.5">Geração local e injeção ADB em tempo real</p>
             </div>
@@ -294,10 +297,10 @@
             </div>
           </div>
 
-          <!-- Ciclos de Mineração (Slider 1 a 256) -->
+          <!-- Ciclos de Validação (Slider 1 a 256) -->
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-white">Ciclos de Mineração:</label>
+              <label class="text-xs font-bold text-white">Ciclos de Validação:</label>
               <div class="flex items-center gap-2">
                 <span class="text-[11px] text-slate-400">
                   Fila: <strong id="batch-queue-count" class="text-white font-mono">10</strong> itens
@@ -320,7 +323,7 @@
 
             <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300 hover:text-white pt-1">
               <input type="checkbox" id="batch-stop-on-virgin" checked class="w-4 h-4 rounded bg-dark-input text-amber-500 border-dark-border accent-amber-500">
-              <span class="text-[11px] text-amber-300/90 font-medium">Pausar se encontrar <strong>Conta 0 Dias (Virgem)</strong></span>
+              <span class="text-[11px] text-amber-300/90 font-medium">Pausar se encontrar <strong>Conta Ativa</strong></span>
             </label>
           </div>
 
@@ -329,7 +332,7 @@
             <div class="grid grid-cols-2 gap-2">
               <button onclick="startBatchScanner()" id="btn-start-batch"
                 class="py-3 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2">
-                <i data-lucide="play" class="w-4 h-4"></i> Iniciar Mineração ADB
+                <i data-lucide="play" class="w-4 h-4"></i> Iniciar Scanner ADB
               </button>
               <button onclick="stopBatchScanner()" id="btn-stop-batch" disabled
                 class="py-3 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 disabled:opacity-40 disabled:cursor-not-allowed text-rose-300 hover:text-white font-bold text-xs transition flex items-center justify-center gap-2">
@@ -345,11 +348,11 @@
             <div class="grid grid-cols-2 gap-2">
               <button onclick="downloadApprovedBatchZip()" id="btn-download-approved-zip" disabled
                 class="py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-[11px] shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-200"></i> Baixar 0 Dias (.ZIP)
+                <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-200"></i> Baixar Aprovadas (.ZIP)
               </button>
               <button onclick="downloadAllBatchZip()" id="btn-download-all-zip" disabled
-                class="py-2.5 px-2 rounded-xl bg-dark-hover hover:bg-slate-700 border border-dark-border disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 hover:text-white font-bold text-[11px] transition flex items-center justify-center gap-1.5 text-center">
-                <i data-lucide="archive" class="w-3.5 h-3.5 text-indigo-300"></i> Baixar Todas (.ZIP)
+                class="py-2.5 px-2 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 hover:text-white font-semibold text-[11px] shadow-sm transition flex items-center justify-center gap-1.5 text-center">
+                <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-cyan-400"></i> Baixar Todas (.ZIP)
               </button>
             </div>
           </div>
@@ -357,12 +360,43 @@
         </div>
       </div>
 
-      <!-- Coluna da Direita: Estatísticas & Tabela de Resultados (8 Colunas) -->
+      <!-- Coluna da Direita: Tabela de Resultados ADB (8 Colunas) -->
       <div class="lg:col-span-8 flex flex-col gap-4">
-        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col flex-1 gap-4">
+        
+        <!-- Status e Ações Rápidas do Lote -->
+        <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
           
-          <!-- Grid de 4 Estatísticas -->
-          <div class="grid grid-cols-4 gap-2.5 text-xs font-mono">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-dark-border pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-white">Monitor de Execução em Tempo Real</h3>
+                <span id="batch-running-badge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 animate-pulse">
+                  EXECUTANDO
+                </span>
+              </div>
+              <p id="batch-progress-status" class="text-xs text-slate-400 mt-0.5">Aguardando início do teste...</p>
+            </div>
+            
+            <div class="flex items-center gap-2 self-end sm:self-center">
+              <button onclick="clearBatchTable()" class="px-3 py-1.5 rounded-lg bg-dark-input hover:bg-red-500/10 border border-dark-border hover:border-red-500/30 text-slate-400 hover:text-red-400 text-xs font-medium transition flex items-center gap-1.5">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpar Tabela
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso do Teste -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between text-xs font-medium">
+              <span class="text-slate-400 font-mono">Progresso do Lote</span>
+              <span id="batch-progress-percent" class="text-purple-400 font-bold font-mono">0%</span>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-dark-input overflow-hidden p-0.5 border border-dark-border">
+              <div id="batch-progress-bar" class="h-full bg-gradient-to-r from-purple-600 via-indigo-500 to-emerald-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Cards de Resumo e Filtros Rápidos -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
               <span class="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
               <span id="stat-batch-total" class="text-white font-bold text-lg mt-0.5">0</span>
@@ -429,7 +463,7 @@
                 <tbody id="batch-results-table-body" class="divide-y divide-dark-border font-mono text-[11px]">
                   <tr>
                     <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">
-                      1. Defina um MAC base (opcional) para focar a busca. | 2. Escolha os ciclos. | 3. Inicie a mineração.
+                      1. Defina um MAC base (opcional) para focar a busca. | 2. Escolha os ciclos. | 3. Inicie a validação.
                     </td>
                   </tr>
                 </tbody>
@@ -613,7 +647,7 @@
         <div class="flex flex-row items-center justify-between gap-4 border-b border-dark-border pb-4 overflow-x-auto flex-wrap">
           <div class="shrink-0">
             <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Cofre de Mineração
+              <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Cofre de Contas
             </h2>
           </div>
 
@@ -1115,7 +1149,7 @@
       <div class="flex items-center gap-2">
         <span class="text-slate-300 font-medium">Gerador de Configurações IPTV</span>
         <span>•</span>
-        <span>Mineração Local &amp; Validador ADB SaaS</span>
+        <span>Scanner Local &amp; Validador ADB SaaS</span>
       </div>
       <div class="flex items-center gap-3">
         <a href="https://pixgg.com.br/rzao" target="_blank" rel="noopener noreferrer" 
@@ -2003,7 +2037,7 @@
       if (el2) el2.value = "";
       if (el3) el3.value = "";
       if (hiddenMac) hiddenMac.value = "";
-      showToast("MAC Base limpo. O minerador gerará MACs 100% aleatórios.");
+      showToast("MAC Base limpo. O scanner gerará MACs 100% aleatórios.");
     }
 
     function getSequentialMAC(baseOctets, offset, defaultOctets) {
@@ -2270,7 +2304,7 @@
       lucide.createIcons();
     }
 
-    // --- COFRE DE MINERAÇÃO & INTELIGÊNCIA COLETIVA ---
+    // --- COFRE DE CONTAS & INTELIGÊNCIA COLETIVA ---
     let vaultRecords = [];
     let vaultSortColumn = 'tested_at';
     let vaultSortDirection = 'desc';
@@ -3278,7 +3312,7 @@
       reader.readAsText(file);
     }
 
-    // --- SCANNER & MINERADOR DIRETO ADB ---
+    // --- SCANNER & VALIDADOR DIRETO ADB ---
     let batchQueue = []; // array of { name: string, mac: string, xml_content: string, content: string }
     let batchResults = []; // array of { index, name, mac, content, account_id, days_raw, days_active, duration_sec, is_target, is_valid, status }
     let isBatchRunning = false;
@@ -3322,7 +3356,7 @@
       if (!isBatchRunning && batchResults.length === 0) {
         document.getElementById('batch-queue-count').innerText = qty;
         document.getElementById('stat-batch-total').innerText = qty;
-        document.getElementById('batch-progress-status').innerText = `Pronto para minerar e testar ${qty} configurações.`;
+        document.getElementById('batch-progress-status').innerText = `Pronto para escanear e testar ${qty} configurações.`;
       }
     }
 
@@ -3502,7 +3536,7 @@
       document.getElementById('btn-start-batch').disabled = false;
       document.getElementById('btn-stop-batch').disabled = true;
       if (document.getElementById('batch-progress-status').innerText.indexOf("pausado") === -1) {
-        document.getElementById('batch-progress-status').innerText = "Varredura e mineração concluídas!";
+        document.getElementById('batch-progress-status').innerText = "Varredura e validação concluídas!";
       }
       showToast("Varredura em lote concluída!");
       lucide.createIcons();
@@ -3595,7 +3629,7 @@
       document.getElementById('batch-results-table-body').innerHTML = `
         <tr>
           <td colspan="8" class="px-4 py-12 text-center text-slate-500 font-sans">
-            1. Defina um MAC base (opcional) para focar a busca. | 2. Escolha os ciclos. | 3. Inicie a mineração.
+            1. Defina um MAC base (opcional) para focar a busca. | 2. Escolha os ciclos. | 3. Inicie a validação.
           </td>
         </tr>
       `;

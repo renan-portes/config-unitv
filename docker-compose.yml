@@ -10,10 +10,10 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-      - DATABASE_URL=sqlite:////app/mining_history.db
+      - DATABASE_URL=sqlite:////app/scanner_history.db
       - JWT_SECRET=super-secret-mining-key-saas-unitv-2026-auth-token-key-32b
     volumes:
-      - ./mining_history.db:/app/mining_history.db
+      - ./scanner_history.db:/app/scanner_history.db
       - ./configs:/app/configs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

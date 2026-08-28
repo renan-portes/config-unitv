@@ -16,7 +16,7 @@ import requests
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Union
 from fastapi import FastAPI, HTTPException, Response, Request, Depends, status
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -50,7 +50,7 @@ import webbrowser
 import threading
 
 if getattr(sys, 'frozen', False):
-    BASE_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    BASE_DIR = sys._MEIPASS
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -61,7 +61,7 @@ if os.path.exists(apps_dir):
 
 # --- CONFIGURAÇÃO DE BANCO DE DADOS (ORM / AGNOSTIC DATABASE) ---
 # A URL de conexão está isolada para fácil migração futura para PostgreSQL (Docker/Portainer/Proxmox)
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'mining_history.db')}")
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'scanner_history.db')}")
 
 # Configuração agnóstica para SQLite e PostgreSQL
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
@@ -113,12 +113,15 @@ class AccountHistory(Base):
 
     def to_dict(self):
         uname = None
-        if self.user:
-            uname = self.user.username
-        elif self.user_id is None:
-            uname = "Admin / Sistema"
-        else:
-            uname = f"User #{self.user_id}"
+        try:
+            if self.user:
+                uname = self.user.username
+            elif self.user_id is None:
+                uname = "Admin / Sistema"
+            else:
+                uname = f"User #{self.user_id}"
+        except Exception:
+            uname = f"User #{self.user_id}" if self.user_id else "Admin / Sistema"
 
         return {
             "mac": self.mac,
@@ -404,6 +407,15 @@ class UpdateUserRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class WorkerReportRequest(BaseModel):
+    mac_address: Optional[str] = None
+    mac: Optional[str] = None
+    account_id: Optional[Union[str, int]] = None
+    days_active: Optional[int] = None
+    status_message: Optional[str] = None
+    is_valid: bool = False
 
 
 # --- ROTAS DE AUTENTICAÇÃO & ADMINISTRAÇÃO (SaaS / JWT) ---
@@ -711,6 +723,81 @@ def get_mining_history(
         raise HTTPException(status_code=500, detail=f"Erro ao consultar histórico: {str(e)}")
     finally:
         session.close()
+
+
+# --- ROTAS DO WORKER / NÓ REMOTO (MASTER-NODE API) ---
+
+@app.get("/api/worker/check-mac")
+def worker_check_mac(
+    mac: Optional[str] = None,
+    mac_address: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Consulta o banco de dados na nuvem para o MAC fornecido (Smart Skip).
+    Retorna { "skip": true, "reason": "..." } se o MAC for conhecido como inválido/bloqueado.
+    Se o MAC for novo ou elegível para teste, retorna { "skip": false, "reason": null }.
+    Totalmente desacoplado de execução ADB local.
+    """
+    target_mac = mac or mac_address
+    if not target_mac or not isinstance(target_mac, str):
+        return {"skip": False, "reason": None}
+
+    clean_mac = target_mac.strip().upper()
+    session = SessionLocal()
+    try:
+        cached_account = session.query(AccountHistory).filter(
+            func.upper(AccountHistory.mac) == clean_mac
+        ).first()
+
+        if cached_account and cached_account.is_valid is False:
+            skip_reason = cached_account.status_message or "Conta inválida/bloqueada previamente"
+            return {
+                "skip": True,
+                "reason": f"⚡ Smart Skip: MAC banido/inválido previamente ({skip_reason})"
+            }
+
+        return {
+            "skip": False,
+            "reason": None
+        }
+    finally:
+        session.close()
+
+
+@app.post("/api/worker/report")
+def worker_report(
+    req: WorkerReportRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recebe os resultados do teste executado no worker/cliente remoto.
+    Persiste no banco de dados vinculando ao user_id logado.
+    Totalmente desacoplado de execução ADB local.
+    """
+    target_mac = req.mac_address or req.mac
+    if not target_mac:
+        raise HTTPException(status_code=400, detail="Parâmetro 'mac_address' ou 'mac' é obrigatório.")
+
+    acc_id_str = str(req.account_id) if (req.account_id is not None and str(req.account_id) != "-") else None
+
+    record = save_account_history(
+        mac=target_mac,
+        user_id=current_user.id,
+        account_id=acc_id_str,
+        days_active=req.days_active,
+        status_message=req.status_message or ("✨ 0 DIAS (VIRGEM)" if req.is_valid else "❌ Inválida / Rejeitada"),
+        is_valid=req.is_valid
+    )
+
+    if not record:
+        raise HTTPException(status_code=400, detail="Não foi possível salvar o registro de histórico para o MAC.")
+
+    return {
+        "success": True,
+        "message": f"Relatório do MAC {record.mac} registrado com sucesso!",
+        "record": record.to_dict()
+    }
 
 
 @app.get("/api/configs")
