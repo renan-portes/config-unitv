@@ -6,6 +6,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Ordenação Interativa e Multicoluna no Cofre:** Cabeçalhos clicáveis na tabela do Cofre (`Endereço MAC`, `ID da Conta`, `Dias Ativos`, `Status`, `Data do Teste`, `Usuário`) com ordenação ascendente/descendente e indicadores visuais dinâmicos (`▲`, `▼`, `↕`).
+- **Filtros Avançados Combinados no Cofre:** Novos seletores dropdown de 'Dias Ativos' (Virgens 0 Dias, Ativas >0 Dias, Banidas) e 'Filtro de Usuário' exclusivo para administradores, operando em sincronia com a busca textual e o filtro de status geral.
 - **Gestão Avançada de Assinaturas & Expiração (SaaS):** Adicionada coluna `expires_at` com migração automática no banco (`ensure_schema_migrations()`), trava comercial de bloqueio 403 Forbidden para contas vencidas no login e rotas protegidas.
 - **CRUD Completo de Usuários no Painel Admin:** Endpoints `PUT /api/admin/users/{id}` (alteração de papel, redefinição de senha e renovação/extensão de dias) e `DELETE /api/admin/users/{id}` (com proteção contra auto-exclusão do admin logado).
 - **Interface Visual de Assinaturas:** Seletor de validade no formulário de cadastro (7d, 15d, 30d, 90d, 365d, Vitalício), coluna de vencimento com status visual (Válido, Expirado, Vitalício) e modal de edição rápida para renovação de planos.
