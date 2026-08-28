@@ -610,7 +610,7 @@
       <div class="glass-panel p-5 rounded-2xl border border-dark-border flex flex-col gap-4">
         
         <!-- Barra de Ações & Filtros -->
-        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-dark-border pb-4">
+        <div class="flex flex-row items-center justify-between gap-4 border-b border-dark-border pb-4 overflow-x-auto">
           <div class="shrink-0">
             <h2 class="text-base font-bold text-white flex items-center gap-2">
               <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i> Cofre de Mineração &amp; Histórico
@@ -618,7 +618,7 @@
             <p class="text-xs text-slate-400 mt-0.5">Histórico persistente de contas mineradas e cache de Inteligência Coletiva</p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex flex-row items-center gap-3 shrink-0">
             <div class="relative">
               <input
                 type="text"
@@ -679,12 +679,12 @@
 
             <button
               onclick="downloadSelectedVaultZip()"
-              id="btn-export-selected"
+              id="btn-download-selected"
               title="Baixar apenas as contas selecionadas com checkbox em arquivo .ZIP"
               class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5 shrink-0 active:scale-[0.98]"
             >
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span id="btn-export-selected-label">Baixar Selecionadas (.ZIP)</span>
+              <span id="btn-download-selected-label">Baixar Selecionadas (.ZIP)</span>
             </button>
           </div>
         </div>
@@ -2333,7 +2333,7 @@
 
     function updateSelectedCountUI() {
       const count = selectedVaultMacs.size;
-      const label = document.getElementById('btn-export-selected-label');
+      const label = document.getElementById('btn-download-selected-label') || document.getElementById('btn-export-selected-label');
       if (label) {
         label.innerText = count > 0 ? `Baixar Selecionadas (${count})` : 'Baixar Selecionadas (.ZIP)';
       }
@@ -2583,7 +2583,7 @@
         return;
       }
 
-      const btn = document.getElementById('btn-export-selected');
+      const btn = document.getElementById('btn-download-selected') || document.getElementById('btn-export-selected');
       const origHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.innerHTML = `<div class="inline-block animate-spin w-3.5 h-3.5 border-2 border-brand-400 border-t-transparent rounded-full mr-1"></div> Exportando...`;
