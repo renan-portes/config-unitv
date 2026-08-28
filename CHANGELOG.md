@@ -6,6 +6,9 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Aba 'Cofre & Histórico' (UI):** Nova interface com métricas em tempo real (Total, Virgens, Recicladas, Banidas), busca textual rápida por MAC ou ID, filtros por status e cópia instantânea de MACs.
+- **Motor Smart Skip (Inteligência Coletiva):** Verificação prévia no banco de dados antes de acionar o ADB. Contas já conhecidas como banidas/inválidas (`is_valid = False`) são ignoradas imediatamente, reduzindo o tempo de teste de ~13s para menos de 10ms por conta e poupando o emulador.
+- **Enriquecimento Multi-tenant do Histórico:** Mapeamento `username` via `joinedload` em `AccountHistory.to_dict()` garantindo exibição clara do operador de cada teste.
 - **Tela de Login e Proteção Visual no Frontend:** Novo card de login em glassmorphism dark mode com Tailwind CSS, que oculta todo o painel principal até a autenticação com sucesso.
 - **Gerenciamento de Sessão JWT no Navegador:** Armazenamento do token de acesso no `localStorage`, validação persistente ao recarregar a página (`/api/auth/me`) e encerramento de sessão com logout seguro.
 - **Interceptador Universal `authFetch`:** Injeção automática do cabeçalho `Authorization: Bearer <TOKEN>` em todas as requisições assíncronas do frontend e redirecionamento suave em caso de token expirado (401).
