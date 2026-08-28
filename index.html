@@ -928,13 +928,14 @@
                     <th class="py-3 px-3 font-semibold w-10 text-center">ID</th>
                     <th class="py-3 px-4 font-semibold">Nome de Usuário</th>
                     <th class="py-3 px-3 font-semibold">Nível</th>
+                    <th class="py-3 px-3 font-semibold">Máquina (HWID)</th>
                     <th class="py-3 px-4 font-semibold">Vencimento</th>
-                    <th class="py-3 px-3 font-semibold text-center w-24">Ações</th>
+                    <th class="py-3 px-3 font-semibold text-center w-28">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-table-body" class="divide-y divide-dark-border font-mono">
                   <tr>
-                    <td colspan="5" class="py-8 text-center text-slate-500 font-sans">
+                    <td colspan="6" class="py-8 text-center text-slate-500 font-sans">
                       Carregando usuários...
                     </td>
                   </tr>
@@ -2940,7 +2941,7 @@
       if (!users || users.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="py-8 text-center text-slate-500 font-sans">
+            <td colspan="6" class="py-8 text-center text-slate-500 font-sans">
               Nenhum usuário cadastrado no sistema.
             </td>
           </tr>
@@ -2957,6 +2958,12 @@
           ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">👑 Admin</span>`
           : `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">👤 Cliente</span>`;
 
+        let hwidBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans text-slate-500 flex items-center gap-1 w-fit"><i data-lucide="unlock" class="w-3 h-3 text-slate-500"></i> Livre</span>`;
+        if (u.hwid) {
+          const shortHwid = u.hwid.length > 10 ? u.hwid.slice(0, 10) + '...' : u.hwid;
+          hwidBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 w-fit cursor-help" title="HWID Vinculado: ${u.hwid}"><i data-lucide="laptop" class="w-3 h-3 text-cyan-400"></i> ${shortHwid}</span>`;
+        }
+
         let expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">♾️ Vitalício</span>`;
         if (u.is_expired) {
           let dateStr = '-';
@@ -2971,6 +2978,7 @@
         }
 
         const isSelf = currentUser && currentUser.id === u.id;
+        const resetHwidBtn = `<button onclick="resetUserHwid(${u.id}, '${u.username}')" title="Resetar Vínculo de HWID (Liberar Computador)" class="p-1.5 rounded-lg bg-dark-card hover:bg-cyan-500/20 text-cyan-400 border border-dark-border hover:border-cyan-500/40 transition active:scale-95"><i data-lucide="monitor" class="w-3.5 h-3.5"></i></button>`;
         const deleteBtn = isSelf
           ? `<button disabled title="Você não pode excluir sua própria conta" class="p-1.5 rounded-lg bg-dark-card text-slate-600 border border-dark-border cursor-not-allowed opacity-50"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`
           : `<button onclick="confirmDeleteUser(${u.id}, '${u.username}')" title="Excluir Usuário" class="p-1.5 rounded-lg bg-dark-card hover:bg-rose-500/20 text-rose-400 border border-dark-border hover:border-rose-500/40 transition active:scale-95"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`;
@@ -2988,12 +2996,14 @@
               </div>
             </td>
             <td class="py-3 px-3 font-sans">${roleBadge}</td>
+            <td class="py-3 px-3 font-sans">${hwidBadge}</td>
             <td class="py-3 px-4 font-sans">${expiryBadge}</td>
             <td class="py-3 px-3 text-center font-sans">
               <div class="flex items-center justify-center gap-1.5">
                 <button onclick="openEditUserModal(${u.id})" title="Editar Usuário / Renovar Assinatura" class="p-1.5 rounded-lg bg-dark-card hover:bg-amber-500/20 text-amber-400 border border-dark-border hover:border-amber-500/40 transition active:scale-95">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </button>
+                ${resetHwidBtn}
                 ${deleteBtn}
               </div>
             </td>
@@ -3004,6 +3014,27 @@
       tbody.innerHTML = html;
       if (countEl) countEl.innerText = `Total: ${users.length} usuários cadastrados`;
       lucide.createIcons();
+    }
+
+    async function resetUserHwid(userId, username) {
+      if (!confirm(`Deseja realmente resetar o vínculo de Hardware ID (HWID) do usuário '${username}'?\nIsso permitirá que o cliente se conecte a partir de um novo computador.`)) {
+        return;
+      }
+      try {
+        const res = await authFetch(`/api/admin/users/${userId}/reset-hwid`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || 'Falha ao resetar HWID.', true);
+          return;
+        }
+        showToast(`HWID do usuário '${username}' resetado com sucesso!`);
+        loadAdminUsers();
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao resetar HWID: ' + err.message, true);
+      }
     }
 
     async function handleCreateAdminUser() {

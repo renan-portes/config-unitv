@@ -77,6 +77,7 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(20), default="user", nullable=False) # 'user' ou 'admin'
+    hwid = Column(String(255), nullable=True, default=None) # Hardware ID (Trava de Máquina do Worker)
     expires_at = Column(DateTime, nullable=True) # Prazo de validade da assinatura (None = Vitalício)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -92,6 +93,7 @@ class User(Base):
             "id": self.id,
             "username": self.username,
             "role": self.role,
+            "hwid": self.hwid,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "is_expired": self.is_expired(),
             "created_at": self.created_at.isoformat() if self.created_at else None
@@ -140,7 +142,7 @@ Base.metadata.create_all(bind=db_engine)
 
 
 def ensure_schema_migrations():
-    """Garante que colunas novas como user_id e expires_at existam em bancos de dados já existentes"""
+    """Garante que colunas novas como user_id, expires_at e hwid existam em bancos de dados já existentes"""
     try:
         with db_engine.connect() as conn:
             if DATABASE_URL.startswith("sqlite"):
@@ -151,11 +153,14 @@ def ensure_schema_migrations():
                     conn.exec_driver_sql("ALTER TABLE account_history ADD COLUMN user_id INTEGER REFERENCES users(id)")
                     conn.commit()
 
-                # Migração users.expires_at
+                # Migração users.expires_at e users.hwid
                 cursor_users = conn.exec_driver_sql("PRAGMA table_info(users)")
                 u_columns = [row[1] for row in cursor_users.fetchall()]
                 if u_columns and "expires_at" not in u_columns:
                     conn.exec_driver_sql("ALTER TABLE users ADD COLUMN expires_at DATETIME")
+                    conn.commit()
+                if u_columns and "hwid" not in u_columns:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN hwid VARCHAR(255)")
                     conn.commit()
     except Exception as e:
         print(f"[DB Migration Note] {e}")
@@ -386,6 +391,7 @@ class ADBInjectRequest(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+    hwid: Optional[str] = None
 
 
 class CreateUserRequest(BaseModel):
@@ -424,6 +430,9 @@ class WorkerReportRequest(BaseModel):
 def login(req: LoginRequest):
     """
     Valida as credenciais do usuário e retorna o token de acesso JWT.
+    Se fornecido 'hwid' (App Desktop Cliente):
+    - Se user.hwid for None: vincula o HWID (primeiro acesso da máquina) e libera o login.
+    - Se user.hwid já existir e for diferente do enviado: bloqueia com 403 Forbidden.
     """
     if not req.username or not req.password:
         raise HTTPException(
@@ -446,6 +455,21 @@ def login(req: LoginRequest):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Assinatura expirada. Entre em contato com o administrador para renovar seu acesso."
             )
+
+        # Validação de Bloqueio por HWID (Hardware ID)
+        if req.hwid and req.hwid.strip():
+            client_hwid = req.hwid.strip().upper()
+            if user.hwid is None:
+                # Primeiro acesso no app cliente: vincula a máquina ao usuário
+                user.hwid = client_hwid
+                session.commit()
+                session.refresh(user)
+            elif user.hwid.upper() != client_hwid:
+                # Tentativa de acesso em máquina diferente da cadastrada
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Este usuário já está vinculado a outro computador."
+                )
 
         token = create_access_token(user)
         return {
@@ -653,6 +677,32 @@ def delete_admin_user(
         return {
             "success": True,
             "message": f"Usuário '{deleted_name}' (ID: {user_id}) excluído com sucesso!"
+        }
+    finally:
+        session.close()
+
+
+@app.post("/api/admin/users/{user_id}/reset-hwid")
+def reset_admin_user_hwid(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin)
+):
+    """
+    Reseta o vínculo de Hardware ID (HWID) de um usuário, liberando para nova máquina (Apenas Administradores).
+    """
+    session = SessionLocal()
+    try:
+        target_user = session.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+        target_user.hwid = None
+        session.commit()
+        session.refresh(target_user)
+        return {
+            "success": True,
+            "message": f"Vínculo de Hardware ID (HWID) do usuário '{target_user.username}' resetado com sucesso!",
+            "user": target_user.to_dict()
         }
     finally:
         session.close()
