@@ -6,9 +6,10 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
-- **Correção da Regra de Validação de Contas Ativas:** Contas que possuem dias ativos (`days_active > 0`) agora são SEMPRE consideradas Válidas (`is_valid = True`) com status de Ativa, mesmo quando o `account_id` for inferior a 567.000.000.
-- **Polimento UI/UX para Resolução Full HD:** Ampliação dos containers principais (`header`, `main`) para `max-w-screen-2xl` e desafogamento dos campos de busca e filtros na tabela do Cofre.
-- **Simplificação e Destaque da Exportação do Cofre:** Remoção do botão redundante 'Exportar 0 Dias' e reposicionamento do botão 'Baixar Selecionadas (.ZIP)' em destaque verde esmeralda alinhado ao botão 'Atualizar'.
+- **Prioridade Absoluta para Contas Ativas (OCR/Backend):** Correção da ordem de validação em `inspect_emulator_account_info` e ampliação das expressões regulares em `parse_profile_dump` garantindo que contas com dias ativos (`days_active > 0`) sejam SEMPRE tratadas como válidas (`is_valid = True`) e ativas, sobrepondo qualquer checagem de ID legado (< 567M).
+- **Renomeação do Card de Estatísticas do Cofre:** Atualização visual do card superior de 'Contas Recicladas' para 'Contas Ativas' com tema ciano/azul (`text-cyan-400`).
+- **Aproveitamento de Tela Full HD (1080p):** Expansão dos containers principais da aplicação para `max-w-screen-2xl` e organização harmônica dos controles e filtros da tabela.
+- **Destaque e Reorganização do Botão de Exportação:** Remoção do botão redundante 'Exportar 0 Dias' e alinhamento do botão 'Baixar Selecionadas (.ZIP)' em verde esmeralda ao lado do botão 'Atualizar'.
 - **Revelação/Toggle de Senha no Login:** Adicionado botão com ícone de olho no input de senha da tela de login para alternar visibilidade (`password`/`text`).
 - **Remoção de Links Externos no Rodapé:** Retirado o link de repositório no GitHub do rodapé da aplicação, preservando o botão de apoio via Pix.
 - **Seleção em Massa e Download Personalizado no Cofre:** Adição de checkboxes individuais e cabeçalho mestre ("selecionar todos os visíveis") na tabela do Cofre, com o novo botão "Baixar Selecionadas (.ZIP)" gerando pacotes compactados dinamicamente via JSZip.

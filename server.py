@@ -1207,14 +1207,18 @@ def parse_profile_dump(dump_xml_str: str) -> tuple[Optional[str], Optional[int],
         if m_date_any:
             activation_date = m_date_any.group(1).replace('/', '-')
             
-    # 2. Busca quantidade de dias ativos (logo após 'ativa por' ou antes de 'dias')
-    m_days_ativa_por = re.search(r'ativa\s+por\s*([0-9]+)', all_text_combined, re.IGNORECASE)
+    # 2. Busca quantidade de dias ativos (logo após 'ativa por', 'ativo por', 'validade' ou antes de 'dias'/'dia')
+    m_days_ativa_por = re.search(r'ativ[ao]\s+por\s*([0-9]+)', all_text_combined, re.IGNORECASE)
     if m_days_ativa_por:
         days_active = int(m_days_ativa_por.group(1))
     else:
-        m_days_dias = re.search(r'([0-9]+)\s*dias', all_text_combined, re.IGNORECASE)
+        m_days_dias = re.search(r'([0-9]+)\s*dia', all_text_combined, re.IGNORECASE)
         if m_days_dias:
             days_active = int(m_days_dias.group(1))
+        else:
+            m_days_val = re.search(r'(?:validade|expira|restante[s]?)\s*[:\s]*([0-9]+)', all_text_combined, re.IGNORECASE)
+            if m_days_val:
+                days_active = int(m_days_val.group(1))
             
     return activation_date, days_active, status_msg, has_access_error
 
