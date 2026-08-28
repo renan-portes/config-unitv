@@ -6,6 +6,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Refinamento do Cabeçalho do Cofre:** Limpeza do subtítulo descritivo e simplificação do título para 'Cofre de Mineração', com alinhamento horizontal perfeitamente integrado entre o título e a barra de ações/filtros (`flex-wrap`).
 - **Hotfix de Alinhamento Absoluto do Botão de Download (DOM):** Inclusão direta do botão 'Baixar Selecionadas (.ZIP)' (`#btn-download-selected`) na div flex horizontal (`flex flex-row items-center gap-3`) com remoção de qualquer quebra de linha (`flex-wrap`), garantindo posicionamento linear contínuo ao lado do botão 'Atualizar'.
 - **Script de Higienização Retroativa do Banco (`fix_db.py`):** Criação de rotina automatizada que conecta ao banco de dados via SQLAlchemy e atualiza retroativamente todas as contas históricas onde `days_active > 0` e `is_valid == False`, marcando-as como válidas (`is_valid = True`) com status limpo de ativa.
 - **Prioridade Absoluta para Contas Ativas (OCR/Backend):** Correção da ordem de validação em `inspect_emulator_account_info` e ampliação das expressões regulares em `parse_profile_dump` garantindo que contas com dias ativos (`days_active > 0`) sejam SEMPRE tratadas como válidas (`is_valid = True`) e ativas, sobrepondo qualquer checagem de ID legado (< 567M).
