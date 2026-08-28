@@ -6,6 +6,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ## [1.5.0] - 27-08-2026
 ### 🚀 Inteligência Coletiva, Multi-tenant & Autenticação SaaS
+- **Script de Higienização Retroativa do Banco (`fix_db.py`):** Criação de rotina automatizada que conecta ao banco de dados via SQLAlchemy e atualiza retroativamente todas as contas históricas onde `days_active > 0` e `is_valid == False`, marcando-as como válidas (`is_valid = True`) com status limpo de ativa.
+- **Correção de Alinhamento Flexbox no Cofre:** Ajuste estrutural do container de ações do Cofre (`xl:flex-row`, `shrink-0`) garantindo que a barra de busca, selects, botão 'Atualizar' e o botão 'Baixar Selecionadas (.ZIP)' permaneçam perfeitamente alinhados na mesma linha em telas Full HD.
 - **Prioridade Absoluta para Contas Ativas (OCR/Backend):** Correção da ordem de validação em `inspect_emulator_account_info` e ampliação das expressões regulares em `parse_profile_dump` garantindo que contas com dias ativos (`days_active > 0`) sejam SEMPRE tratadas como válidas (`is_valid = True`) e ativas, sobrepondo qualquer checagem de ID legado (< 567M).
 - **Renomeação do Card de Estatísticas do Cofre:** Atualização visual do card superior de 'Contas Recicladas' para 'Contas Ativas' com tema ciano/azul (`text-cyan-400`).
 - **Aproveitamento de Tela Full HD (1080p):** Expansão dos containers principais da aplicação para `max-w-screen-2xl` e organização harmônica dos controles e filtros da tabela.
