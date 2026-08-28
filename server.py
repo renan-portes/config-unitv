@@ -15,7 +15,7 @@ import subprocess
 import requests
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Union
 from fastapi import FastAPI, HTTPException, Response, Request, Depends, status
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, HTMLResponse
@@ -59,15 +59,21 @@ if os.path.exists(apps_dir):
     app.mount("/apps", StaticFiles(directory=apps_dir), name="apps")
 
 
-# --- CONFIGURAÇÃO DE BANCO DE DADOS (ORM / AGNOSTIC DATABASE) ---
-# A URL de conexão está isolada para fácil migração futura para PostgreSQL (Docker/Portainer/Proxmox)
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'scanner_history.db')}")
+# --- BANCO DE DADOS & MODELOS (MULTI-TENANT & AUTENTICAÇÃO) ---
 
-# Configuração agnóstica para SQLite e PostgreSQL
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-db_engine = create_engine(DATABASE_URL, connect_args=connect_args, echo=False)
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'scanner_history.db')}")
+db_engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    echo=False
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
 Base = declarative_base()
+
+
+def get_utc_now() -> datetime:
+    """Retorna o timestamp atual em UTC com timezone-aware (evita DeprecationWarning)"""
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -79,24 +85,37 @@ class User(Base):
     role = Column(String(20), default="user", nullable=False) # 'user' ou 'admin'
     hwid = Column(String(255), nullable=True, default=None) # Hardware ID (Trava de Máquina do Worker)
     expires_at = Column(DateTime, nullable=True) # Prazo de validade da assinatura (None = Vitalício)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
 
     history = relationship("AccountHistory", back_populates="user", cascade="all, delete-orphan")
 
     def is_expired(self) -> bool:
+        """Verifica estritamente contra o relógio UTC do servidor para prevenir fraudes locais"""
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at
+        exp = self.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) > exp
 
     def to_dict(self):
+        exp_str = None
+        if self.expires_at:
+            exp_dt = self.expires_at if self.expires_at.tzinfo is not None else self.expires_at.replace(tzinfo=timezone.utc)
+            exp_str = exp_dt.isoformat()
+        created_str = None
+        if self.created_at:
+            c_dt = self.created_at if self.created_at.tzinfo is not None else self.created_at.replace(tzinfo=timezone.utc)
+            created_str = c_dt.isoformat()
+
         return {
             "id": self.id,
             "username": self.username,
             "role": self.role,
             "hwid": self.hwid,
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "expires_at": exp_str,
             "is_expired": self.is_expired(),
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": created_str
         }
 
 
@@ -109,7 +128,7 @@ class AccountHistory(Base):
     days_active = Column(Integer, nullable=True)
     status_message = Column(String(255), nullable=True)
     is_valid = Column(Boolean, default=False, nullable=False)
-    tested_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    tested_at = Column(DateTime, default=get_utc_now, nullable=False)
 
     user = relationship("User", back_populates="history")
 
@@ -125,6 +144,11 @@ class AccountHistory(Base):
         except Exception:
             uname = f"User #{self.user_id}" if self.user_id else "Admin / Sistema"
 
+        tested_str = None
+        if self.tested_at:
+            t_dt = self.tested_at if self.tested_at.tzinfo is not None else self.tested_at.replace(tzinfo=timezone.utc)
+            tested_str = t_dt.isoformat()
+
         return {
             "mac": self.mac,
             "user_id": self.user_id,
@@ -133,7 +157,7 @@ class AccountHistory(Base):
             "days_active": self.days_active,
             "status_message": self.status_message,
             "is_valid": self.is_valid,
-            "tested_at": self.tested_at.isoformat() if self.tested_at else None
+            "tested_at": tested_str
         }
 
 
@@ -193,7 +217,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_access_token(user: User, expires_delta: Optional[timedelta] = None) -> str:
     """Gera um token JWT assinado com dados do usuário e data de expiração"""
-    expire = datetime.utcnow() + (expires_delta or timedelta(hours=JWT_EXPIRATION_HOURS))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=JWT_EXPIRATION_HOURS))
     payload = {
         "sub": user.username,
         "user_id": user.id,
@@ -334,7 +358,7 @@ def save_account_history(
             days_active=days_active if isinstance(days_active, int) else None,
             status_message=status_message or "Desconhecido",
             is_valid=bool(is_valid),
-            tested_at=datetime.utcnow()
+            tested_at=datetime.now(timezone.utc)
         )
         merged = session.merge(record)
         session.commit()
@@ -571,11 +595,11 @@ def create_admin_user(
     expires = None
     if req.expires_at:
         try:
-            expires = datetime.fromisoformat(req.expires_at.replace("Z", "+00:00")).replace(tzinfo=None)
+            expires = datetime.fromisoformat(req.expires_at.replace("Z", "+00:00"))
         except Exception:
             expires = None
     elif req.duration_days and req.duration_days > 0:
-        expires = datetime.utcnow() + timedelta(days=req.duration_days)
+        expires = datetime.now(timezone.utc) + timedelta(days=req.duration_days)
 
     session = SessionLocal()
     try:
@@ -632,14 +656,18 @@ def update_admin_user(
             if req.duration_days <= 0:
                 target_user.expires_at = None
             else:
-                base_time = target_user.expires_at if (target_user.expires_at and target_user.expires_at > datetime.utcnow()) else datetime.utcnow()
+                now_utc = datetime.now(timezone.utc)
+                target_exp = target_user.expires_at
+                if target_exp and target_exp.tzinfo is None:
+                    target_exp = target_exp.replace(tzinfo=timezone.utc)
+                base_time = target_exp if (target_exp and target_exp > now_utc) else now_utc
                 target_user.expires_at = base_time + timedelta(days=req.duration_days)
         elif req.expires_at is not None:
             if req.expires_at.lower() in ("null", "none", "lifetime", ""):
                 target_user.expires_at = None
             else:
                 try:
-                    target_user.expires_at = datetime.fromisoformat(req.expires_at.replace("Z", "+00:00")).replace(tzinfo=None)
+                    target_user.expires_at = datetime.fromisoformat(req.expires_at.replace("Z", "+00:00"))
                 except Exception:
                     pass
 

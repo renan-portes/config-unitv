@@ -1,4 +1,4 @@
-﻿"""
+"""
 Scanner Headless Agent (Ponte Web-ADB) - client_node.py
 Micro-servidor HTTP local rodando em 127.0.0.1:21504 com FastAPI e Uvicorn
 Atua como ponte entre o Painel Web (SaaS) e o Emulador Android local (ADB)
@@ -14,7 +14,7 @@ import hashlib
 import threading
 import subprocess
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, HTTPException

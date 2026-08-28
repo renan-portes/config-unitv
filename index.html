@@ -2543,6 +2543,23 @@
       renderVaultTable(filtered);
     }
 
+    // --- UTILITÁRIOS DE TIMEZONE & DATAS (CONVERSÃO UTC -> LOCAL BROWSER) ---
+    function formatUtcToLocal(utcDateStr, includeTime = true) {
+      if (!utcDateStr) return '-';
+      try {
+        let str = String(utcDateStr).trim();
+        // Se a string ISO não possuir indicador explícito de timezone ('Z' ou offset), anexa 'Z' para interpretar como UTC
+        if (!str.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(str)) {
+          str += 'Z';
+        }
+        const dt = new Date(str);
+        if (isNaN(dt.getTime())) return utcDateStr;
+        return includeTime ? dt.toLocaleString('pt-BR') : dt.toLocaleDateString('pt-BR');
+      } catch (e) {
+        return utcDateStr;
+      }
+    }
+
     function renderVaultTable(records) {
       const tbody = document.getElementById('vault-table-body');
       const countEl = document.getElementById('vault-showing-count');
@@ -2585,16 +2602,7 @@
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/15 text-cyan-300 border border-blue-500/30">${r.status_message || '⭐ Ativa'}</span>`;
         }
 
-        let dateStr = '-';
-        if (r.tested_at) {
-          try {
-            const dt = new Date(r.tested_at);
-            dateStr = dt.toLocaleString('pt-BR');
-          } catch(e) {
-            dateStr = r.tested_at.slice(0, 19).replace('T', ' ');
-          }
-        }
-
+        const dateStr = formatUtcToLocal(r.tested_at, true);
         const usernameText = r.username || (r.user_id ? `User #${r.user_id}` : 'Admin / Sistema');
 
         html += `
@@ -2778,10 +2786,10 @@
         }
         if (expiryEl) {
           if (user.is_expired) {
-            let dateStr = user.expires_at ? new Date(user.expires_at).toLocaleString('pt-BR') : '';
+            const dateStr = user.expires_at ? formatUtcToLocal(user.expires_at, true) : '';
             expiryEl.innerHTML = `<span class="text-rose-400 font-semibold flex items-center gap-1"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Expirada em: ${dateStr}</span>`;
           } else if (user.expires_at) {
-            let dateStr = new Date(user.expires_at).toLocaleString('pt-BR');
+            const dateStr = formatUtcToLocal(user.expires_at, true);
             expiryEl.innerHTML = `<span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Válido até: ${dateStr}</span>`;
           } else {
             expiryEl.innerHTML = `<span class="text-cyan-400 font-semibold flex items-center gap-1"><i data-lucide="infinity" class="w-3.5 h-3.5"></i> Acesso Vitalício (Sem Expiração)</span>`;
@@ -2805,10 +2813,10 @@
             }
             if (expiryEl) {
               if (u.is_expired) {
-                let dateStr = u.expires_at ? new Date(u.expires_at).toLocaleString('pt-BR') : '';
+                const dateStr = u.expires_at ? formatUtcToLocal(u.expires_at, true) : '';
                 expiryEl.innerHTML = `<span class="text-rose-400 font-semibold flex items-center gap-1"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Expirada em: ${dateStr}</span>`;
               } else if (u.expires_at) {
-                let dateStr = new Date(u.expires_at).toLocaleString('pt-BR');
+                const dateStr = formatUtcToLocal(u.expires_at, true);
                 expiryEl.innerHTML = `<span class="text-emerald-400 font-semibold flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Válido até: ${dateStr}</span>`;
               } else {
                 expiryEl.innerHTML = `<span class="text-cyan-400 font-semibold flex items-center gap-1"><i data-lucide="infinity" class="w-3.5 h-3.5"></i> Acesso Vitalício (Sem Expiração)</span>`;
@@ -2972,14 +2980,10 @@
 
         let expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">♾️ Vitalício</span>`;
         if (u.is_expired) {
-          let dateStr = '-';
-          if (u.expires_at) {
-            try { dateStr = new Date(u.expires_at).toLocaleDateString('pt-BR'); } catch(e) {}
-          }
+          const dateStr = u.expires_at ? formatUtcToLocal(u.expires_at, false) : '-';
           expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">❌ Expirado (${dateStr})</span>`;
         } else if (u.expires_at) {
-          let dateStr = '-';
-          try { dateStr = new Date(u.expires_at).toLocaleString('pt-BR'); } catch(e) {}
+          const dateStr = formatUtcToLocal(u.expires_at, true);
           expiryBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">📅 ${dateStr}</span>`;
         }
 
@@ -3138,10 +3142,10 @@
 
       if (statusText) {
         if (user.is_expired) {
-          let dateStr = user.expires_at ? new Date(user.expires_at).toLocaleString('pt-BR') : '';
+          const dateStr = user.expires_at ? formatUtcToLocal(user.expires_at, true) : '';
           statusText.innerHTML = `<span class="text-rose-400 font-semibold">Status atual: Expirado em ${dateStr}</span>`;
         } else if (user.expires_at) {
-          let dateStr = new Date(user.expires_at).toLocaleString('pt-BR');
+          const dateStr = formatUtcToLocal(user.expires_at, true);
           statusText.innerHTML = `<span class="text-emerald-400 font-semibold">Status atual: Válido até ${dateStr}</span>`;
         } else {
           statusText.innerHTML = `<span class="text-cyan-400 font-semibold">Status atual: Acesso Vitalício (Sem Vencimento)</span>`;
@@ -3358,6 +3362,8 @@
     let localAgentData = null;
     let agentPollTimer = null;
     let handledResultsCount = 0;
+    let agentConsecutiveFailures = 0;
+    const MAX_AGENT_FAILURES_THRESHOLD = 3;
 
     async function checkLocalAgentStatus() {
       const dotEl = document.getElementById('agent-status-dot');
@@ -3368,10 +3374,11 @@
         const res = await fetch('http://127.0.0.1:21504/status', {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
-          signal: AbortSignal.timeout(2000)
+          signal: AbortSignal.timeout(3000)
         });
         if (res.ok) {
           const data = await res.json();
+          agentConsecutiveFailures = 0;
           localAgentOnline = true;
           localAgentData = data;
 
@@ -3394,13 +3401,17 @@
           throw new Error('Status ' + res.status);
         }
       } catch (err) {
-        localAgentOnline = false;
-        localAgentData = null;
-        if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-rose-500";
-        if (textEl) textEl.innerText = "Agente Desconectado";
-        if (badgeEl) {
-          badgeEl.className = "text-xs px-2.5 py-1 rounded-lg bg-dark-card border border-dark-border font-mono text-slate-400 flex items-center gap-1.5 cursor-pointer";
-          badgeEl.title = "Agente Local Desconectado. Execute python client_node.py na porta 21504.";
+        agentConsecutiveFailures++;
+        // Só altera o estado para offline caso ocorram 3 falhas consecutivas (evita falsos positivos por micro-delays)
+        if (agentConsecutiveFailures >= MAX_AGENT_FAILURES_THRESHOLD) {
+          localAgentOnline = false;
+          localAgentData = null;
+          if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-rose-500";
+          if (textEl) textEl.innerText = "Agente Desconectado";
+          if (badgeEl) {
+            badgeEl.className = "text-xs px-2.5 py-1 rounded-lg bg-dark-card border border-dark-border font-mono text-slate-400 flex items-center gap-1.5 cursor-pointer";
+            badgeEl.title = "Agente Local Desconectado. Execute python client_node.py na porta 21504.";
+          }
         }
         return null;
       }
