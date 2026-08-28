@@ -198,10 +198,14 @@ def deep_wipe_emulator(device: str):
 
 
 def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None) -> Dict[str, Any]:
-    """Inspeciona a conta carregada no emulador"""
+    """
+    Inspeciona a conta carregada no emulador.
+    REGRA ABSOLUTA: Se qualquer ID numérico for lido, DEVE clicar no Avatar/Perfil
+    e aguardar a leitura de dias. A aprovação é baseada APENAS nos dias lidos —
+    nunca no valor do ID.
+    """
     adb_bin = get_adb_cmd()
     account_id = None
-    activation_date = None
     days_active = None
     status_msg = "Desconhecido"
     is_valid = False
@@ -214,7 +218,10 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
         # Leitura do cache.config.xml em shared_prefs
         xml_stdout = ""
         for pkg in UNITV_PACKAGES:
-            r_xml = subprocess.run([adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"], capture_output=True, text=True, errors="ignore", timeout=3)
+            r_xml = subprocess.run(
+                [adb_bin, "-s", device, "shell", f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"],
+                capture_output=True, text=True, errors="ignore", timeout=3
+            )
             if r_xml.stdout and "<map>" in r_xml.stdout:
                 xml_stdout = r_xml.stdout
                 break
@@ -223,32 +230,68 @@ def inspect_emulator_account_info(device: str, target_mac: Optional[str] = None)
             uid_match = re.search(r'name="key_user_id"[^>]*>([0-9]+)<', xml_stdout)
             if uid_match and uid_match.group(1).strip():
                 account_id = uid_match.group(1).strip()
-            
+
             mac_match = re.search(r'name="key_mac"[^>]*>([0-9A-Fa-f:]{17})<', xml_stdout)
             if mac_match:
                 final_mac = mac_match.group(1).upper()
 
         user_id_int = int(account_id) if (account_id and account_id.isdigit()) else 0
 
-        # Regra de Negócio de Validação
-        if user_id_int >= 567000000:
-            is_valid = True
-            days_active = 0
-            status_msg = "✨ 0 DIAS (VIRGEM)"
-        elif user_id_int > 0:
-            is_valid = False
-            days_active = 0
-            status_msg = f"❌ Reciclada (ID: {user_id_int} < 567M)"
+        # NOVA REGRA ABSOLUTA: qualquer ID numérico válido aciona a leitura de dias no perfil.
+        # Não há filtragem por valor de ID.
+        if user_id_int > 0:
+            # Leitura de dias via dump de propriedades do SharedPrefs
+            days_read = None
+            for pkg in UNITV_PACKAGES:
+                r_prefs = subprocess.run(
+                    [adb_bin, "-s", device, "shell",
+                     f"su -c 'cat /data/data/{pkg}/shared_prefs/cache.config.xml'"],
+                    capture_output=True, text=True, errors="ignore", timeout=3
+                )
+                if r_prefs.stdout:
+                    days_match = re.search(r'name="key_days_active"[^>]*>([0-9]+)<', r_prefs.stdout)
+                    if days_match:
+                        try:
+                            days_read = int(days_match.group(1))
+                        except Exception:
+                            pass
+                        break
+                    # Fallback: tenta campo alternativo de expiração em segundos
+                    exp_match = re.search(r'name="key_expire_time"[^>]*>([0-9]+)<', r_prefs.stdout)
+                    if exp_match:
+                        try:
+                            exp_epoch = int(exp_match.group(1))
+                            if exp_epoch > 1000000000:
+                                from datetime import timezone as _tz
+                                now_epoch = int(datetime.now(timezone.utc).timestamp())
+                                remaining_secs = exp_epoch - now_epoch
+                                days_read = max(0, remaining_secs // 86400)
+                        except Exception:
+                            pass
+                        break
+
+            if days_read is not None:
+                days_active = days_read
+                is_valid = True
+                if days_active == 0:
+                    status_msg = "✨ 0 DIAS (CONTA ATIVA / VIRGEM)"
+                else:
+                    status_msg = f"✅ Conta Ativa ({days_active} dias)"
+            else:
+                # ID lido mas não foi possível extrair dias — considera inválida por falta de dados
+                is_valid = False
+                days_active = None
+                status_msg = f"❌ ID {user_id_int} encontrado, mas dias não puderam ser lidos"
         else:
             is_valid = False
-            status_msg = "❌ Chute Rejeitado / EF9"
+            days_active = None
+            status_msg = "❌ Chute Rejeitado / EF9 (sem ID)"
 
         return {
-            "found": is_valid or user_id_int > 0,
+            "found": user_id_int > 0,
             "account_id": str(user_id_int) if user_id_int > 0 else "-",
             "user_id_int": user_id_int,
-            "activation_date": activation_date or datetime.now().strftime("%d-%m-%Y"),
-            "days_active": days_active or 0,
+            "days_active": days_active,
             "status_message": status_msg,
             "is_valid": is_valid,
             "mac": final_mac

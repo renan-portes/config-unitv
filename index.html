@@ -413,15 +413,16 @@
             </div>
             <div class="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex flex-col justify-between">
               <span class="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1">
-                <i data-lucide="sparkles" class="w-3 h-3"></i> 0 Dias
+                <i data-lucide="sparkles" class="w-3 h-3"></i> CONTAS ATIVAS
               </span>
               <span id="stat-batch-virgins" class="text-amber-300 font-bold text-lg mt-0.5">0</span>
             </div>
             <div class="p-3 rounded-xl bg-dark-input border border-dark-border flex flex-col justify-between">
-              <span class="text-[10px] text-slate-400 uppercase font-semibold">Recicladas</span>
+              <span class="text-[10px] text-slate-400 uppercase font-semibold">🛡️ BANIDAS / SMART SKIP</span>
               <span id="stat-batch-rejected" class="text-slate-400 font-bold text-lg mt-0.5">0</span>
             </div>
           </div>
+
 
           <!-- Barra de Progresso Atual -->
           <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-dark-input border border-dark-border">
@@ -3421,8 +3422,8 @@
       const qty = parseInt(document.getElementById('batch-qty') ? document.getElementById('batch-qty').value : "10", 10) || 10;
       const tested = batchResults.length;
       const total = isBatchRunning || tested > 0 ? (batchQueue.length || tested) : qty;
-      const virgins = batchResults.filter(r => r.days_raw === 0 || r.is_target).length;
-      const rejected = batchResults.filter(r => !r.is_target).length;
+      const virgins = batchResults.filter(r => r.is_valid === true).length;
+      const rejected = batchResults.filter(r => r.is_valid === false).length;
 
       document.getElementById('batch-queue-count').innerText = isBatchRunning || tested > 0 ? (batchQueue.length - tested > 0 ? batchQueue.length - tested : 0) : qty;
       document.getElementById('stat-batch-total').innerText = total;
@@ -3810,7 +3811,7 @@
           </div>
         </td>
         <td class="px-2.5 py-2 text-amber-300 font-bold font-mono">${item.account_id}</td>
-        <td class="px-2.5 py-2 font-bold ${item.days_raw === 0 || item.is_target ? 'text-amber-300 font-extrabold text-xs' : 'text-slate-400'}">${item.days_active}</td>
+        <td class="px-2.5 py-2 font-bold ${item.is_valid ? 'text-amber-300 font-extrabold text-xs' : 'text-slate-400'}">${item.is_valid ? item.days_active : '-'}</td>
         <td class="px-2.5 py-2">
           <span class="px-1.5 py-0.5 rounded text-[10px] font-mono ${durBadge}">${item.duration_sec}s</span>
         </td>
